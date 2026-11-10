@@ -152,6 +152,18 @@ table.pres td { white-space: nowrap; }
 table.pres td.c, table.pres th.c { text-align: center; padding: 7px 4px; }
 table.pres td.pr { color: #9fe0b1; } table.pres td.ab { color: #ff9aa6; font-weight: 600; } table.pres td.nr { color: #5d5658; }
 table.pres tr.clickable { cursor: pointer; } table.pres tr.clickable:hover td { background: var(--surface-2); }
+.pitch { position: relative; width: 100%; max-width: 440px; aspect-ratio: 68 / 100; background: linear-gradient(180deg, #16231a, #101a13); border: 1px solid var(--ligne); border-radius: 6px; }
+.pitch > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tok { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px; width: 84px; text-align: center; }
+.tok .av-mini { width: 38px; height: 38px; border: 2px solid var(--rouge); }
+.tok.me .av-mini { border-color: #fff; box-shadow: 0 0 0 2px var(--rouge); }
+.tok .tn { font-size: 12px; font-weight: 600; line-height: 1.1; background: rgba(0,0,0,.65); border-radius: 3px; padding: 1px 5px; white-space: nowrap; }
+.tok .tp { font-family: var(--label); font-size: 10px; letter-spacing: .12em; color: var(--or); }
+.compo-wrap { display: grid; grid-template-columns: minmax(0, 440px) 1fr; gap: 16px; align-items: start; }
+@media (max-width: 680px) { .compo-wrap { grid-template-columns: 1fr; } .tok { width: 70px; } .tok .tn { font-size: 11px; } }
+.compo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.lab-s { font-family: var(--label); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.me-row { font-weight: 700; color: #fff; }
 .kicker { font-family: var(--label); font-style: italic; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; font-size: 13px; color: var(--or); }
 .login-hero { max-width: 420px; margin: 28px auto 0; background: var(--sable); border-radius: 6px 6px 0 0; padding: 22px 18px 18px; text-align: center; color: #fff; position: relative; overflow: hidden; }
 .login-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(118deg, transparent 0 88%, var(--rouge) 88% 93%, transparent 93%); pointer-events: none; }
@@ -183,7 +195,7 @@ table.pres tr.clickable { cursor: pointer; } table.pres tr.clickable:hover td { 
 "use strict";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc as fsDoc, collection as fsCol, onSnapshot as fsSnap, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc as fsDoc, collection as fsCol, onSnapshot as fsSnap, getDoc, getDocs, setDoc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const FIREBASE_CONFIG = {"apiKey": "AIzaSyA06TpNjasBn1vQLlp36_ImHEQ-JW3LBPE", "authDomain": "suivi-endoume.firebaseapp.com", "projectId": "suivi-endoume", "storageBucket": "suivi-endoume.firebasestorage.app", "messagingSenderId": "117976790225", "appId": "1:117976790225:web:e74232bf5749edcdff81f0"};
 const fbApp = initializeApp(FIREBASE_CONFIG), auth = getAuth(fbApp), fs = getFirestore(fbApp);
 const wrapDoc = x => ({ id: x.id, exists: x.exists(), data: () => x.data() });
@@ -201,9 +213,10 @@ const isTemp = fid => typeof fid === "string" && fid.startsWith("j-");
 
 const S = { db: null, user: null, me: null, admin: false, demo: false, demoAs: "coach",
   fiches: {}, loaded: false, slow: false, tab: "U19", view: "list", sel: null, saisie: null,
-  myFiche: undefined, flash: "", avatars: {}, objectifs: {}, avDraft: null, avEdit: false, inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
+  myFiche: undefined, flash: "", avatars: {}, objectifs: {}, avDraft: null, avEdit: false, inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, votants: {}, convoc: {}, compoDraft: {}, compoSel: {}, voteDraft: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
 
 /* ---------- petits outils ---------- */
+{ const _ap = Element.prototype.append; Element.prototype.append = function (...k) { return _ap.apply(this, k.filter(x => x != null && x !== false)); }; }
 function h(tag, attrs, ...kids) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -482,8 +495,10 @@ function analysesCard(g, asCoach) {
 function voteLabel(type, g) { return type === "mois" ? "Joueur du mois" : (g === "U10" ? "Joueur du plateau" : "Homme du match"); }
 function watchBulletins(vid) {
   if (S.subs["b-" + vid]) return;
-  if (S.admin) S.subs["b-" + vid] = S.db.collection("votes/" + vid + "/bulletins").onSnapshot(q => { S.bulletins[vid] = q.docs.map(d => ({ uid: d.id, ...d.data() })); softRender(); }, () => {});
-  else S.subs["b-" + vid] = S.db.doc("votes/" + vid + "/bulletins/" + S.me).onSnapshot(d => { S.myBallots[vid] = d.exists ? d.data().choix : null; softRender(); }, () => {});
+  if (S.admin) {
+    S.subs["b-" + vid] = S.db.collection("votes/" + vid + "/urne").onSnapshot(q => { S.bulletins[vid] = q.docs.map(d => d.data()); softRender(); }, () => {});
+    S.subs["n-" + vid] = S.db.collection("votes/" + vid + "/votants").onSnapshot(q => { S.votants[vid] = q.docs.length; softRender(); }, () => {});
+  } else S.subs["b-" + vid] = S.db.doc("votes/" + vid + "/votants/" + S.me).onSnapshot(d => { S.myBallots[vid] = d.exists; softRender(); }, () => {});
 }
 function votesCard(g, asCoach) {
   const all = Object.entries(S.votes).filter(([, v]) => v.groupe === g).sort((a, b) => (b[1].ouvert ? 1 : 0) - (a[1].ouvert ? 1 : 0) || (a[1].at < b[1].at ? 1 : -1));
@@ -499,20 +514,36 @@ function votesCard(g, asCoach) {
       sel.onchange = () => { const m = ms[+sel.value]; if (m) titre.value = `J${m.j} · ${sh(m.h)} – ${sh(m.a)}`; };
       fields.push(h("label", { class: "field", style: "flex:1;min-width:200px" }, "Match", sel));
     }
+    const players = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g).map(([fid, f]) => ({ fid, nom: f.nom || "Sans nom" })).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+    const conv = S.convoc[g] || (S.convoc[g] = new Set());
+    const convBox = h("div", { class: "stack", style: "gap:6px" });
+    const drawConv = () => {
+      convBox.textContent = "";
+      if (g !== "U19" || type.value !== "hdm") return;
+      const nolink = [...conv].filter(isTemp).length;
+      convBox.append(h("div", { class: "row", style: "justify-content:space-between;align-items:center" }, h("span", { class: "lab", style: "font-family:var(--label);letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--muted)" }, `Joueurs convoqués · ${conv.size}`),
+        h("span", { class: "row", style: "gap:10px" }, ...(((S.equipes[g] || {}).compos || []).length ? [(() => { const cs = ((S.equipes[g] || {}).compos || []).slice().sort((a, b) => (a.date || "") < (b.date || "") ? 1 : -1); const sc = h("select", { "aria-label": "Reprendre une compo", style: "max-width:220px" }, h("option", { value: "" }, "Reprendre une compo…"), cs.map(c => h("option", { value: c.id }, c.titre))); sc.onchange = () => { const c = cs.find(x => x.id === sc.value); if (!c) return; conv.clear(); [...(c.xi || []), ...(c.rempl || [])].filter(fid => S.fiches[fid]).forEach(fid => conv.add(fid)); if (!titre.value) titre.value = c.titre; drawConv(); }; return sc; })()] : []), h("button", { type: "button", class: "linkbtn", onclick: () => { players.forEach(p => conv.add(p.fid)); drawConv(); } }, "Tous"), h("button", { type: "button", class: "linkbtn", onclick: () => { conv.clear(); drawConv(); } }, "Aucun"))),
+        h("div", { class: "row", style: "gap:6px" }, players.map(p => h("button", { type: "button", class: "opt", "aria-pressed": String(conv.has(p.fid)), onclick: () => { conv.has(p.fid) ? conv.delete(p.fid) : conv.add(p.fid); drawConv(); } }, p.nom))),
+        h("p", { class: "note", style: "margin:0" }, "Seuls les joueurs convoqués votent, et uniquement pour un autre convoqué." + (nolink ? ` ${nolink} convoqué${nolink > 1 ? "s n'ont" : " n'a"} pas encore de compte relié : ${nolink > 1 ? "ils ne pourront" : "il ne pourra"} pas voter.` : "")));
+    };
+    type.addEventListener("change", drawConv); drawConv();
     const msg = h("span", { class: "note" });
     const go = h("button", { class: "btn small" }, "Ouvrir le vote");
     go.onclick = async () => {
-      const cands = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g).map(([fid, f]) => ({ fid, nom: f.nom || "Sans nom" })).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+      const restrict = g === "U19" && type.value === "hdm";
+      const cands = restrict ? players.filter(p => conv.has(p.fid)) : players;
+      if (restrict && cands.length < 2) { msg.className = "err"; msg.textContent = "Sélectionne les joueurs convoqués pour ce match."; return; }
       const t = titre.value.trim() || (type.value === "mois" ? new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) : "");
       if (!t) { msg.className = "err"; msg.textContent = "Donne un titre au vote (le match ou le mois)."; return; }
       if (!cands.length) { msg.className = "err"; msg.textContent = "Aucun joueur dans ce groupe."; return; }
       go.disabled = true;
-      try { await S.db.doc("votes/" + nid()).set({ groupe: g, type: type.value, titre: t.slice(0, 80), candidats: cands, ouvert: true, at: new Date().toISOString() }); msg.className = "ok"; msg.textContent = "Vote ouvert : les joueurs peuvent voter."; titre.value = ""; }
+      try { const d = { groupe: g, type: type.value, titre: t.slice(0, 80), candidats: cands, ouvert: true, at: new Date().toISOString() }; if (restrict) d.convoques = cands.map(c => c.fid);
+        await S.db.doc("votes/" + nid()).set(d); msg.className = "ok"; msg.textContent = restrict ? `Vote ouvert pour les ${cands.length} convoqués.` : "Vote ouvert : les joueurs peuvent voter."; titre.value = ""; conv.clear(); }
       catch (e) { msg.className = "err"; msg.textContent = "Échec : réessaie."; }
       go.disabled = false;
     };
-    card.append(h("div", { class: "row" }, fields), h("label", { class: "field" }, "Titre", titre), h("div", { class: "row" }, go, msg),
-      h("p", { class: "note", style: "margin:0" }, "Chaque joueur relié vote une fois (il peut changer d'avis tant que le vote est ouvert) et ne peut pas voter pour lui-même. Les bulletins ne sont visibles que par les coachs."));
+    card.append(h("div", { class: "row" }, fields), h("label", { class: "field" }, "Titre", titre), convBox, h("div", { class: "row" }, go, msg),
+      h("p", { class: "note", style: "margin:0" }, "Vote anonyme : chaque joueur vote une seule fois, pas pour lui-même. Personne, même pas les coachs, ne voit qui a voté pour qui : seulement le total par joueur."));
   }
   if (!open.length && !asCoach) card.append(h("p", { class: "note", style: "margin:0" }, "Aucun vote en cours."));
   for (const [vid, v] of open) {
@@ -521,9 +552,10 @@ function votesCard(g, asCoach) {
     if (asCoach) {
       const bs = S.bulletins[vid] || [], tally = {};
       for (const b of bs) tally[b.choix] = (tally[b.choix] || 0) + 1;
+      const nv = (v.convoques || null);
       const rows = Object.entries(tally).sort((a, b) => b[1] - a[1]);
       const nomOf = fid => ((v.candidats || []).find(c => c.fid === fid) || {}).nom || "?";
-      item.append(h("div", { class: "note" }, `${bs.length} vote${bs.length > 1 ? "s" : ""} reçu${bs.length > 1 ? "s" : ""}`),
+      item.append(h("div", { class: "note" }, `${bs.length} vote${bs.length > 1 ? "s" : ""} reçu${bs.length > 1 ? "s" : ""}${nv ? ` sur ${nv.length} convoqués` : ""}`),
         rows.length ? h("div", { class: "chips" }, rows.map(([fid, n]) => h("span", { class: "chip" }, nomOf(fid), " ", h("b", {}, n)))) : null);
       const win = h("select", { id: "v-win-" + vid }, (v.candidats || []).map(c => h("option", { value: c.fid, selected: rows[0] && rows[0][0] === c.fid }, c.nom)));
       const cm = h("span", { class: "note" });
@@ -542,14 +574,23 @@ function votesCard(g, asCoach) {
       del.onclick = async () => { if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer l'annulation"; return; } try { await S.db.doc("votes/" + vid).delete(); } catch (e) { del.textContent = "Échec : réessaie"; } };
       item.append(h("div", { class: "row" }, h("label", { class: "field" }, "Gagnant", win), close, cm), del);
     } else {
-      const mine = S.myBallots[vid];
-      const choices = h("div", { class: "chips" });
-      for (const c of (v.candidats || []).filter(c => c.fid !== S.me)) {
-        const b = h("button", { class: "toggle", "aria-pressed": String(mine === c.fid) }, c.nom);
-        b.onclick = async () => { try { await S.db.doc("votes/" + vid + "/bulletins/" + S.me).set({ choix: c.fid, at: new Date().toISOString() }); } catch (e) { b.textContent = "Échec, réessaie"; } };
-        choices.append(b);
+      const done = S.myBallots[vid];
+      const allowed = !v.convoques || v.convoques.includes(S.me);
+      if (!allowed) item.append(h("p", { class: "note", style: "margin:0" }, "Ce vote est réservé aux joueurs convoqués pour ce match."));
+      else if (done) item.append(h("p", { class: "ok", style: "margin:0" }, "Ton vote est enregistré. Il est anonyme : personne ne sait pour qui tu as voté."));
+      else {
+        const pick = S.voteDraft[vid];
+        const choices = h("div", { class: "chips" });
+        for (const c of (v.candidats || []).filter(c => c.fid !== S.me)) choices.append(h("button", { class: "toggle", "aria-pressed": String(pick === c.fid), onclick: () => { S.voteDraft[vid] = c.fid; render(); } }, c.nom));
+        const m = h("span", { class: "note" });
+        const ok = h("button", { class: "btn small", disabled: !pick }, "Valider mon vote");
+        ok.onclick = async () => {
+          if (!pick) return; ok.disabled = true; m.className = "note"; m.textContent = "Envoi…";
+          try { const b = writeBatch(fs); b.set(fsDoc(fs, "votes/" + vid + "/votants/" + S.me), { ok: true }); b.set(fsDoc(fsCol(fs, "votes/" + vid + "/urne")), { choix: pick }); await b.commit(); S.myBallots[vid] = true; delete S.voteDraft[vid]; render(); }
+          catch (e) { ok.disabled = false; m.className = "err"; m.textContent = "Échec : le vote est peut-être fermé, ou tu as déjà voté."; }
+        };
+        item.append(h("div", { class: "note" }, "Choisis un joueur puis valide. Ton vote est anonyme et définitif."), choices, h("div", { class: "row", style: "align-items:center" }, ok, m));
       }
-      item.append(h("div", { class: "note" }, mine ? "Ton vote est enregistré. Tu peux changer d'avis tant que le vote est ouvert." : "Touche le nom du joueur pour qui tu votes."), choices);
     }
     card.append(item);
   }
@@ -747,6 +788,7 @@ function equipeView(g, asCoach) {
     obj.append(h("div", { class: "stack", style: "margin-top:10px" }, h("label", { class: "field" }, "Modifier l'objectif", t), saveBtn("Enregistrer", () => writeEquipe(g, { objectif: t.value.trim().slice(0, 160) })))); }
 
   box.append(obj);
+  if (g === "U19") box.append(composCard(g, asCoach));
   box.append(votesCard(g, asCoach));
   box.append(analysesCard(g, asCoach));
 
@@ -754,7 +796,7 @@ function equipeView(g, asCoach) {
   const hommes = (eq.hommes || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
   const hm = h("div", { class: "card" }, h("h3", {}, g === "U10" ? "Joueur du plateau" : "Homme du match"));
   if (hommes.length) hm.append(h("div", { class: "hero-eq" }, hommes[0].nom), h("p", { class: "note" }, `${M[0].toUpperCase() + M.slice(1)} du ${fmtLong(hommes[0].date)}`),
-    hommes.length > 1 ? h("p", { class: "note" }, "Avant : " + hommes.slice(1, 5).map(x => `${x.nom} (${fmtDate(x.date)})`).join(", ")) : null);
+    hommes.length > 1 ? h("p", { class: "note" }, "Avant : " + hommes.slice(1, 5).map(x => `${x.nom} (${fmtDate(x.date)})`).join(", ")) : "");
   else hm.append(h("p", { class: "note" }, `Personne encore désigné.`));
   const jm = h("div", { class: "card" }, h("h3", {}, "Joueur du mois"));
   if (eq.mois && eq.mois.nom) jm.append(h("div", { class: "hero-eq" }, eq.mois.nom), h("p", { class: "note" }, eq.mois.label || "")); else jm.append(h("p", { class: "note" }, "Pas encore désigné."));
@@ -807,6 +849,99 @@ function objectifCard(fid, f, asCoach) {
       const v = sel.value; if (!OBJ_ALL.has(v)) { m.className = "err"; m.textContent = "Choisis un objectif dans la liste."; return; }
       try { const d = { obj: v, at: new Date().toISOString() }; await setDoc(fsDoc(fs, "objectifs/" + S.me), d); S.objectifs[S.me] = d; render(); } catch (e) { m.className = "err"; m.textContent = "Échec : réessaie."; }
     } }, "Enregistrer mon objectif"), m)));
+  return card;
+}
+
+/* ---------- compositions de match ---------- */
+const DEF4 = [["GB", 50, 91], ["DD", 85, 72], ["DC", 62, 77], ["DC", 38, 77], ["DG", 15, 72]];
+const SYSTEMES = {
+  "4-4-2": [...DEF4, ["MD", 85, 47], ["MC", 62, 52], ["MC", 38, 52], ["MG", 15, 47], ["BU", 62, 21], ["BU", 38, 21]],
+  "4-3-3": [...DEF4, ["MDC", 50, 59], ["MC", 70, 46], ["MC", 30, 46], ["AD", 82, 23], ["BU", 50, 16], ["AG", 18, 23]],
+  "4-2-3-1": [...DEF4, ["MDC", 62, 59], ["MDC", 38, 59], ["MOD", 83, 37], ["MOC", 50, 35], ["MOG", 17, 37], ["BU", 50, 15]],
+  "4-1-4-1": [...DEF4, ["MDC", 50, 61], ["MD", 85, 43], ["MC", 62, 46], ["MC", 38, 46], ["MG", 15, 43], ["BU", 50, 17]],
+  "3-5-2": [["GB", 50, 91], ["DC", 72, 76], ["DC", 50, 78], ["DC", 28, 76], ["PD", 88, 49], ["MC", 66, 52], ["MDC", 50, 60], ["MC", 34, 52], ["PG", 12, 49], ["BU", 62, 20], ["BU", 38, 20]],
+  "3-4-3": [["GB", 50, 91], ["DC", 72, 76], ["DC", 50, 78], ["DC", 28, 76], ["PD", 86, 51], ["MC", 62, 54], ["MC", 38, 54], ["PG", 14, 51], ["AD", 80, 23], ["BU", 50, 17], ["AG", 20, 23]]
+};
+const shortNom = n => { const w = (n || "?").trim().split(/\s+/); if (w.length < 2) return w[0]; const caps = w.filter(x => x === x.toUpperCase() && /[A-Z]/.test(x)); const pre = w.find(x => !caps.includes(x)) || w[0]; const fam = caps[0] || w[w.length - 1]; return pre === fam ? pre : `${pre[0].toUpperCase() + pre.slice(1).toLowerCase()} ${fam[0].toUpperCase()}.`; };
+function pitchView(c) {
+  const pos = SYSTEMES[c.systeme] || SYSTEMES["4-4-2"];
+  const pitch = h("div", { class: "pitch", role: "img", "aria-label": `Composition en ${c.systeme}` });
+  pitch.innerHTML = `<svg viewBox="0 0 68 100" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="rgba(205,189,143,.35)" stroke-width=".4"><rect x="2" y="2" width="64" height="96"/><line x1="2" y1="50" x2="66" y2="50"/><circle cx="34" cy="50" r="8"/><rect x="16" y="2" width="36" height="15"/><rect x="16" y="83" width="36" height="15"/><rect x="26" y="2" width="16" height="5"/><rect x="26" y="93" width="16" height="5"/></g></svg>`;
+  pos.forEach(([lab, x, y], i) => {
+    const fid = (c.xi || [])[i], nom = fid ? ((c.noms || {})[fid] || "?") : "";
+    const t = h("div", { class: "tok" + (fid && fid === S.me ? " me" : ""), style: `left:${x}%;top:${y}%` },
+      fid ? avatarNode(fid, nom, "av-mini") : h("div", { class: "av-mini" }, "–"),
+      h("span", { class: "tn" }, fid ? shortNom(nom) + (c.cap === fid ? " (C)" : "") : lab), h("span", { class: "tp" }, lab));
+    pitch.append(t);
+  });
+  return pitch;
+}
+function composCard(g, asCoach) {
+  const eq = S.equipes[g] || {}, compos = (eq.compos || []).slice().sort((a, b) => (a.date || "") < (b.date || "") ? 1 : -1);
+  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Compositions de match"));
+  const players = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g).sort((a, b) => (a[1].nom || "").localeCompare(b[1].nom || "", "fr"));
+  // éditeur coach
+  if (asCoach) {
+    const d = S.compoDraft[g];
+    if (!d) {
+      card.append(h("div", { class: "row" }, h("button", { class: "btn small", onclick: () => { S.compoDraft[g] = { id: nid(), titre: "", date: today(), systeme: "4-3-3", xi: Array(11).fill(""), rempl: [], cap: "" }; render(); } }, "Nouvelle composition"),
+        compos.length ? h("span", { class: "note" }, "ou modifie une compo existante plus bas") : null));
+    } else {
+      const ed = h("div", { class: "hitem stack" });
+      const titre = h("input", { maxlength: "80", placeholder: "Ex. J7 · Endoume – Simiane", value: d.titre }); titre.addEventListener("input", () => d.titre = titre.value);
+      const dt = h("input", { type: "date", value: d.date }); dt.addEventListener("change", () => d.date = dt.value);
+      const fields = [];
+      if (g === "U19" && S.champ && Array.isArray(S.champ.matchs)) {
+        const sh = t => (S.champ.noms && S.champ.noms[t]) || t, ms = S.champ.matchs.slice().sort((a, b) => a.j - b.j);
+        const ms2 = h("select", {}, h("option", { value: "" }, "Match de la saison"), ms.map((m, i) => h("option", { value: String(i) }, `J${m.j} · ${sh(m.h)} – ${sh(m.a)}`)));
+        ms2.onchange = () => { const m = ms[+ms2.value]; if (!m) return; d.titre = `J${m.j} · ${sh(m.h)} – ${sh(m.a)}`; if (m.date && /^\d{4}-\d{2}-\d{2}/.test(m.date)) d.date = m.date.slice(0, 10); render(); };
+        fields.push(h("label", { class: "field", style: "flex:1;min-width:200px" }, "Match", ms2));
+      }
+      const sys = h("select", {}, Object.keys(SYSTEMES).map(k => h("option", { value: k, selected: k === d.systeme }, k))); sys.onchange = () => { d.systeme = sys.value; render(); };
+      ed.append(h("div", { class: "row" }, ...fields, h("label", { class: "field" }, "Système", sys)), h("div", { class: "row" }, h("label", { class: "field", style: "flex:1;min-width:200px" }, "Titre", titre), h("label", { class: "field" }, "Date", dt)));
+      const used = new Set(d.xi.filter(Boolean));
+      const grid = h("div", { class: "compo-grid" });
+      (SYSTEMES[d.systeme]).forEach(([lab], i) => {
+        const sel = h("select", { "aria-label": `Poste ${lab}` }, h("option", { value: "" }, "—"), players.map(([fid, f]) => h("option", { value: fid, selected: d.xi[i] === fid, disabled: used.has(fid) && d.xi[i] !== fid }, f.nom)));
+        sel.onchange = () => { d.xi[i] = sel.value; d.rempl = d.rempl.filter(x => x !== sel.value); render(); };
+        grid.append(h("label", { class: "field" }, `${i + 1}. ${lab}`, sel));
+      });
+      ed.append(grid);
+      const bench = players.filter(([fid]) => !used.has(fid));
+      ed.append(h("div", {}, h("div", { class: "lab-s" }, `Remplaçants · ${d.rempl.length}`), h("div", { class: "row", style: "gap:6px" }, bench.map(([fid, f]) =>
+        h("button", { type: "button", class: "opt", "aria-pressed": String(d.rempl.includes(fid)), onclick: () => { d.rempl = d.rempl.includes(fid) ? d.rempl.filter(x => x !== fid) : [...d.rempl, fid]; render(); } }, f.nom)))));
+      const cap = h("select", {}, h("option", { value: "" }, "—"), d.xi.filter(Boolean).map(fid => h("option", { value: fid, selected: d.cap === fid }, S.fiches[fid] ? S.fiches[fid].nom : "?"))); cap.onchange = () => d.cap = cap.value;
+      ed.append(h("label", { class: "field", style: "max-width:320px" }, "Capitaine", cap));
+      const m = h("span", { class: "note" });
+      const save = h("button", { class: "btn small" }, "Publier la compo");
+      save.onclick = async () => {
+        if (!d.titre.trim()) { m.className = "err"; m.textContent = "Donne un titre (le match)."; return; }
+        if (d.xi.filter(Boolean).length < 7) { m.className = "err"; m.textContent = "Place au moins 7 titulaires."; return; }
+        const ids = [...d.xi.filter(Boolean), ...d.rempl], noms = {}; ids.forEach(fid => noms[fid] = (S.fiches[fid] && S.fiches[fid].nom) || "?");
+        const c = { id: d.id, titre: d.titre.trim().slice(0, 80), date: d.date || today(), systeme: d.systeme, xi: d.xi, rempl: d.rempl, cap: d.xi.includes(d.cap) ? d.cap : "", noms };
+        save.disabled = true;
+        try { await writeEquipe(g, { compos: [...(eq.compos || []).filter(x => x.id !== d.id), c] }); S.compoDraft[g] = null; S.compoSel[g] = c.id; S.flashCompo = "Compo publiée : les joueurs la voient dans L'équipe."; render(); }
+        catch (e) { save.disabled = false; m.className = "err"; m.textContent = "Échec : réessaie."; }
+      };
+      ed.append(h("div", { class: "row", style: "align-items:center" }, save, h("button", { class: "btn ghost small", onclick: () => { S.compoDraft[g] = null; render(); } }, "Annuler"), m));
+      card.append(ed);
+    }
+    if (S.flashCompo) { card.append(h("p", { class: "ok", style: "margin:0" }, S.flashCompo)); S.flashCompo = ""; }
+  }
+  if (!compos.length) { if (!asCoach) card.append(h("p", { class: "note", style: "margin:0" }, "Aucune composition publiée pour l'instant.")); return card; }
+  const curId = compos.some(c => c.id === S.compoSel[g]) ? S.compoSel[g] : compos[0].id, c = compos.find(x => x.id === curId);
+  const pick = h("select", { "aria-label": "Choisir le match" }, compos.map(x => h("option", { value: x.id, selected: x.id === curId }, `${x.titre} · ${fmtDate(x.date)}`)));
+  pick.onchange = () => { S.compoSel[g] = pick.value; render(); };
+  const hm = (eq.hommes || []).find(x => x.titre && x.titre === c.titre);
+  const mine = S.me && ((c.xi || []).includes(S.me) ? "titulaire" : (c.rempl || []).includes(S.me) ? "remplaçant" : "");
+  card.append(h("div", { class: "row", style: "align-items:center;justify-content:space-between" }, h("label", { class: "field", style: "flex:1;min-width:220px" }, "Match", pick),
+    asCoach ? h("span", { class: "row", style: "gap:10px" }, h("button", { class: "linkbtn", onclick: () => { S.compoDraft[g] = JSON.parse(JSON.stringify({ id: c.id, titre: c.titre, date: c.date, systeme: c.systeme, xi: [...(c.xi || []), ...Array(11).fill("")].slice(0, 11), rempl: c.rempl || [], cap: c.cap || "" })); render(); } }, "Modifier"),
+      h("button", { class: "linkbtn danger", onclick: async e => { const b = e.currentTarget; if (b.dataset.c !== "1") { b.dataset.c = "1"; b.textContent = "Confirmer la suppression"; return; } try { await writeEquipe(g, { compos: (eq.compos || []).filter(x => x.id !== c.id) }); render(); } catch (er) { b.textContent = "Échec"; } } }, "Supprimer")) : null));
+  card.append(h("div", { class: "pmeta" }, `${c.systeme} · ${fmtLong(c.date)}`, mine ? h("span", { class: "pill match", style: "margin-left:8px" }, `Tu étais ${mine}`) : null, hm ? h("span", { class: "pill ex", style: "margin-left:8px" }, `Homme du match : ${hm.nom}`) : null));
+  const subs = (c.rempl || []).map(fid => (c.noms || {})[fid] || "?");
+  card.append(h("div", { class: "compo-wrap" }, pitchView(c), h("div", { class: "stack", style: "gap:6px" }, h("div", { class: "lab-s" }, "Remplaçants"),
+    subs.length ? h("div", { class: "stack", style: "gap:6px" }, (c.rempl || []).map(fid => h("div", { class: "row" + (fid === S.me ? " me-row" : ""), style: "gap:8px;align-items:center;flex-wrap:nowrap" }, avatarNode(fid, (c.noms || {})[fid], "av-mini"), (c.noms || {})[fid] || "?"))) : h("p", { class: "note", style: "margin:0" }, "Aucun."),
+    c.cap ? h("p", { class: "note", style: "margin:6px 0 0" }, `Capitaine : ${(c.noms || {})[c.cap] || "?"}`) : null)));
   return card;
 }
 
@@ -1390,7 +1525,7 @@ onAuthStateChanged(auth, async u => {
   } else {
     try { const ins = await getDoc(fsDoc(fs, "inscriptions/" + u.uid)); S.myInscription = ins.exists() ? ins.data() : null; } catch (e) {}
     db.doc("objectifs/" + S.me).onSnapshot(os => { if (os.exists) S.objectifs[S.me] = os.data(); softRender(); }, () => {});
-    db.doc("avatars/" + S.me).onSnapshot(as => { if (as.exists) S.avatars[S.me] = as.data(); softRender(); }, () => {});
+    db.collection("avatars").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.avatars = n; softRender(); }, () => {});
     db.doc("fiches/" + S.me).onSnapshot(snap => {
       clearTimeout(slowT); S.slow = false;
       S.myFiche = snap.exists ? snap.data() : null;
