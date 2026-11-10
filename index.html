@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suivi joueurs US Endoume</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Plan : noir du blason, rouge pour l'action, or pour les repères. Une colonne lisible au téléphone, saisie rapide au bord du terrain. */
+:root {
+  --noir: #0e0d0f;
+  --surface: #18171b;
+  --surface-2: #222026;
+  --ligne: #34313a;
+  --texte: #f2eee6;
+  --muted: #a39e94;
+  --rouge: #d0182f;
+  --rouge-fonce: #8f0f1f;
+  --or: #d6ac4e;
+  --bon: #4fae6a;
+  --display: "Oswald", "Arial Narrow", Impact, sans-serif;
+  --body: "Barlow", "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--noir); color: var(--texte); font-family: var(--body); font-size: 16px; line-height: 1.45; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--or); outline-offset: 2px; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 16px 48px; }
+header.top { border-bottom: 3px solid var(--rouge); background: linear-gradient(180deg, #151316, var(--noir)); }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; padding-bottom: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.badge { width: 40px; height: 46px; background: var(--rouge); clip-path: polygon(0 0,100% 0,100% 62%,50% 100%,0 62%); display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--or); border-top: 4px solid #000; }
+.brand h1 { font-family: var(--display); font-weight: 600; font-size: 21px; letter-spacing: .04em; text-transform: uppercase; margin: 0; line-height: 1.1; }
+.brand small { display: block; color: var(--or); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+.role { font-size: 13px; color: var(--muted); border: 1px solid var(--ligne); border-radius: 999px; padding: 4px 12px; }
+.demo { background: #2a2210; border: 1px solid #5c4a1c; color: #ecd59a; border-radius: 10px; padding: 10px 14px; margin: 16px 0 0; font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.demo button { background: transparent; border: 1px solid #8a7130; color: #ecd59a; border-radius: 999px; padding: 3px 12px; font-size: 13px; }
+.demo button[aria-pressed="true"] { background: var(--or); color: #1b1505; border-color: var(--or); }
+.tabs { display: flex; gap: 6px; margin: 20px 0 16px; flex-wrap: wrap; }
+.tab { background: var(--surface); border: 1px solid var(--ligne); border-radius: 8px; padding: 8px 16px; font-family: var(--display); font-size: 16px; letter-spacing: .05em; text-transform: uppercase; }
+.tab[aria-selected="true"] { background: var(--rouge); border-color: var(--rouge); }
+.bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 14px; }
+h2 { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 24px; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; font-size: 16px; color: var(--or); margin: 0 0 10px; }
+.btn { background: var(--rouge); border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; }
+.btn:hover { background: #e2223a; }
+.btn.ghost { background: transparent; border: 1px solid var(--ligne); }
+.btn.ghost:hover { border-color: var(--muted); }
+.btn.small { padding: 6px 12px; font-size: 14px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; padding: 14px; }
+button.card { text-align: left; width: 100%; display: flex; flex-direction: column; gap: 8px; }
+button.card:hover { border-color: var(--rouge); }
+.pname { font-weight: 600; font-size: 17px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.pmeta { color: var(--muted); font-size: 13px; }
+.avg { font-family: var(--display); font-size: 26px; color: var(--or); font-variant-numeric: tabular-nums; }
+.avg small { font-size: 14px; color: var(--muted); }
+.pill { display: inline-block; font-size: 12px; border-radius: 999px; padding: 2px 9px; border: 1px solid var(--ligne); color: var(--muted); }
+.pill.match { border-color: var(--rouge); color: #ff9aa6; }
+.pill.ex { border-color: #5c4a1c; color: #ecd59a; }
+.empty { color: var(--muted); padding: 24px; border: 1px dashed var(--ligne); border-radius: 12px; text-align: center; }
+.crit-row { display: grid; grid-template-columns: minmax(130px, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--ligne); }
+.crit-row:first-of-type { border-top: 0; }
+.scale { display: flex; gap: 4px; }
+.sc { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--ligne); background: var(--surface-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.sc[aria-pressed="true"] { background: var(--or); color: #1b1505; border-color: var(--or); }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted); }
+.field input, .field select, .field textarea { background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 8px; padding: 9px 10px; color: var(--texte); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.saisie-p { display: flex; flex-direction: column; gap: 6px; }
+.saisie-p.absent .crits, .saisie-p.absent .com { display: none; }
+.saisie-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.toggle { font-size: 13px; background: transparent; border: 1px solid var(--ligne); border-radius: 999px; padding: 4px 10px; color: var(--muted); }
+.toggle[aria-pressed="true"] { border-color: var(--bon); color: #9fe0b1; }
+.bars { display: flex; flex-direction: column; gap: 10px; }
+.barline { display: grid; grid-template-columns: minmax(120px, 170px) 1fr 52px; gap: 10px; align-items: center; font-size: 14px; }
+.track { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.fill { height: 100%; background: linear-gradient(90deg, var(--rouge-fonce), var(--rouge)); border-radius: 999px; }
+.fill.m { background: linear-gradient(90deg, #7a5d1f, var(--or)); }
+.val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.chart { width: 100%; overflow-x: auto; }
+.chart svg { width: 100%; min-width: 420px; height: auto; display: block; }
+.hist { display: flex; flex-direction: column; gap: 10px; }
+.hitem { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.hitem .hhead { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 13px; background: var(--surface); border: 1px solid var(--ligne); border-radius: 6px; padding: 2px 8px; }
+.chip b { color: var(--or); font-variant-numeric: tabular-nums; }
+.com-text { font-size: 15px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.obj { border-left: 3px solid var(--or); padding: 6px 12px; background: var(--surface-2); border-radius: 0 8px 8px 0; }
+.note { font-size: 13px; color: var(--muted); }
+.err { color: #ff9aa6; font-size: 14px; }
+.ok { color: #9fe0b1; font-size: 14px; }
+.code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; width: 100%; }
+.linkbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; font-size: 14px; }
+.danger { color: #ff9aa6; }
+.subtabs { display: flex; gap: 0; border-bottom: 1px solid var(--ligne); margin: -4px 0 16px; }
+.subtab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; color: var(--muted); font-weight: 600; }
+.subtab[aria-selected="true"] { color: var(--texte); border-bottom-color: var(--or); }
+.top-fiche { display: grid; grid-template-columns: 240px 1fr; gap: 12px; align-items: start; }
+@media (max-width: 620px) { .top-fiche { grid-template-columns: 1fr; } .fcard { margin: 0 auto; } }
+.fcard { width: 240px; aspect-ratio: 5 / 7; border-radius: 14px; position: relative; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  background: linear-gradient(135deg, #111012 0 52%, var(--rouge) 52% 70%, #111012 70%); border: 2px solid var(--or); box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+.fcard .fc-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.fcard .fc-note { font-family: var(--display); font-size: 46px; line-height: .9; color: var(--or); font-variant-numeric: tabular-nums; }
+.fcard .fc-note small { display: block; font-size: 12px; letter-spacing: .12em; color: var(--texte); }
+.fcard .fc-ini { width: 64px; height: 64px; border-radius: 50%; background: #000; border: 2px solid var(--or); display: grid; place-items: center; font-family: var(--display); font-size: 24px; }
+.fcard .fc-nom { font-family: var(--display); font-size: 21px; text-transform: uppercase; letter-spacing: .04em; text-align: center; margin-top: auto; text-wrap: balance; line-height: 1.1; }
+.fcard .fc-poste { text-align: center; font-size: 12px; color: var(--or); letter-spacing: .12em; text-transform: uppercase; }
+.fcard .fc-crit { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 13px; background: rgba(0,0,0,.55); border-radius: 8px; padding: 8px 10px; }
+.fcard .fc-crit span b { color: var(--or); font-variant-numeric: tabular-nums; margin-right: 4px; }
+.fcard .fc-club { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-size: 10px; letter-spacing: .16em; color: var(--muted); }
+.stars { color: var(--or); letter-spacing: 1px; }
+.stars .off { color: #4a4650; }
+.record { background: linear-gradient(90deg, rgba(214,172,78,.18), transparent); border: 1px solid #5c4a1c; border-radius: 10px; padding: 10px 12px; font-weight: 600; }
+.mot { border-left: 3px solid var(--rouge); background: var(--surface-2); border-radius: 0 8px 8px 0; padding: 8px 12px; font-size: 15px; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bdg { display: flex; gap: 8px; align-items: center; background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 10px; padding: 8px; }
+.bdg .ico { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-size: 15px; background: var(--or); color: #1b1505; }
+.bdg.off { opacity: .45; }
+.bdg.off .ico { background: #3a3640; color: var(--muted); }
+.bdg b { display: block; font-size: 14px; }
+.bdg small { color: var(--muted); font-size: 12px; line-height: 1.25; display: block; }
+table.stats { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+table.stats th, table.stats td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--ligne); }
+table.stats th { color: var(--muted); font-weight: 500; font-size: 13px; }
+.tablebox { overflow-x: auto; }
+.hero-eq { font-size: 18px; font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) { button.card, .btn, .sc { transition: background .15s, border-color .15s; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand"><div class="badge">1925</div><div><h1>US Endoume Catalans</h1><small>Suivi des joueurs</small></div></div>
+  <div class="row" style="gap:8px"><span class="role" id="role">Chargement…</span><button class="role" id="logout" hidden style="background:none;cursor:pointer">Se déconnecter</button></div>
+</div></header>
+<main class="wrap" id="app"><p class="note" style="margin-top:24px">Chargement du suivi…</p></main>
+
+<script type="module">
+"use strict";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc as fsDoc, collection as fsCol, onSnapshot as fsSnap, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const FIREBASE_CONFIG = {"apiKey": "AIzaSyA06TpNjasBn1vQLlp36_ImHEQ-JW3LBPE", "authDomain": "suivi-endoume.firebaseapp.com", "projectId": "suivi-endoume", "storageBucket": "suivi-endoume.firebasestorage.app", "messagingSenderId": "117976790225", "appId": "1:117976790225:web:e74232bf5749edcdff81f0"};
+const fbApp = initializeApp(FIREBASE_CONFIG), auth = getAuth(fbApp), fs = getFirestore(fbApp);
+const wrapDoc = x => ({ id: x.id, exists: x.exists(), data: () => x.data() });
+function docRef(path) { const r = fsDoc(fs, path); return { id: r.id, path, get: async () => wrapDoc(await getDoc(r)), set: d => setDoc(r, d), update: d => updateDoc(r, d), delete: () => deleteDoc(r), onSnapshot: (n, e) => fsSnap(r, x => n(wrapDoc(x)), e) }; }
+function colRef(path) { const r = fsCol(fs, path); return { path, get: async () => { const q = await getDocs(r); return { docs: q.docs.map(wrapDoc) }; }, onSnapshot: (n, e) => fsSnap(r, q => n({ docs: q.docs.map(wrapDoc), size: q.size, empty: q.empty }), e), doc: id => docRef(path + "/" + id) }; }
+const DB = { doc: docRef, collection: colRef };
+const GROUPS = {
+  U19: { label: "U19", crit: [["eng","Engagement"],["tech","Technique"],["intel","Intelligence de jeu"],["comp","Comportement"]] },
+  U10: { label: "U10", parent: true, crit: [["plaisir","Plaisir et engagement"],["tech","Technique balle au pied"],["jeu","Compréhension du jeu"],["respect","Respect et écoute"]] },
+  GB:  { label: "Gardiens", crit: [["prise","Prise de balle"],["plac","Placement"],["pied","Jeu au pied"],["comm","Communication"],["cour","Courage"]] }
+};
+const LEVELS = ["", "À travailler", "En progrès", "Correct", "Bien", "Très bien"];
+const SEG = /^[A-Za-z0-9_\-.~:@+]{1,200}$/;
+const isTemp = fid => typeof fid === "string" && fid.startsWith("j-");
+
+const S = { db: null, user: null, me: null, admin: false, demo: false, demoAs: "coach",
+  fiches: {}, loaded: false, slow: false, tab: "U19", view: "list", sel: null, saisie: null,
+  myFiche: undefined, flash: "", inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
+
+/* ---------- petits outils ---------- */
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "class") el.className = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : String(kid));
+  return el;
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const fmtDate = d => { const x = new Date(d + "T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }); };
+const fmtLong = d => { const x = new Date(d + "T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); };
+const nid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const groupOf = f => GROUPS[f && f.groupe] ? f.groupe : "U19";
+const sortedNotes = f => [...((f && Array.isArray(f.notes)) ? f.notes : [])].filter(n => n && typeof n.date === "string").sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+function noteAvg(n, g) {
+  const v = GROUPS[g].crit.map(c => n.crit && n.crit[c[0]]).filter(x => typeof x === "number" && x >= 1 && x <= 5);
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+function critAvg(notes, k, type) {
+  const v = notes.filter(n => !type || n.type === type).map(n => n.crit && n.crit[k]).filter(x => typeof x === "number" && x >= 1 && x <= 5);
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+function overall(f, last) {
+  const g = groupOf(f); let ns = sortedNotes(f); if (last) ns = ns.slice(-last);
+  const v = ns.map(n => noteAvg(n, g)).filter(x => x != null);
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+const n1 = x => x == null ? "–" : x.toFixed(1).replace(".", ",");
+const initials = n => (n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+const ABBR = { eng: "ENG", tech: "TEC", intel: "INT", comp: "COM", plaisir: "PLA", jeu: "JEU", respect: "RES", prise: "PRI", plac: "PLA", pied: "PIE", comm: "COM", cour: "COU" };
+function stars(v) { const r = Math.round(v || 0); const s = h("span", { class: "stars", "aria-label": `${r} sur 5` }); for (let i = 1; i <= 5; i++) s.append(i <= r ? h("span", {}, "★") : h("span", { class: "off" }, "★")); return s; }
+
+/* ---------- carte joueur ---------- */
+function fcard(f, parent) {
+  const g = groupOf(f), G = GROUPS[g], ns = sortedNotes(f).slice(-5);
+  const o = overall(f, 5);
+  const card = h("div", { class: "fcard", role: "img", "aria-label": `Carte de ${f.nom || "joueur"}` });
+  card.append(h("div", { class: "fc-club" }, "ENDOUME · 1925"));
+  card.append(h("div", { class: "fc-top" },
+    parent ? h("div", { class: "fc-note", style: "font-size:20px;line-height:1.1" }, o == null ? "–" : LEVELS[Math.round(o)], h("small", {}, "niveau"))
+           : h("div", { class: "fc-note" }, o == null ? "–" : Math.round(o * 20), h("small", {}, "NOTE")),
+    h("div", { class: "fc-ini" }, initials(f.nom))));
+  card.append(h("div", { class: "fc-nom" }, f.nom || "Joueur"));
+  card.append(h("div", { class: "fc-poste" }, [f.poste, f.sousCat || G.label].filter(Boolean).join(" · ")));
+  const crit = h("div", { class: "fc-crit" });
+  for (const [k] of G.crit) {
+    const a = critAvg(ns, k);
+    crit.append(parent ? h("span", {}, ABBR[k] || k, " ", stars(a)) : h("span", {}, h("b", {}, a == null ? "–" : Math.round(a * 20)), ABBR[k] || k));
+  }
+  card.append(crit);
+  return card;
+}
+
+/* ---------- badges et records ---------- */
+function badges(fid, f, eq) {
+  const g = groupOf(f), ns = sortedNotes(f), avgs = ns.map(n => noteAvg(n, g)).filter(x => x != null);
+  const pres = (Array.isArray(f.presences) ? f.presences : []).slice().sort((a, b) => a.date < b.date ? -1 : 1);
+  const last10 = pres.slice(-10);
+  const out = [];
+  const add = (ico, nom, desc, got) => out.push({ ico, nom, desc, got: !!got });
+  add("10", "Assidu", "Présent aux 10 dernières séances", last10.length >= 10 && last10.every(p => p.p));
+  add("3x", "En feu", "3 évaluations de suite à 4 ou plus", avgs.length >= 3 && avgs.slice(-3).every(v => v >= 4));
+  add("5x", "Régulier", "5 évaluations de suite à 3 ou plus", avgs.length >= 5 && avgs.slice(-5).every(v => v >= 3));
+  add("↑", "Record", "Ta meilleure évaluation de la saison", avgs.length >= 3 && avgs[avgs.length - 1] > Math.max(...avgs.slice(0, -1)));
+  if (g === "GB") add("GB", "Le Mur", "3 matchs notés à 4 ou plus", ns.filter(n => n.type === "Match" && noteAvg(n, g) >= 4).length >= 3);
+  add("20", "Pilier", "20 évaluations dans la saison", ns.length >= 20);
+  const hdm = ((eq && eq.hommes) || []).filter(x => x.fid === fid).length;
+  add("★", g === "U10" ? "Joueur du plateau" : "Homme du match", hdm ? `Choisi ${hdm} fois par le coach` : "Choisi par le coach après un match", hdm);
+  for (const d of (Array.isArray(f.defis) ? f.defis : [])) add("D", `Défi : ${d.titre}`, `Réussi le ${fmtDate(d.date)}`, true);
+  return out;
+}
+function records(f, parent) {
+  const g = groupOf(f), ns = sortedNotes(f), last = ns[ns.length - 1], msgs = [];
+  if (!last || ns.length < 3) return msgs;
+  for (const [k, lab] of GROUPS[g].crit) {
+    const v = last.crit && last.crit[k]; if (typeof v !== "number") continue;
+    const prev = ns.slice(0, -1).map(n => n.crit && n.crit[k]).filter(x => typeof x === "number");
+    if (prev.length >= 2 && v > Math.max(...prev)) msgs.push(parent ? `Son meilleur niveau en ${lab.toLowerCase()} depuis le ${fmtLong(ns[0].date)}.` : `Ta meilleure note en ${lab.toLowerCase()} depuis le ${fmtLong(ns[0].date)}.`);
+  }
+  return msgs;
+}
+function badgesBox(fid, f) {
+  const box = h("div", { class: "badges" });
+  const list = badges(fid, f, S.equipes[groupOf(f)]);
+  list.sort((a, b) => (b.got ? 1 : 0) - (a.got ? 1 : 0));
+  for (const b of list) box.append(h("div", { class: "bdg" + (b.got ? "" : " off") }, h("span", { class: "ico", "aria-hidden": "true" }, b.ico), h("div", {}, h("b", {}, b.nom), h("small", {}, b.desc))));
+  return box;
+}
+
+const LOGOS = {"J.S. ST JULIEN": "data:image/jpeg;base64,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", "USM ENDOUME CATALANS": "data:image/jpeg;base64,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", "F.C. ST VICTORET": "data:image/jpeg;base64,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", "U.S. FARENQUE": "data:image/jpeg;base64,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", "ENT. FCT/ AAVSA": "data:image/jpeg;base64,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", "SP.C. ST MARTINOIS": "data:image/jpeg;base64,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", "SMUC 2": "data:image/jpeg;base64,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", "A.S. GRANSOISE": "data:image/jpeg;base64,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", "MARSEILLE UNITED FC": "data:image/jpeg;base64,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", "A.S. ROGNAC": "data:image/jpeg;base64,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", "SIMIANE COLLONGUE O.": "data:image/jpeg;base64,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", "SALON BEL AIR FOOT 2": "data:image/jpeg;base64,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"};
+/* ---------- championnat U19 ---------- */
+function champView() {
+  const c = S.champ, box = h("div", { class: "stack" });
+  if (!c || !Array.isArray(c.classement)) { box.append(h("div", { class: "card" }, h("h3", {}, "Championnat"), h("p", { class: "note" }, "Le classement et le calendrier ne sont pas encore chargés."))); return box; }
+  const ME = c.equipe || "USM ENDOUME CATALANS";
+  const short = t => (c.noms && c.noms[t]) || t;
+  const logo = (t, sz) => { const src = (c.logos && c.logos[t]) || LOGOS[t]; return src && /^data:image\/(jpeg|png);base64,/.test(src) ? h("img", { src, alt: "", width: sz || 22, height: sz || 22, style: "border-radius:4px;vertical-align:middle;margin-right:8px;background:#fff;object-fit:contain" }) : null; };
+  const team = (t, sz) => h("span", { style: "display:inline-flex;align-items:center;white-space:nowrap" }, logo(t, sz), t === ME ? h("strong", {}, short(t)) : short(t));
+  const maj = c.majAt ? new Date(c.majAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
+  const matchs = (c.matchs || []).slice().sort((a, b) => a.date < b.date ? -1 : 1);
+  const next = matchs.find(m => !m.score);
+  if (next) {
+    const dom = next.h === ME, opp = dom ? next.a : next.h, r = c.classement.find(x => x.t === opp);
+    box.append(h("div", { class: "card", style: "border-color:var(--rouge)" }, h("h3", {}, "Prochain match"),
+      h("div", { class: "hero-eq", style: "display:flex;align-items:center;gap:10px;flex-wrap:wrap" }, team(next.h, 40), h("span", { style: "color:var(--muted)" }, "contre"), team(next.a, 40)),
+      h("p", { class: "note", style: "margin:4px 0 0" }, `J${next.j} · ${fmtLong(next.date)}${next.heure ? " à " + next.heure : ""} · ${dom ? "à domicile" : "à l'extérieur"}${r ? ` · adversaire ${r.rang}e avec ${r.pts} pts` : ""}`)));
+  }
+  const tb = h("tbody");
+  for (const r of c.classement) tb.append(h("tr", { style: r.t === ME ? "background:rgba(208,24,47,.15)" : null },
+    h("td", {}, r.rang), h("td", {}, team(r.t)), h("td", {}, h("b", {}, r.pts)), h("td", {}, r.j), h("td", {}, `${r.v}-${r.n}-${r.d}`), h("td", {}, `${r.bp}-${r.bc}`), h("td", {}, (r.bp - r.bc > 0 ? "+" : "") + (r.bp - r.bc))));
+  box.append(h("div", { class: "card" }, h("h3", {}, `${c.titre || "Classement"}`),
+    h("div", { class: "tablebox" }, h("table", { class: "stats" }, h("thead", {}, h("tr", {}, ["#", "Équipe", "Pts", "J", "V-N-D", "Buts", "Diff"].map(x => h("th", {}, x)))), tb)),
+    h("p", { class: "note" }, `Classement FFF au ${maj}, sous réserve des procédures en cours.${c.remarque ? " " + c.remarque : ""}`)));
+  const tb2 = h("tbody");
+  for (const m of matchs) {
+    const dom = m.h === ME, opp = dom ? m.a : m.h;
+    let res = "";
+    if (m.score) { const [x, y] = dom ? m.score : [m.score[1], m.score[0]]; res = (x > y ? "V " : x < y ? "D " : "N ") + x + "-" + y + (m.forfait ? " (forfait)" : ""); }
+    tb2.append(h("tr", { style: next && m === next ? "background:rgba(214,172,78,.12)" : null }, h("td", {}, "J" + m.j), h("td", {}, fmtDate(m.date)), h("td", {}, dom ? "Dom." : "Ext."), h("td", {}, team(opp)),
+      h("td", { style: res.startsWith("V") ? "color:#9fe0b1;font-weight:600" : res.startsWith("D") ? "color:#ff9aa6;font-weight:600" : null }, res || (m.heure || "–"))));
+  }
+  box.append(h("div", { class: "card" }, h("h3", {}, "Calendrier et résultats d'Endoume"), h("div", { class: "tablebox" }, h("table", { class: "stats" }, h("thead", {}, h("tr", {}, ["J", "Date", "Lieu", "Adversaire", "Résultat"].map(x => h("th", {}, x)))), tb2))));
+  return box;
+}
+
+/* ---------- analyses de match ---------- */
+function analysesCard(g, asCoach) {
+  const eq = S.equipes[g] || {}, list = (Array.isArray(eq.analyses) ? eq.analyses : []).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Analyses de match"));
+  if (asCoach) {
+    const st = S.anaEdit && S.anaEdit.g === g ? S.anaEdit : { g, id: null, date: today(), titre: "", texte: "" };
+    const date = h("input", { type: "date", id: "ana-d-" + g, value: st.date });
+    const titre = h("input", { id: "ana-t-" + g, maxlength: "80", placeholder: "Ex. J7 · Endoume – Simiane, 2-1" }); titre.value = st.titre;
+    const fields = [h("label", { class: "field" }, "Date du match", date)];
+    if (g === "U19" && S.champ && Array.isArray(S.champ.matchs)) {
+      const ME = S.champ.equipe, sh = t => (S.champ.noms && S.champ.noms[t]) || t;
+      const ms = S.champ.matchs.slice().sort((a, b) => a.j - b.j);
+      const sel = h("select", { id: "ana-m-" + g }, h("option", { value: "" }, "Choisir un match de la saison (J1 à J22)"), ms.map((m, i) => h("option", { value: String(i) }, `J${m.j} · ${sh(m.h)} – ${sh(m.a)}${m.score ? " " + m.score.join("-") : ""}`)));
+      sel.onchange = () => { const m = ms[+sel.value]; if (!m) return; date.value = m.date; titre.value = `J${m.j} · ${sh(m.h)} – ${sh(m.a)}${m.score ? ", " + m.score.join("-") : ""}`; };
+      fields.push(h("label", { class: "field", style: "flex:1;min-width:220px" }, "Match", sel));
+    }
+    const ta = h("textarea", { id: "ana-x-" + g, rows: "10", maxlength: "8000", placeholder: "Ton analyse du match : ce qui s'est passé, pourquoi, ce que tu en retiens, ce que tu changes…" }); ta.value = st.texte;
+    const msg = h("span", { class: "note" });
+    const save = h("button", { class: "btn small" }, st.id ? "Enregistrer les modifications" : "Publier l'analyse");
+    save.onclick = async () => {
+      const x = ta.value.trim(), t = titre.value.trim();
+      if (!x) { msg.className = "err"; msg.textContent = "Écris l'analyse avant de l'enregistrer."; return; }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date.value)) { msg.className = "err"; msg.textContent = "Choisis la date du match."; return; }
+      save.disabled = true;
+      const item = { id: st.id || nid(), date: date.value, titre: t.slice(0, 80) || `Match du ${fmtDate(date.value)}`, texte: x.slice(0, 8000), at: new Date().toISOString() };
+      const next = [...(eq.analyses || []).filter(a => a.id !== item.id), item];
+      try { await writeEquipe(g, { analyses: next }); S.anaEdit = null; render(); }
+      catch (e) { save.disabled = false; msg.className = "err"; msg.textContent = "Échec de l'enregistrement : réessaie."; }
+    };
+    const cancel = st.id ? h("button", { class: "btn ghost small", onclick: () => { S.anaEdit = null; render(); } }, "Annuler") : null;
+    card.append(h("div", { class: "row" }, fields), h("label", { class: "field" }, "Titre", titre), h("label", { class: "field" }, "Analyse", ta), h("div", { class: "row" }, save, cancel, msg),
+      h("p", { class: "note", style: "margin:0" }, "Les joueurs du groupe peuvent lire les analyses publiées."));
+  }
+  if (!list.length) card.append(h("p", { class: "note", style: "margin:0" }, "Aucune analyse publiée pour l'instant."));
+  for (const a of list) {
+    const item = h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, a.titre || "Match"), h("span", { class: "pill" }, fmtLong(a.date))),
+      h("div", { class: "com-text", style: "white-space:pre-wrap" }, a.texte || ""));
+    if (asCoach) {
+      const del = h("button", { class: "linkbtn danger" }, "Supprimer");
+      del.onclick = async () => {
+        if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer la suppression"; return; }
+        try { await writeEquipe(g, { analyses: (eq.analyses || []).filter(x => x.id !== a.id) }); render(); } catch (e) { del.textContent = "Échec : réessaie"; }
+      };
+      item.append(h("div", { class: "row" }, h("button", { class: "linkbtn", onclick: () => { S.anaEdit = { g, id: a.id, date: a.date, titre: a.titre || "", texte: a.texte || "" }; render(); window.scrollTo({ top: 0 }); } }, "Modifier"), del));
+    }
+    card.append(item);
+  }
+  return card;
+}
+
+/* ---------- votes ---------- */
+function voteLabel(type, g) { return type === "mois" ? "Joueur du mois" : (g === "U10" ? "Joueur du plateau" : "Homme du match"); }
+function watchBulletins(vid) {
+  if (S.subs["b-" + vid]) return;
+  if (S.admin) S.subs["b-" + vid] = S.db.collection("votes/" + vid + "/bulletins").onSnapshot(q => { S.bulletins[vid] = q.docs.map(d => ({ uid: d.id, ...d.data() })); softRender(); }, () => {});
+  else S.subs["b-" + vid] = S.db.doc("votes/" + vid + "/bulletins/" + S.me).onSnapshot(d => { S.myBallots[vid] = d.exists ? d.data().choix : null; softRender(); }, () => {});
+}
+function votesCard(g, asCoach) {
+  const all = Object.entries(S.votes).filter(([, v]) => v.groupe === g).sort((a, b) => (b[1].ouvert ? 1 : 0) - (a[1].ouvert ? 1 : 0) || (a[1].at < b[1].at ? 1 : -1));
+  const open = all.filter(([, v]) => v.ouvert), closed = all.filter(([, v]) => !v.ouvert).slice(0, 3);
+  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Votes des joueurs"));
+  if (asCoach) {
+    const type = h("select", { id: "v-type-" + g }, h("option", { value: "hdm" }, voteLabel("hdm", g)), h("option", { value: "mois" }, "Joueur du mois"));
+    const titre = h("input", { id: "v-titre-" + g, maxlength: "80", placeholder: "Ex. J7 · Endoume – Simiane" });
+    const fields = [h("label", { class: "field" }, "Type", type)];
+    if (g === "U19" && S.champ && Array.isArray(S.champ.matchs)) {
+      const sh = t => (S.champ.noms && S.champ.noms[t]) || t, ms = S.champ.matchs.slice().sort((a, b) => a.j - b.j);
+      const sel = h("select", { id: "v-m-" + g }, h("option", { value: "" }, "Match de la saison"), ms.map((m, i) => h("option", { value: String(i) }, `J${m.j} · ${sh(m.h)} – ${sh(m.a)}`)));
+      sel.onchange = () => { const m = ms[+sel.value]; if (m) titre.value = `J${m.j} · ${sh(m.h)} – ${sh(m.a)}`; };
+      fields.push(h("label", { class: "field", style: "flex:1;min-width:200px" }, "Match", sel));
+    }
+    const msg = h("span", { class: "note" });
+    const go = h("button", { class: "btn small" }, "Ouvrir le vote");
+    go.onclick = async () => {
+      const cands = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g).map(([fid, f]) => ({ fid, nom: f.nom || "Sans nom" })).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+      const t = titre.value.trim() || (type.value === "mois" ? new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) : "");
+      if (!t) { msg.className = "err"; msg.textContent = "Donne un titre au vote (le match ou le mois)."; return; }
+      if (!cands.length) { msg.className = "err"; msg.textContent = "Aucun joueur dans ce groupe."; return; }
+      go.disabled = true;
+      try { await S.db.doc("votes/" + nid()).set({ groupe: g, type: type.value, titre: t.slice(0, 80), candidats: cands, ouvert: true, at: new Date().toISOString() }); msg.className = "ok"; msg.textContent = "Vote ouvert : les joueurs peuvent voter."; titre.value = ""; }
+      catch (e) { msg.className = "err"; msg.textContent = "Échec : réessaie."; }
+      go.disabled = false;
+    };
+    card.append(h("div", { class: "row" }, fields), h("label", { class: "field" }, "Titre", titre), h("div", { class: "row" }, go, msg),
+      h("p", { class: "note", style: "margin:0" }, "Chaque joueur relié vote une fois (il peut changer d'avis tant que le vote est ouvert) et ne peut pas voter pour lui-même. Les bulletins ne sont visibles que par les coachs."));
+  }
+  if (!open.length && !asCoach) card.append(h("p", { class: "note", style: "margin:0" }, "Aucun vote en cours."));
+  for (const [vid, v] of open) {
+    watchBulletins(vid);
+    const item = h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, `${voteLabel(v.type, g)} · ${v.titre}`), h("span", { class: "pill match" }, "Vote ouvert")));
+    if (asCoach) {
+      const bs = S.bulletins[vid] || [], tally = {};
+      for (const b of bs) tally[b.choix] = (tally[b.choix] || 0) + 1;
+      const rows = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+      const nomOf = fid => ((v.candidats || []).find(c => c.fid === fid) || {}).nom || "?";
+      item.append(h("div", { class: "note" }, `${bs.length} vote${bs.length > 1 ? "s" : ""} reçu${bs.length > 1 ? "s" : ""}`),
+        rows.length ? h("div", { class: "chips" }, rows.map(([fid, n]) => h("span", { class: "chip" }, nomOf(fid), " ", h("b", {}, n)))) : null);
+      const win = h("select", { id: "v-win-" + vid }, (v.candidats || []).map(c => h("option", { value: c.fid, selected: rows[0] && rows[0][0] === c.fid }, c.nom)));
+      const cm = h("span", { class: "note" });
+      const close = h("button", { class: "btn small" }, "Clôturer et désigner");
+      close.onclick = async () => {
+        const c = (v.candidats || []).find(x => x.fid === win.value); if (!c) return;
+        close.disabled = true;
+        try {
+          await S.db.doc("votes/" + vid).update({ ouvert: false, gagnant: c, closAt: new Date().toISOString(), total: bs.length });
+          const eq = S.equipes[g] || {};
+          if (v.type === "mois") await writeEquipe(g, { mois: { fid: c.fid, nom: c.nom, label: v.titre } });
+          else await writeEquipe(g, { hommes: [...(eq.hommes || []), { date: today(), fid: c.fid, nom: c.nom, titre: v.titre }] });
+        } catch (e) { close.disabled = false; cm.textContent = "Échec : réessaie."; }
+      };
+      const del = h("button", { class: "linkbtn danger" }, "Annuler ce vote");
+      del.onclick = async () => { if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer l'annulation"; return; } try { await S.db.doc("votes/" + vid).delete(); } catch (e) { del.textContent = "Échec : réessaie"; } };
+      item.append(h("div", { class: "row" }, h("label", { class: "field" }, "Gagnant", win), close, cm), del);
+    } else {
+      const mine = S.myBallots[vid];
+      const choices = h("div", { class: "chips" });
+      for (const c of (v.candidats || []).filter(c => c.fid !== S.me)) {
+        const b = h("button", { class: "toggle", "aria-pressed": String(mine === c.fid) }, c.nom);
+        b.onclick = async () => { try { await S.db.doc("votes/" + vid + "/bulletins/" + S.me).set({ choix: c.fid, at: new Date().toISOString() }); } catch (e) { b.textContent = "Échec, réessaie"; } };
+        choices.append(b);
+      }
+      item.append(h("div", { class: "note" }, mine ? "Ton vote est enregistré. Tu peux changer d'avis tant que le vote est ouvert." : "Touche le nom du joueur pour qui tu votes."), choices);
+    }
+    card.append(item);
+  }
+  for (const [, v] of closed) card.append(h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, `${voteLabel(v.type, g)} · ${v.titre}`), h("span", { class: "pill" }, "Terminé")),
+    v.gagnant ? h("div", { class: "hero-eq" }, v.gagnant.nom) : null, v.total != null ? h("div", { class: "note" }, `${v.total} votant${v.total > 1 ? "s" : ""}`) : null));
+  return card;
+}
+
+/* ---------- auto-évaluations ---------- */
+function watchAutos(fid) {
+  if (S.subs["a-" + fid]) return;
+  S.subs["a-" + fid] = S.db.collection("fiches/" + fid + "/auto").onSnapshot(q => { S.autos[fid] = q.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.date < b.date ? 1 : -1); softRender(); }, () => {});
+}
+function autoMissing(fid, f) {
+  const lastMatch = sortedNotes(f).filter(n => n.type === "Match").pop();
+  if (!lastMatch) return false;
+  const autos = S.autos[fid] || [];
+  return !autos.some(a => a.type === "Match" && a.date >= lastMatch.date);
+}
+function autoCard(fid, f, asCoach) {
+  const g = groupOf(f), G = GROUPS[g], autos = S.autos[fid] || [], notes = sortedNotes(f);
+  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, asCoach ? "Auto-évaluations du joueur" : "Mon auto-évaluation"));
+  if (!asCoach) {
+    const st = { crit: {} };
+    const type = h("select", { id: "au-type" }, h("option", { value: "Semaine" }, "Ma semaine"), h("option", { value: "Match" }, "Mon match"));
+    const date = h("input", { type: "date", id: "au-date", value: today() });
+    const crits = h("div", {});
+    for (const [k, lab] of G.crit) {
+      const sc = h("div", { class: "scale", role: "group", "aria-label": lab });
+      for (let v = 1; v <= 5; v++) { const b = h("button", { class: "sc", "aria-pressed": "false", title: LEVELS[v] }, v); b.onclick = () => { st.crit[k] = st.crit[k] === v ? undefined : v; if (st.crit[k] === undefined) delete st.crit[k]; sc.querySelectorAll(".sc").forEach((x, i) => x.setAttribute("aria-pressed", String(st.crit[k] === i + 1))); }; sc.append(b); }
+      crits.append(h("div", { class: "crit-row" }, h("span", {}, lab), sc));
+    }
+    const com = h("textarea", { id: "au-com", rows: "3", maxlength: "1000", placeholder: "Ce que tu as bien fait, ce que tu dois travailler" });
+    const msg = h("span", { class: "note" });
+    const go = h("button", { class: "btn small" }, "Envoyer mon auto-évaluation");
+    go.onclick = async () => {
+      if (Object.keys(st.crit).length < G.crit.length) { msg.className = "err"; msg.textContent = "Note-toi sur tous les critères."; return; }
+      go.disabled = true;
+      try { await S.db.doc("fiches/" + S.me + "/auto/" + nid()).set({ date: date.value || today(), type: type.value, crit: { ...st.crit }, com: com.value.trim().slice(0, 1000), at: new Date().toISOString() }); msg.className = "ok"; msg.textContent = "Envoyé au coach."; }
+      catch (e) { go.disabled = false; msg.className = "err"; msg.textContent = "Échec : réessaie."; }
+    };
+    const lastMatch = notes.filter(n => n.type === "Match").pop();
+    if (lastMatch && autoMissing(fid, f)) card.append(h("div", { class: "record", style: "border-color:var(--rouge)" }, `Auto-évaluation obligatoire : tu n'as pas encore fait celle du match du ${fmtLong(lastMatch.date)}.`));
+    card.append(h("div", { class: "row" }, h("label", { class: "field" }, "Sur quoi", type), h("label", { class: "field" }, "Date", date)), crits, h("label", { class: "field" }, "Commentaire", com), h("div", { class: "row" }, go, msg),
+      h("p", { class: "note", style: "margin:0" }, "Une fois par semaine, et obligatoirement après chaque match. Le coach compare avec ses notes."));
+  } else if (autoMissing(fid, f)) card.append(h("span", { class: "pill match" }, "Auto-évaluation du dernier match manquante"));
+  if (!autos.length) card.append(h("p", { class: "note", style: "margin:0" }, "Aucune auto-évaluation pour l'instant."));
+  for (const a of autos.slice(0, 12)) {
+    const coach = notes.filter(n => n.date <= a.date && (a.type !== "Match" || n.type === "Match")).pop();
+    const rows = h("div", { class: "chips" });
+    for (const [k, lab] of G.crit) {
+      const mine = a.crit && a.crit[k], co = coach && coach.crit && coach.crit[k];
+      if (typeof mine !== "number") continue;
+      rows.append(h("span", { class: "chip" }, `${lab} `, h("b", {}, `${mine}`), co ? h("span", { class: "note" }, ` · coach ${co}`) : null));
+    }
+    const item = h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, `${a.type === "Match" ? "Match" : "Semaine"} · ${fmtLong(a.date)}`), coach ? h("span", { class: "pill" }, `comparé au ${fmtDate(coach.date)}`) : null), rows, a.com ? h("div", { class: "com-text" }, a.com) : null);
+    if (asCoach) { const del = h("button", { class: "linkbtn danger" }, "Supprimer"); del.onclick = async () => { if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer"; return; } try { await S.db.doc("fiches/" + fid + "/auto/" + a.id).delete(); } catch (e) { del.textContent = "Échec"; } }; item.append(del); }
+    card.append(item);
+  }
+  return card;
+}
+
+/* ---------- accès (coachs et comptes en attente) ---------- */
+function accesView() {
+  const box = h("div", { class: "stack" });
+  const pend = Object.entries(S.inscriptions).filter(([uid]) => !S.fiches[uid] && !S.coachs[uid]);
+  const pc = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, `Comptes en attente · ${pend.length}`),
+    h("p", { class: "note", style: "margin:0" }, "Un joueur ou un parent qui crée son compte apparaît ici. Relie-le à sa fiche depuis la fiche du joueur, ou donne-lui un accès coach s'il s'agit d'un adjoint."));
+  for (const [uid, x] of pend) {
+    const m = h("span", { class: "note" });
+    pc.append(h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, x.nom || "Sans nom"), h("span", { class: "note" }, x.email || "")),
+      h("div", { class: "row" },
+        h("button", { class: "btn ghost small", onclick: async () => { try { await S.db.doc("coachs/" + uid).set({ nom: x.nom || "", email: x.email || "", at: new Date().toISOString() }); await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Donner l'accès coach"),
+        h("button", { class: "linkbtn danger", onclick: async () => { try { await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Refuser"), m)));
+  }
+  const cc = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Coachs"), h("p", { class: "note", style: "margin:0" }, "Les coachs voient et modifient toutes les fiches."));
+  for (const [uid, x] of Object.entries(S.coachs)) {
+    const m = h("span", { class: "note" });
+    cc.append(h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, x.nom || x.email || "Coach"), h("span", { class: "note" }, x.email || "")),
+      uid === S.me ? h("span", { class: "note" }, "C'est toi") : h("button", { class: "linkbtn danger", onclick: async () => { try { await S.db.doc("coachs/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Retirer l'accès coach"), m));
+  }
+  box.append(pc, cc);
+  return box;
+}
+
+/* ---------- connexion ---------- */
+const AUTH_ERR = { "auth/invalid-credential": "Email ou mot de passe incorrect.", "auth/wrong-password": "Email ou mot de passe incorrect.", "auth/user-not-found": "Aucun compte avec cet email.", "auth/email-already-in-use": "Un compte existe déjà avec cet email : connecte-toi.", "auth/weak-password": "Le mot de passe doit faire au moins 6 caractères.", "auth/invalid-email": "Cet email n'est pas valide.", "auth/too-many-requests": "Trop d'essais : attends quelques minutes." };
+function loginView() {
+  const app = document.getElementById("app"); app.textContent = "";
+  document.getElementById("role").textContent = "Connexion";
+  let mode = S.loginMode || "in";
+  const email = h("input", { id: "l-email", type: "email", autocomplete: "email" }), pass = h("input", { id: "l-pass", type: "password", autocomplete: mode === "in" ? "current-password" : "new-password" });
+  const nom = h("input", { id: "l-nom", maxlength: "60", placeholder: "Prénom et nom (de l'enfant pour les U10)" });
+  const msg = h("p", { class: "note", style: "margin:0" });
+  const go = h("button", { class: "btn" }, mode === "in" ? "Se connecter" : "Créer mon compte");
+  const submit = async e => {
+    e.preventDefault(); msg.className = "note"; msg.textContent = "…"; go.disabled = true;
+    try {
+      if (mode === "in") await signInWithEmailAndPassword(auth, email.value.trim(), pass.value);
+      else {
+        const n = nom.value.trim(); if (!n) { msg.className = "err"; msg.textContent = "Indique ton prénom et ton nom."; go.disabled = false; return; }
+        const cred = await createUserWithEmailAndPassword(auth, email.value.trim(), pass.value);
+        await setDoc(fsDoc(fs, "inscriptions/" + cred.user.uid), { nom: n.slice(0, 60), email: cred.user.email || "", at: new Date().toISOString() });
+      }
+    } catch (err) { go.disabled = false; msg.className = "err"; msg.textContent = AUTH_ERR[err && err.code] || "Échec : vérifie ta connexion et réessaie."; }
+  };
+  const form = h("form", { class: "card stack", style: "max-width:420px;margin:32px auto" },
+    h("div", { class: "subtabs", role: "tablist" },
+      h("button", { type: "button", class: "subtab", "aria-selected": String(mode === "in"), onclick: () => { S.loginMode = "in"; loginView(); } }, "Connexion"),
+      h("button", { type: "button", class: "subtab", "aria-selected": String(mode === "up"), onclick: () => { S.loginMode = "up"; loginView(); } }, "Créer mon compte")),
+    mode === "up" ? h("label", { class: "field" }, "Prénom et nom", nom) : null,
+    h("label", { class: "field" }, "Email", email), h("label", { class: "field" }, "Mot de passe", pass), go, msg,
+    mode === "in" ? h("button", { type: "button", class: "linkbtn", onclick: async () => { const e = email.value.trim(); if (!e) { msg.className = "err"; msg.textContent = "Écris ton email, puis clique à nouveau ici."; return; } try { await sendPasswordResetEmail(auth, e); msg.className = "ok"; msg.textContent = "Email de réinitialisation envoyé."; } catch (err) { msg.className = "err"; msg.textContent = AUTH_ERR[err && err.code] || "Échec : réessaie."; } } }, "Mot de passe oublié ?") : h("p", { class: "note", style: "margin:0" }, "Ton coach reliera ensuite ton compte à ta fiche. Tu ne verras que tes propres notes."));
+  form.addEventListener("submit", submit);
+  app.append(form);
+}
+let renderTimer = null;
+function softRender() {
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === "TEXTAREA" || (ae.tagName === "INPUT" && ae.type !== "button"))) return;
+  if (S.view === "saisie" || S.view === "ajout") return;
+  clearTimeout(renderTimer); renderTimer = setTimeout(render, 30);
+}
+
+/* ---------- page équipe ---------- */
+async function writeEquipe(g, patch) {
+  if (S.demo) { S.equipes[g] = { ...(S.equipes[g] || {}), ...patch }; return; }
+  const ref = S.db.doc("equipe/" + g);
+  if (S.equipes[g]) await ref.update(patch); else await ref.set(patch);
+  S.equipes[g] = { ...(S.equipes[g] || {}), ...patch };
+}
+function equipeView(g, asCoach) {
+  const G = GROUPS[g], eq = S.equipes[g] || {}, box = h("div", { class: "stack" });
+  const M = g === "U10" ? "plateau" : "match";
+  const players = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g).sort((a, b) => (a[1].nom || "").localeCompare(b[1].nom || "", "fr"));
+  if (g === "U19") box.append(champView());
+  const saveBtn = (label, fn) => { const m = h("span", { class: "note" }); const b = h("button", { class: "btn small" }, label);
+    b.onclick = async () => { b.disabled = true; try { await fn(); m.textContent = "Enregistré."; render(); } catch (e) { m.textContent = "Échec : réessaie."; } b.disabled = false; }; return h("div", { class: "row" }, b, m); };
+
+  // objectif collectif
+  const obj = h("div", { class: "card" }, h("h3", {}, "Objectif collectif du cycle"));
+  if (eq.objectif) obj.append(h("div", { class: "hero-eq" }, eq.objectif)); else obj.append(h("p", { class: "note" }, "Pas encore d'objectif collectif."));
+  if (asCoach) { const t = h("input", { id: "eq-obj-" + g, maxlength: "160", placeholder: "Ex. plus de 4 passes avant de frapper, 6 fois par match" }); t.value = eq.objectif || "";
+    obj.append(h("div", { class: "stack", style: "margin-top:10px" }, h("label", { class: "field" }, "Modifier l'objectif", t), saveBtn("Enregistrer", () => writeEquipe(g, { objectif: t.value.trim().slice(0, 160) })))); }
+
+  box.append(obj);
+  box.append(votesCard(g, asCoach));
+  box.append(analysesCard(g, asCoach));
+
+  // homme du match / joueur du mois
+  const hommes = (eq.hommes || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
+  const hm = h("div", { class: "card" }, h("h3", {}, g === "U10" ? "Joueur du plateau" : "Homme du match"));
+  if (hommes.length) hm.append(h("div", { class: "hero-eq" }, hommes[0].nom), h("p", { class: "note" }, `${M[0].toUpperCase() + M.slice(1)} du ${fmtLong(hommes[0].date)}`),
+    hommes.length > 1 ? h("p", { class: "note" }, "Avant : " + hommes.slice(1, 5).map(x => `${x.nom} (${fmtDate(x.date)})`).join(", ")) : null);
+  else hm.append(h("p", { class: "note" }, `Personne encore désigné.`));
+  const jm = h("div", { class: "card" }, h("h3", {}, "Joueur du mois"));
+  if (eq.mois && eq.mois.nom) jm.append(h("div", { class: "hero-eq" }, eq.mois.nom), h("p", { class: "note" }, eq.mois.label || "")); else jm.append(h("p", { class: "note" }, "Pas encore désigné."));
+  if (asCoach && players.length) {
+    const sel = h("select", { id: "eq-hm-" + g }, players.map(([fid, f]) => h("option", { value: fid }, f.nom)));
+    const dt = h("input", { type: "date", id: "eq-hmd-" + g, value: today() });
+    hm.append(h("div", { class: "row", style: "margin-top:10px" }, h("label", { class: "field" }, "Joueur", sel), h("label", { class: "field" }, "Date", dt)),
+      saveBtn("Désigner", () => writeEquipe(g, { hommes: [...(eq.hommes || []), { date: dt.value || today(), fid: sel.value, nom: S.fiches[sel.value].nom }] })));
+    const sel2 = h("select", { id: "eq-jm-" + g }, players.map(([fid, f]) => h("option", { value: fid }, f.nom)));
+    const lab = new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+    jm.append(h("div", { class: "row", style: "margin-top:10px" }, h("label", { class: "field" }, "Joueur", sel2)),
+      saveBtn(`Désigner pour ${lab}`, () => writeEquipe(g, { mois: { fid: sel2.value, nom: S.fiches[sel2.value].nom, label: lab } })));
+  }
+  box.append(h("div", { class: "two" }, hm, jm));
+
+  return box;
+}
+
+/* ---------- graphique d'évolution ---------- */
+function chart(f) {
+  const g = groupOf(f);
+  const pts = sortedNotes(f).map(n => ({ d: n.date, t: n.type, v: noteAvg(n, g) })).filter(p => p.v != null);
+  const box = h("div", { class: "chart" });
+  if (pts.length < 2) { box.append(h("p", { class: "note" }, "La courbe apparaît à partir de 2 évaluations.")); return box; }
+  const W = 640, H = 200, L = 34, R = 14, T = 12, B = 30;
+  const x = i => L + (pts.length === 1 ? 0 : i * (W - L - R) / (pts.length - 1));
+  const y = v => T + (5 - v) * (H - T - B) / 4;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution de la note moyenne">`;
+  for (let v = 1; v <= 5; v++) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#34313a" stroke-width="1"/><text x="${L - 10}" y="${y(v) + 4}" fill="#a39e94" font-size="12" text-anchor="end">${v}</text>`;
+  const line = pts.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+  s += `<polygon points="${x(0)},${y(1)} ${line} ${x(pts.length - 1)},${y(1)}" fill="rgba(208,24,47,.16)"/>`;
+  s += `<polyline points="${line}" fill="none" stroke="#d0182f" stroke-width="2.5" stroke-linejoin="round"/>`;
+  pts.forEach((p, i) => {
+    const last = i === pts.length - 1;
+    s += `<circle cx="${x(i)}" cy="${y(p.v)}" r="${last ? 6 : 4}" fill="${p.t === "Match" ? "#d6ac4e" : "#d0182f"}" stroke="#0e0d0f" stroke-width="2"><title>${esc(fmtDate(p.d))} · ${esc(p.t)} · ${n1(p.v)}</title></circle>`;
+  });
+  const step = Math.max(1, Math.ceil(pts.length / 7));
+  pts.forEach((p, i) => { if (i % step === 0 || i === pts.length - 1) s += `<text x="${x(i)}" y="${H - 8}" fill="#a39e94" font-size="12" text-anchor="middle">${esc(fmtDate(p.d))}</text>`; });
+  const lp = pts[pts.length - 1];
+  s += `<text x="${Math.min(x(pts.length - 1), W - R - 4)}" y="${y(lp.v) - 12}" fill="#f2eee6" font-size="13" font-weight="600" text-anchor="end">${n1(lp.v)}</text></svg>`;
+  box.innerHTML = s;
+  return box;
+}
+
+/* ---------- fiche détaillée (joueur, parent ou coach) ---------- */
+function ficheView(fid, f, asCoach) {
+  const g = groupOf(f), G = GROUPS[g], notes = sortedNotes(f), parent = G.parent && !asCoach;
+  const wrap = h("div", { class: "stack" });
+  const title = parent ? `Suivi de ${f.nom || "votre enfant"}` : (f.nom || "Joueur");
+  wrap.append(h("div", { class: "bar" },
+    h("div", {}, h("h2", {}, title), h("div", { class: "pmeta" }, [G.label, f.age, f.sousCat, f.poste].filter(Boolean).join(" · "), " · ", `${notes.length} évaluation${notes.length > 1 ? "s" : ""}`)),
+    asCoach ? h("button", { class: "btn ghost small", onclick: () => { S.view = "list"; S.sel = null; render(); } }, "← Retour à la liste") : null));
+
+  // carte, records, mot du coach
+  const side = h("div", { class: "stack" });
+  for (const r of records(f, parent)) side.append(h("div", { class: "record" }, r));
+  if (asCoach) {
+    const mt = h("input", { id: "mot-" + fid, maxlength: "160", placeholder: "Un mot personnel, épinglé en haut de sa fiche" }); mt.value = f.mot || "";
+    const mm = h("span", { class: "note" });
+    side.append(h("div", { class: "card" }, h("h3", {}, "Mot du coach"), h("label", { class: "field" }, mt), h("div", { class: "row", style: "margin-top:8px" },
+      h("button", { class: "btn small", onclick: async () => { const v = mt.value.trim().slice(0, 160); try { await writeFiche(fid, { mot: v }); mm.textContent = "Mot enregistré."; } catch (e) { mm.textContent = "Échec : réessaie."; } } }, "Épingler"), mm)));
+  } else if (f.mot) side.append(h("div", { class: "card" }, h("h3", {}, "Le mot du coach"), h("div", { class: "mot" }, f.mot)));
+  side.append(h("div", { class: "card" }, h("h3", {}, "Badges"), badgesBox(fid, f)));
+  wrap.append(h("div", { class: "top-fiche" }, fcard(f, parent), side));
+
+  if (asCoach && isTemp(fid)) {
+    const pend = Object.entries(S.inscriptions).filter(([uid]) => !S.fiches[uid] && !S.coachs[uid]);
+    const sel = h("select", { id: "link-" + fid }, h("option", { value: "" }, pend.length ? "Choisir le compte du joueur" : "Aucun compte en attente"), pend.map(([uid, x]) => h("option", { value: uid }, `${x.nom || "Sans nom"}${x.email ? " · " + x.email : ""}`)));
+    const lm = h("span", { class: "note" });
+    const lb = h("button", { class: "btn small", disabled: !pend.length }, "Relier ce compte");
+    lb.onclick = async () => {
+      const c = sel.value; if (!c) { lm.className = "err"; lm.textContent = "Choisis un compte."; return; }
+      lb.disabled = true; lm.className = "note"; lm.textContent = "Liaison…";
+      try {
+        const data = { ...S.fiches[fid], linkedAt: new Date().toISOString() };
+        const ref = S.db.doc("fiches/" + c); if ((await ref.get()).exists) throw new Error("exists");
+        await ref.set(data); await S.db.doc("fiches/" + fid).delete(); await S.db.doc("inscriptions/" + c).delete();
+        S.sel = c; S.flash = `${data.nom} est relié à son compte.`; render();
+      } catch (e) { lb.disabled = false; lm.className = "err"; lm.textContent = e && e.message === "exists" ? "Ce compte a déjà une fiche." : "Échec : réessaie."; }
+    };
+    wrap.append(h("div", { class: "card" }, h("h3", {}, "Relier au compte du joueur"),
+      h("p", { class: "note", style: "margin:0 0 8px" }, "Le joueur crée son compte sur ce site, puis il apparaît dans cette liste. Ses notes et badges sont gardés lors de la liaison."),
+      h("label", { class: "field" }, sel), h("div", { class: "row", style: "margin-top:8px" }, lb, lm)));
+  }
+  // objectif
+  const objCard = h("div", { class: "card" }, h("h3", {}, parent ? "Objectif du moment" : "Mon objectif"));
+  if (asCoach) {
+    const ta = h("textarea", { id: "obj-" + fid, rows: "2", maxlength: "300", placeholder: "Objectif fixé lors de l'entretien individuel" });
+    ta.value = f.objectif || "";
+    const msg = h("span", { class: "note" });
+    objCard.append(h("div", { class: "field" }, ta), h("div", { class: "row", style: "margin-top:8px" },
+      h("button", { class: "btn small", onclick: async () => {
+        const v = ta.value.trim().slice(0, 300);
+        if (v === (f.objectif || "")) { msg.textContent = "Rien à enregistrer."; return; }
+        try { await writeFiche(fid, { objectif: v }); msg.textContent = "Objectif enregistré."; } catch (e) { msg.textContent = "Échec de l'enregistrement : réessaie."; }
+      } }, "Enregistrer l'objectif"), msg));
+  } else {
+    objCard.append(f.objectif ? h("div", { class: "obj" }, f.objectif) : h("p", { class: "note" }, "Pas encore d'objectif fixé avec le coach."));
+  }
+  wrap.append(objCard);
+
+  if (!notes.length) { watchAutos(fid); wrap.append(h("div", { class: "empty" }, "Aucune évaluation du coach pour l'instant."), autoCard(fid, f, asCoach)); return wrap; }
+
+  // moyennes par critère
+  const hasMatch = notes.some(n => n.type === "Match");
+  const bars = h("div", { class: "bars" });
+  for (const [k, lab] of G.crit) {
+    const e = critAvg(notes, k, "Entraînement"), m = critAvg(notes, k, "Match"), a = critAvg(notes, k);
+    if (parent) {
+      const lv = a == null ? "–" : LEVELS[Math.round(a)];
+      bars.append(h("div", { class: "barline" }, h("span", {}, lab), h("div", { class: "track" }, h("div", { class: "fill", style: `width:${a ? a / 5 * 100 : 0}%` })), h("span", { class: "val", style: "width:auto" }, "")),
+        h("div", { class: "pmeta", style: "margin:-6px 0 2px" }, lv));
+    } else {
+      bars.append(h("div", { class: "barline" }, h("span", {}, lab), h("div", { class: "track" }, h("div", { class: "fill", style: `width:${e ? e / 5 * 100 : 0}%` })), h("span", { class: "val" }, n1(e))));
+      if (hasMatch) bars.append(h("div", { class: "barline" }, h("span", {}, ""), h("div", { class: "track" }, h("div", { class: "fill m", style: `width:${m ? m / 5 * 100 : 0}%` })), h("span", { class: "val" }, n1(m))));
+    }
+  }
+  const moy = h("div", { class: "card" }, h("h3", {}, parent ? "Où il en est" : "Moyenne par critère, sur 5"));
+  if (!parent && hasMatch) moy.append(h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:var(--or)" }), "Match")));
+  moy.append(bars);
+
+  const evo = h("div", { class: "card" }, h("h3", {}, "Évolution"), parent ? null : h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:var(--or)" }), "Match")), chart(f));
+  wrap.append(h("div", { class: "two" }, moy, evo));
+
+  watchAutos(fid);
+  wrap.append(autoCard(fid, f, asCoach));
+  // historique
+  const hist = h("div", { class: "hist" });
+  for (const n of [...notes].reverse()) {
+    const chips = h("div", { class: "chips" });
+    for (const [k, lab] of G.crit) {
+      const v = n.crit && n.crit[k];
+      if (typeof v !== "number") continue;
+      chips.append(h("span", { class: "chip" }, `${lab} `, h("b", {}, parent ? LEVELS[v] : `${v}/5`)));
+    }
+    const item = h("div", { class: "hitem" },
+      h("div", { class: "hhead" }, h("strong", {}, fmtLong(n.date)), h("span", { class: "pill" + (n.type === "Match" ? " match" : "") }, n.type === "Match" ? (g === "U10" ? "Plateau" : "Match") : "Entraînement")),
+      chips, n.com ? h("div", { class: "com-text" }, n.com) : null);
+    if (asCoach) {
+      const del = h("button", { class: "linkbtn danger" }, "Supprimer cette évaluation");
+      del.onclick = async () => {
+        if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer la suppression"; return; }
+        try { await writeFiche(fid, { notes: sortedNotes(f).filter(x => x.id !== n.id) }); } catch (e) { del.textContent = "Échec : réessaie"; }
+      };
+      item.append(del);
+    }
+    hist.append(item);
+  }
+  wrap.append(h("div", { class: "card" }, h("h3", {}, "Historique"), hist));
+
+  if (asCoach) {
+    const rm = h("button", { class: "linkbtn danger" }, "Supprimer cette fiche");
+    rm.onclick = async () => {
+      if (rm.dataset.c !== "1") { rm.dataset.c = "1"; rm.textContent = "Confirmer : la fiche et toutes ses notes seront effacées"; return; }
+      try { if (S.demo) delete S.fiches[fid]; else await S.db.doc("fiches/" + fid).delete(); S.view = "list"; S.sel = null; render(); } catch (e) { rm.textContent = "Échec : réessaie"; }
+    };
+    wrap.append(rm);
+  }
+  return wrap;
+}
+
+async function writeFiche(fid, patch) {
+  if (S.demo) { S.fiches[fid] = { ...S.fiches[fid], ...patch }; render(); return; }
+  await S.db.doc("fiches/" + fid).update(patch);
+}
+
+/* ---------- vue coach ---------- */
+function coachView() {
+  const app = h("div");
+  app.append(h("div", { class: "tabs", role: "tablist" }, Object.entries(GROUPS).map(([k, G]) =>
+    h("button", { class: "tab", role: "tab", "aria-selected": String(S.tab === k), onclick: () => { S.tab = k; S.view = "list"; S.sel = null; render(); } }, G.label))));
+  if (S.view === "list" && S.sub === "joueurs") { /* liste */ }
+
+  if (S.view === "fiche" && S.fiches[S.sel]) { app.append(ficheView(S.sel, S.fiches[S.sel], true)); return app; }
+  if (S.view === "list") app.append(h("div", { class: "subtabs", role: "tablist" },
+    h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "joueurs"), onclick: () => { S.sub = "joueurs"; render(); } }, "Joueurs"),
+    h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "equipe"), onclick: () => { S.sub = "equipe"; render(); } }, "Équipe"),
+    h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "acces"), onclick: () => { S.sub = "acces"; render(); } }, `Accès${Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]).length ? " (" + Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]).length + ")" : ""}`)));
+  if (S.view === "list" && S.sub === "acces") { app.append(accesView()); return app; }
+  if (S.view === "list" && S.sub === "equipe") { app.append(equipeView(S.tab, true)); return app; }
+  if (S.view === "saisie") { app.append(saisieView()); return app; }
+  if (S.view === "ajout") { app.append(ajoutView()); return app; }
+
+  const list = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === S.tab).sort((a, b) => (a[1].nom || "").localeCompare(b[1].nom || "", "fr"));
+  app.append(h("div", { class: "bar" },
+    h("h2", {}, `${GROUPS[S.tab].label} · ${list.length} joueur${list.length > 1 ? "s" : ""}`),
+    h("div", { class: "row" },
+      h("button", { class: "btn ghost", onclick: () => { S.view = "ajout"; render(); } }, "Ajouter un joueur"),
+      h("button", { class: "btn", disabled: !list.length, onclick: () => startSaisie() }, "Noter une séance"))));
+  if (S.flash) { app.append(h("p", { class: "ok" }, S.flash)); S.flash = ""; }
+  if (!S.loaded && !S.demo) app.append(h("p", { class: "note" }, S.slow ? "Les données ne répondent pas encore. Vérifie ta connexion, la page se mettra à jour seule." : "Chargement des fiches…"));
+  if (S.loaded && !list.length) app.append(h("div", { class: "empty" }, `Aucun joueur ${GROUPS[S.tab].label} pour l'instant. Commence par « Ajouter un joueur ».`));
+  const grid = h("div", { class: "grid" });
+  for (const [fid, f] of list) {
+    const all = overall(f), last = overall(f, 5), ns = sortedNotes(f);
+    const trend = (all != null && last != null && ns.length >= 6) ? (last - all > 0.15 ? "En hausse" : last - all < -0.15 ? "En baisse" : "Stable") : null;
+    grid.append(h("button", { class: "card", onclick: () => { S.view = "fiche"; S.sel = fid; render(); } },
+      h("div", { class: "pname" }, h("span", {}, f.nom || "Sans nom"), f.exemple ? h("span", { class: "pill ex" }, "Exemple") : (isTemp(fid) ? h("span", { class: "pill" }, "Compte non lié") : (watchAutos(fid), autoMissing(fid, f) ? h("span", { class: "pill match" }, "Auto-éval manquante") : null))),
+      h("div", { class: "pmeta" }, [f.age, f.sousCat, f.poste].filter(Boolean).join(" · ") || GROUPS[groupOf(f)].label),
+      h("div", { class: "row", style: "justify-content:space-between;align-items:baseline" },
+        h("span", { class: "avg" }, n1(last), h("small", {}, " /5 sur les 5 dernières")),
+        trend ? h("span", { class: "pill" }, trend) : null),
+      h("div", { class: "pmeta" }, ns.length ? `Dernière évaluation : ${fmtDate(ns[ns.length - 1].date)} · ${ns.length} au total` : "Pas encore évalué")));
+  }
+  app.append(grid);
+  return app;
+}
+
+function startSaisie() {
+  const rows = {};
+  for (const [fid, f] of Object.entries(S.fiches)) if (groupOf(f) === S.tab) rows[fid] = { present: true, crit: {}, com: "" };
+  S.saisie = { date: today(), type: "Entraînement", rows, msg: "" };
+  S.view = "saisie"; render();
+}
+
+function saisieView() {
+  const s = S.saisie, G = GROUPS[S.tab];
+  const box = h("div", { class: "stack" });
+  box.append(h("div", { class: "bar" }, h("h2", {}, `Noter une séance ${G.label}`),
+    h("button", { class: "btn ghost small", onclick: () => { S.view = "list"; S.saisie = null; render(); } }, "Annuler")));
+  const date = h("input", { type: "date", id: "s-date", value: s.date, oninput: e => s.date = e.target.value });
+  const type = h("select", { id: "s-type", onchange: e => s.type = e.target.value },
+    h("option", { value: "Entraînement", selected: s.type === "Entraînement" }, "Entraînement"),
+    h("option", { value: "Match", selected: s.type === "Match" }, S.tab === "U10" ? "Plateau / match" : "Match"));
+  box.append(h("div", { class: "card row" }, h("label", { class: "field" }, "Date", date), h("label", { class: "field" }, "Type", type),
+    h("p", { class: "note", style: "margin:0;flex:1;min-width:200px" }, "Touche une note de 1 à 5 par critère. Les joueurs marqués absents ne sont pas enregistrés.")));
+  const ids = Object.keys(s.rows).sort((a, b) => (S.fiches[a].nom || "").localeCompare(S.fiches[b].nom || "", "fr"));
+  for (const fid of ids) {
+    const r = s.rows[fid], f = S.fiches[fid];
+    const card = h("div", { class: "card saisie-p" + (r.present ? "" : " absent") });
+    const tog = h("button", { class: "toggle", "aria-pressed": String(r.present) }, r.present ? "Présent" : "Absent");
+    tog.onclick = () => { r.present = !r.present; tog.setAttribute("aria-pressed", String(r.present)); tog.textContent = r.present ? "Présent" : "Absent"; card.classList.toggle("absent", !r.present); };
+    card.append(h("div", { class: "saisie-head" }, h("strong", {}, f.nom || "Sans nom"), tog));
+    const crits = h("div", { class: "crits" });
+    for (const [k, lab] of G.crit) {
+      const sc = h("div", { class: "scale", role: "group", "aria-label": lab });
+      for (let v = 1; v <= 5; v++) {
+        const b = h("button", { class: "sc", "aria-pressed": String(r.crit[k] === v), title: LEVELS[v] }, v);
+        b.onclick = () => {
+          if (r.crit[k] === v) delete r.crit[k]; else r.crit[k] = v;
+          sc.querySelectorAll(".sc").forEach((x, i) => x.setAttribute("aria-pressed", String(r.crit[k] === i + 1)));
+        };
+        sc.append(b);
+      }
+      crits.append(h("div", { class: "crit-row" }, h("span", {}, lab), sc));
+    }
+    const com = h("input", { class: "com", type: "text", maxlength: "500", id: "com-" + fid, placeholder: G.parent ? "Un mot pour les parents (facultatif)" : "Commentaire (facultatif)", oninput: e => r.com = e.target.value });
+    com.value = r.com;
+    card.append(crits, h("label", { class: "field com" }, com));
+    box.append(card);
+  }
+  const msg = h("p", { class: "note" }, s.msg || "");
+  const save = h("button", { class: "btn" }, "Enregistrer la séance");
+  save.onclick = async () => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s.date)) { msg.className = "err"; msg.textContent = "Choisis une date."; return; }
+    save.disabled = true; msg.className = "note"; msg.textContent = "Enregistrement…";
+    let ok = 0, ko = 0;
+    let rated = 0;
+    for (const fid of ids) {
+      const r = s.rows[fid], f = S.fiches[fid];
+      const pres = (Array.isArray(f.presences) ? f.presences : []).filter(p => !(p.date === s.date && p.type === s.type));
+      const patch = { presences: [...pres, { date: s.date, type: s.type, p: r.present }] };
+      if (r.present && (Object.keys(r.crit).length || r.com.trim())) {
+        patch.notes = [...sortedNotes(f), { id: nid(), date: s.date, type: s.type, crit: { ...r.crit }, com: r.com.trim().slice(0, 500), at: new Date().toISOString() }];
+        rated++;
+      }
+      try { await writeFicheQuiet(fid, patch); ok++; } catch (e) { ko++; }
+    }
+    if (!rated && !ko) { /* présences seules */ }
+    if (!ok && !ko) { save.disabled = false; msg.className = "err"; msg.textContent = "Aucun joueur dans ce groupe."; return; }
+    if (ko) { save.disabled = false; msg.className = "err"; msg.textContent = `${ok} fiche${ok > 1 ? "s" : ""} enregistrée${ok > 1 ? "s" : ""}, ${ko} en échec. Réessaie pour celles-là.`; return; }
+    S.flash = `Séance du ${fmtDate(s.date)} enregistrée : ${rated} joueur${rated > 1 ? "s" : ""} noté${rated > 1 ? "s" : ""}, présences à jour.`;
+    S.view = "list"; S.saisie = null; render();
+  };
+  box.append(h("div", { class: "row" }, save, msg));
+  return box;
+}
+async function writeFicheQuiet(fid, patch) {
+  if (S.demo) { S.fiches[fid] = { ...S.fiches[fid], ...patch }; return; }
+  await S.db.doc("fiches/" + fid).update(patch);
+}
+
+function ajoutView() {
+  const box = h("div", { class: "stack" });
+  box.append(h("div", { class: "bar" }, h("h2", {}, "Ajouter un joueur"),
+    h("button", { class: "btn ghost small", onclick: () => { S.view = "list"; render(); } }, "Annuler")));
+  box.append(h("div", { class: "card" }, h("h3", {}, "Comment ça marche"),
+    h("p", { class: "note", style: "margin:0" }, "Crée la fiche tout de suite. Quand le joueur (ou un parent pour les U10) a créé son compte sur ce site, choisis-le ici ou plus tard depuis sa fiche : il ne verra que la sienne.")));
+  const pendA = Object.entries(S.inscriptions).filter(([uid]) => !S.fiches[uid] && !S.coachs[uid]);
+  const code = h("select", { id: "a-code" }, h("option", { value: "" }, "Pas encore de compte : je le relierai plus tard"), pendA.map(([uid, x]) => h("option", { value: uid }, `${x.nom || "Sans nom"}${x.email ? " · " + x.email : ""}`)));
+  const nom = h("input", { id: "a-nom", maxlength: "60", placeholder: "Prénom et nom" });
+  const grp = h("select", { id: "a-grp" }, Object.entries(GROUPS).map(([k, G]) => h("option", { value: k, selected: k === S.tab }, G.label)));
+  const sous = h("select", { id: "a-sous" }, ["U14", "U16", "U19"].map(x => h("option", { value: x }, x)));
+  const sousF = h("label", { class: "field" }, "Catégorie du gardien", sous);
+  const poste = h("input", { id: "a-poste", maxlength: "40", placeholder: "Ex. milieu axial" });
+  const syncSous = () => { sousF.style.display = grp.value === "GB" ? "" : "none"; };
+  grp.onchange = syncSous; syncSous();
+  const msg = h("p", { class: "note" });
+  const go = h("button", { class: "btn" }, "Créer la fiche");
+  go.onclick = async () => {
+    const c = code.value.trim(), n = nom.value.trim();
+    const cid = c || ("j-" + nid());
+    if (c && (!SEG.test(c) || c === "." || c === ".." || isTemp(c))) { msg.className = "err"; msg.textContent = "Ce code n'est pas valide : copie-le tel quel depuis la page du joueur."; return; }
+    if (!n) { msg.className = "err"; msg.textContent = "Indique le prénom et le nom."; return; }
+    const data = { nom: n.slice(0, 60), groupe: grp.value, sousCat: grp.value === "GB" ? sous.value : "", poste: poste.value.trim().slice(0, 40), objectif: "", notes: [], createdAt: new Date().toISOString() };
+    go.disabled = true;
+    try {
+      if (S.demo) { if (S.fiches[cid]) throw new Error("exists"); S.fiches[cid] = data; }
+      else { const ref = S.db.doc("fiches/" + cid); const snap = await ref.get(); if (snap.exists) throw new Error("exists"); await ref.set(data); if (c) await S.db.doc("inscriptions/" + c).delete(); }
+      S.tab = grp.value; S.flash = `Fiche de ${n} créée.`; S.view = "list"; render();
+    } catch (e) {
+      go.disabled = false; msg.className = "err";
+      msg.textContent = e && e.message === "exists" ? "Ce code a déjà une fiche." : "Échec de la création : réessaie.";
+    }
+  };
+  box.append(h("div", { class: "card stack" },
+    h("label", { class: "field" }, "Compte du joueur (facultatif)", code),
+    h("div", { class: "row" }, h("label", { class: "field", style: "flex:1;min-width:200px" }, "Nom", nom), h("label", { class: "field" }, "Groupe", grp), sousF),
+    h("label", { class: "field" }, "Poste (facultatif)", poste),
+    h("div", { class: "row" }, go, msg)));
+  return box;
+}
+
+/* ---------- vue joueur / parent ---------- */
+function joueurView() {
+  const box = h("div", { style: "margin-top:20px" });
+  if (S.demo && S.demoAs !== "coach") {
+    const fid = Object.keys(S.fiches).find(k => groupOf(S.fiches[k]) === S.demoAs);
+    if (fid) box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.fiches[fid]), false) : ficheView(fid, S.fiches[fid], false));
+    return box;
+  }
+  if (!S.me) { box.append(h("div", { class: "empty" }, "Connecte-toi pour voir ta fiche.")); return box; }
+  if (S.myFiche === undefined) { box.append(h("p", { class: "note" }, S.slow ? "Les données ne répondent pas encore. La page se mettra à jour seule." : "Chargement de ta fiche…")); return box; }
+  if (S.myFiche === null) {
+    const nomI = h("input", { id: "ins-nom", maxlength: "60", placeholder: "Prénom et nom" });
+    const msg = h("span", { class: "note" });
+    const card = h("div", { class: "card stack" }, h("h2", {}, "Ton compte est créé"),
+      h("p", { style: "margin:0" }, "Ton coach doit maintenant le relier à ta fiche. Dès que c'est fait, cette page affichera tes notes, tes badges et l'équipe. Tu ne verras que ta propre fiche."));
+    if (!S.myInscription) {
+      card.append(h("label", { class: "field" }, "Indique ton prénom et ton nom pour que le coach te reconnaisse", nomI),
+        h("div", { class: "row" }, h("button", { class: "btn", onclick: async () => {
+          const n = nomI.value.trim(); if (!n) { msg.textContent = "Indique ton prénom et ton nom."; return; }
+          try { await S.db.doc("inscriptions/" + S.me).set({ nom: n.slice(0, 60), email: S.email || "", at: new Date().toISOString() }); S.myInscription = { nom: n }; render(); } catch (e) { msg.textContent = "Échec : réessaie."; }
+        } }, "Envoyer au coach"), msg));
+    } else card.append(h("p", { class: "note", style: "margin:0" }, `Demande envoyée au nom de ${S.myInscription.nom}.`));
+    box.append(card);
+    return box;
+  }
+  box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, S.myFiche, false));
+  return box;
+}
+function psubtabs() {
+  return h("div", { class: "subtabs", role: "tablist" },
+    h("button", { class: "subtab", role: "tab", "aria-selected": String(S.psub === "fiche"), onclick: () => { S.psub = "fiche"; render(); } }, "Ma fiche"),
+    h("button", { class: "subtab", role: "tab", "aria-selected": String(S.psub === "equipe"), onclick: () => { S.psub = "equipe"; render(); } }, "L'équipe"));
+}
+
+/* ---------- rendu ---------- */
+function render() {
+  const app = document.getElementById("app"); app.textContent = "";
+  const role = document.getElementById("role");
+  role.textContent = S.admin ? "Espace coach" : "Mon espace";
+  app.append(S.admin ? coachView() : joueurView());
+}
+
+/* ---------- exemples pour l'aperçu ---------- */
+function demoData() {
+  let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const mk = (nom, groupe, extra) => {
+    const G = GROUPS[groupe], notes = [];
+    const base = 2.4 + rnd() * 1.2;
+    for (let i = 0; i < 9; i++) {
+      const d = new Date(2026, 8, 8 + i * 7 + (i % 2 ? 3 : 0)).toISOString().slice(0, 10);
+      const crit = {}; for (const [k] of G.crit) crit[k] = Math.max(1, Math.min(5, Math.round(base + i * 0.12 + (rnd() - 0.5) * 1.6)));
+      notes.push({ id: "ex" + i + nom, date: d, type: i % 3 === 2 ? "Match" : "Entraînement", crit, com: i === 8 ? (groupe === "U10" ? "Très appliqué aujourd'hui, il a osé demander le ballon." : "Bonne séance, continue à parler avec tes partenaires.") : "" });
+    }
+    const presences = notes.filter(n => n.type === "Entraînement").map(n => ({ date: n.date, type: n.type, p: true }));
+    for (let i = 0; i < 6; i++) presences.push({ date: new Date(2026, 9, 1 + i * 3).toISOString().slice(0, 10), type: "Entraînement", p: rnd() > 0.15 });
+    return { nom, groupe, notes, presences, defis: groupe === "U19" ? [{ titre: "30 jongles pied faible", date: "2026-10-21" }] : [], mot: groupe === "U10" ? "Bravo pour ton courage cette semaine !" : "Continue à guider tes partenaires, ça se voit.", objectif: groupe === "U10" ? "Lever la tête avant de passer." : "Être disponible plus tôt pour le porteur.", exemple: true, ...extra };
+  };
+  return {
+    ex1: mk("Joueur exemple A", "U19", { poste: "Milieu axial" }), ex2: mk("Joueur exemple B", "U19", { poste: "Défenseur central" }), ex3: mk("Joueur exemple C", "U19", { poste: "Ailier" }),
+    ex4: mk("Enfant exemple A", "U10"), ex5: mk("Enfant exemple B", "U10"),
+    ex6: mk("Gardien exemple A", "GB", { sousCat: "U16" }), ex7: mk("Gardien exemple B", "GB", { sousCat: "U14" })
+  };
+}
+
+function demoEquipes() {
+  return {
+    U19: { objectif: "6 séquences de plus de 4 passes par match", defi: { titre: "30 jongles pied faible", detail: "Sans que le ballon touche le sol, devant le coach." },
+      hommes: [{ date: "2026-10-18", fid: "ex2", nom: "Joueur exemple B" }, { date: "2026-11-01", fid: "ex1", nom: "Joueur exemple A" }], mois: { fid: "ex3", nom: "Joueur exemple C", label: "octobre 2026" },
+      stats: [{ date: "2026-10-18", adv: "Exemple FC", passes: 4, recup: 31, bm: 2, be: 1 }, { date: "2026-11-01", adv: "Exemple AS", passes: 7, recup: 36, bm: 3, be: 0 }] },
+    U10: { objectif: "Écarter le jeu pour créer des espaces", defi: { titre: "Conduite slalom", detail: "Passer les 6 plots sans en toucher un." }, hommes: [{ date: "2026-10-17", fid: "ex4", nom: "Enfant exemple A" }], stats: [] },
+    GB: { objectif: "Relancer à la main vers un joueur libre", hommes: [], stats: [] }
+  };
+}
+
+/* ---------- démarrage ---------- */
+document.getElementById("logout").onclick = async () => { await signOut(auth); location.reload(); };
+let started = false;
+onAuthStateChanged(auth, async u => {
+  if (!u) { if (started) location.reload(); document.getElementById("logout").hidden = true; loginView(); return; }
+  if (started) return; started = true;
+  document.getElementById("logout").hidden = false;
+  const db = DB; S.db = db; S.me = u.uid; S.email = u.email || "";
+  try { S.admin = (await getDoc(fsDoc(fs, "coachs/" + u.uid))).exists(); } catch (e) { S.admin = false; }
+  const slowT = setTimeout(() => { S.slow = true; render(); }, 10000);
+  render();
+  const watchVotes = () => db.collection("votes").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.votes = n; softRender(); }, () => {});
+  if (S.admin) {
+    db.collection("fiches").onSnapshot(snap => {
+      clearTimeout(slowT); S.slow = false;
+      const next = {}; snap.docs.forEach(d => { if (d.exists) next[d.id] = d.data(); });
+      S.fiches = next; S.loaded = true;
+      if (S.view === "saisie" || S.view === "ajout") return;
+      if (S.view === "fiche" && !S.fiches[S.sel]) { S.view = "list"; S.sel = null; }
+      softRender();
+    }, err => { clearTimeout(slowT); S.loaded = true; render(); document.getElementById("app").append(h("p", { class: "err" }, "Impossible de lire les fiches pour l'instant.")); });
+    db.collection("inscriptions").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.inscriptions = n; softRender(); }, () => {});
+    db.collection("coachs").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.coachs = n; softRender(); }, () => {});
+    db.doc("championnat/u19").onSnapshot(cs => { S.champ = cs.exists ? cs.data() : null; softRender(); }, () => {});
+    db.collection("equipe").onSnapshot(snap => { const next = {}; snap.docs.forEach(d => { if (d.exists) next[d.id] = d.data(); }); S.equipes = next; softRender(); }, () => {});
+    watchVotes();
+  } else {
+    try { const ins = await getDoc(fsDoc(fs, "inscriptions/" + u.uid)); S.myInscription = ins.exists() ? ins.data() : null; } catch (e) {}
+    db.doc("fiches/" + S.me).onSnapshot(snap => {
+      clearTimeout(slowT); S.slow = false;
+      S.myFiche = snap.exists ? snap.data() : null;
+      if (S.myFiche && !S.eqSub) {
+        const g = groupOf(S.myFiche);
+        S.eqSub = db.doc("equipe/" + g).onSnapshot(es => { if (es.exists) S.equipes[g] = es.data(); else delete S.equipes[g]; softRender(); }, () => {});
+        if (g === "U19") db.doc("championnat/u19").onSnapshot(cs => { S.champ = cs.exists ? cs.data() : null; softRender(); }, () => {});
+        watchVotes();
+      }
+      softRender();
+    }, err => { clearTimeout(slowT); S.myFiche = null; render(); });
+  }
+});
+</script>
+</body>
+</html>
