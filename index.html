@@ -6,21 +6,23 @@
 <title>Suivi joueurs US Endoume</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oranienbaum&family=Barlow+Condensed:ital,wght@0,500;0,600;1,500;1,600&family=Barlow:wght@400;500;600&display=swap">
 <style>
-/* Plan : noir du blason, rouge pour l'action, or pour les repères. Une colonne lisible au téléphone, saisie rapide au bord du terrain. */
+/* DA du club (Instagram @us_endoume) : noir et rouge du blason en diagonale, sable kaki pour les annonces, titres en serif condensé façon affiche, petites lignes en italique espacé. */
 :root {
-  --noir: #0e0d0f;
-  --surface: #18171b;
-  --surface-2: #222026;
-  --ligne: #34313a;
-  --texte: #f2eee6;
-  --muted: #a39e94;
-  --rouge: #d0182f;
-  --rouge-fonce: #8f0f1f;
-  --or: #d6ac4e;
+  --noir: #100e0f;
+  --surface: #1b1819;
+  --surface-2: #262223;
+  --ligne: #3b3536;
+  --texte: #f5f2ec;
+  --muted: #aaa294;
+  --rouge: #e0182d;
+  --rouge-fonce: #8e0e1c;
+  --or: #cdbd8f;
+  --sable: #7c6f4f;
   --bon: #4fae6a;
-  --display: "Oswald", "Arial Narrow", Impact, sans-serif;
+  --display: "Oranienbaum", "Didot", "Bodoni 72", Georgia, serif;
+  --label: "Barlow Condensed", "Arial Narrow", sans-serif;
   --body: "Barlow", "Segoe UI", Roboto, Arial, sans-serif;
   color-scheme: dark;
 }
@@ -30,45 +32,45 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--or); outline-offset: 2px; }
 .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px 48px; }
-header.top { border-bottom: 3px solid var(--rouge); background: linear-gradient(180deg, #151316, var(--noir)); }
+header.top { border-bottom: 4px solid var(--rouge); background: linear-gradient(118deg, #0b0a0a 0 58%, var(--rouge) 58% 71%, #0b0a0a 71% 76%, var(--rouge) 76%); }
 header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; padding-bottom: 12px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 12px; }
-.badge { width: 40px; height: 46px; background: var(--rouge); clip-path: polygon(0 0,100% 0,100% 62%,50% 100%,0 62%); display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 13px; color: var(--or); border-top: 4px solid #000; }
-.brand h1 { font-family: var(--display); font-weight: 600; font-size: 21px; letter-spacing: .04em; text-transform: uppercase; margin: 0; line-height: 1.1; }
-.brand small { display: block; color: var(--or); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
-.role { font-size: 13px; color: var(--muted); border: 1px solid var(--ligne); border-radius: 999px; padding: 4px 12px; }
+.crest { width: 44px; height: 57px; display: block; border-radius: 5px 5px 50% 50% / 5px 5px 34% 34%; }
+.brand h1 { font-family: var(--display); font-weight: 400; font-size: 27px; letter-spacing: .01em; text-transform: uppercase; margin: 0; line-height: 1; }
+.brand small { display: block; color: var(--or); font-family: var(--label); font-style: italic; font-weight: 500; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; margin-top: 3px; }
+.role { font-family: var(--label); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--texte); background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 4px 12px; }
 .demo { background: #2a2210; border: 1px solid #5c4a1c; color: #ecd59a; border-radius: 10px; padding: 10px 14px; margin: 16px 0 0; font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .demo button { background: transparent; border: 1px solid #8a7130; color: #ecd59a; border-radius: 999px; padding: 3px 12px; font-size: 13px; }
 .demo button[aria-pressed="true"] { background: var(--or); color: #1b1505; border-color: var(--or); }
 .tabs { display: flex; gap: 6px; margin: 20px 0 16px; flex-wrap: wrap; }
-.tab { background: var(--surface); border: 1px solid var(--ligne); border-radius: 8px; padding: 8px 16px; font-family: var(--display); font-size: 16px; letter-spacing: .05em; text-transform: uppercase; }
+.tab { background: var(--surface); border: 1px solid var(--ligne); border-radius: 4px; padding: 8px 16px; font-family: var(--label); font-weight: 600; font-size: 16px; letter-spacing: .12em; text-transform: uppercase; }
 .tab[aria-selected="true"] { background: var(--rouge); border-color: var(--rouge); }
 .bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 14px; }
-h2 { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 24px; margin: 0; text-wrap: balance; }
-h3 { font-family: var(--display); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; font-size: 16px; color: var(--or); margin: 0 0 10px; }
-.btn { background: var(--rouge); border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; }
-.btn:hover { background: #e2223a; }
+h2 { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .01em; font-size: 32px; line-height: 1.05; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--label); font-style: italic; font-weight: 600; text-transform: uppercase; letter-spacing: .18em; font-size: 14px; color: var(--or); margin: 0 0 10px; }
+.btn { background: var(--rouge); border: 0; border-radius: 4px; padding: 10px 18px; font-family: var(--label); font-weight: 600; font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: #fff; }
+.btn:hover { background: #f02a3f; }
 .btn.ghost { background: transparent; border: 1px solid var(--ligne); }
 .btn.ghost:hover { border-color: var(--muted); }
-.btn.small { padding: 6px 12px; font-size: 14px; }
+.btn.small { padding: 6px 12px; font-size: 14px; letter-spacing: .08em; }
 .btn:disabled { opacity: .5; cursor: default; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.card { background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; padding: 14px; }
+.card { background: var(--surface); border: 1px solid var(--ligne); border-radius: 6px; padding: 14px; }
 button.card { text-align: left; width: 100%; display: flex; flex-direction: column; gap: 8px; }
 button.card:hover { border-color: var(--rouge); }
 .pname { font-weight: 600; font-size: 17px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .pmeta { color: var(--muted); font-size: 13px; }
-.avg { font-family: var(--display); font-size: 26px; color: var(--or); font-variant-numeric: tabular-nums; }
-.avg small { font-size: 14px; color: var(--muted); }
+.avg { font-family: var(--display); font-size: 30px; color: var(--or); font-variant-numeric: tabular-nums; }
+.avg small { font-family: var(--body); font-size: 14px; color: var(--muted); }
 .pill { display: inline-block; font-size: 12px; border-radius: 999px; padding: 2px 9px; border: 1px solid var(--ligne); color: var(--muted); }
 .pill.match { border-color: var(--rouge); color: #ff9aa6; }
-.pill.ex { border-color: #5c4a1c; color: #ecd59a; }
+.pill.ex { border-color: var(--sable); color: var(--or); }
 .empty { color: var(--muted); padding: 24px; border: 1px dashed var(--ligne); border-radius: 12px; text-align: center; }
 .crit-row { display: grid; grid-template-columns: minmax(130px, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--ligne); }
 .crit-row:first-of-type { border-top: 0; }
 .scale { display: flex; gap: 4px; }
 .sc { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--ligne); background: var(--surface-2); font-weight: 600; font-variant-numeric: tabular-nums; }
-.sc[aria-pressed="true"] { background: var(--or); color: #1b1505; border-color: var(--or); }
+.sc[aria-pressed="true"] { background: var(--rouge); color: #fff; border-color: var(--rouge); }
 .field { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted); }
 .field input, .field select, .field textarea { background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 8px; padding: 9px 10px; color: var(--texte); }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
@@ -81,7 +83,7 @@ button.card:hover { border-color: var(--rouge); }
 .barline { display: grid; grid-template-columns: minmax(120px, 170px) 1fr 52px; gap: 10px; align-items: center; font-size: 14px; }
 .track { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
 .fill { height: 100%; background: linear-gradient(90deg, var(--rouge-fonce), var(--rouge)); border-radius: 999px; }
-.fill.m { background: linear-gradient(90deg, #7a5d1f, var(--or)); }
+.fill.m { background: linear-gradient(90deg, var(--sable), var(--or)); }
 .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 .legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
@@ -105,28 +107,29 @@ button.card:hover { border-color: var(--rouge); }
 .linkbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; font-size: 14px; }
 .danger { color: #ff9aa6; }
 .subtabs { display: flex; gap: 0; border-bottom: 1px solid var(--ligne); margin: -4px 0 16px; }
-.subtab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; color: var(--muted); font-weight: 600; }
-.subtab[aria-selected="true"] { color: var(--texte); border-bottom-color: var(--or); }
+.subtab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; color: var(--muted); font-family: var(--label); font-weight: 600; font-size: 16px; letter-spacing: .1em; text-transform: uppercase; }
+.subtab[aria-selected="true"] { color: var(--texte); border-bottom-color: var(--rouge); }
 .top-fiche { display: grid; grid-template-columns: 240px 1fr; gap: 12px; align-items: start; }
 @media (max-width: 620px) { .top-fiche { grid-template-columns: 1fr; } .fcard { margin: 0 auto; } }
 .fcard { width: 240px; aspect-ratio: 5 / 7; border-radius: 14px; position: relative; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 8px;
-  background: linear-gradient(135deg, #111012 0 52%, var(--rouge) 52% 70%, #111012 70%); border: 2px solid var(--or); box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+  background: linear-gradient(128deg, var(--rouge) 0 27%, #0b0a0a 27% 55%, var(--rouge) 55% 69%, #0b0a0a 69%); border: 2px solid var(--sable); border-radius: 8px 8px 46% 46% / 8px 8px 16% 16%; box-shadow: 0 8px 24px rgba(0,0,0,.45); padding-bottom: 26px; }
 .fcard .fc-top { display: flex; justify-content: space-between; align-items: flex-start; }
-.fcard .fc-note { font-family: var(--display); font-size: 46px; line-height: .9; color: var(--or); font-variant-numeric: tabular-nums; }
-.fcard .fc-note small { display: block; font-size: 12px; letter-spacing: .12em; color: var(--texte); }
-.fcard .fc-ini { width: 64px; height: 64px; border-radius: 50%; background: #000; border: 2px solid var(--or); display: grid; place-items: center; font-family: var(--display); font-size: 24px; }
-.fcard .fc-nom { font-family: var(--display); font-size: 21px; text-transform: uppercase; letter-spacing: .04em; text-align: center; margin-top: auto; text-wrap: balance; line-height: 1.1; }
-.fcard .fc-poste { text-align: center; font-size: 12px; color: var(--or); letter-spacing: .12em; text-transform: uppercase; }
+.fcard .fc-note { font-family: var(--display); font-size: 52px; line-height: .85; color: #fff; font-variant-numeric: tabular-nums; }
+.fcard .fc-note small { display: block; font-family: var(--label); font-style: italic; font-size: 12px; letter-spacing: .18em; color: var(--texte); }
+.fcard .fc-ini { width: 92px; height: 92px; border-radius: 50%; background: #0b0a0a; border: 2px solid var(--sable); display: grid; place-items: center; font-family: var(--display); font-size: 30px; overflow: hidden; }
+.fcard .fc-ini svg, .av-mini svg, .av-prev svg { width: 100%; height: 100%; display: block; }
+.fcard .fc-nom { font-family: var(--display); font-size: 27px; text-transform: uppercase; letter-spacing: .01em; text-align: center; margin-top: auto; text-wrap: balance; line-height: 1.1; }
+.fcard .fc-poste { text-align: center; font-family: var(--label); font-style: italic; font-size: 13px; color: var(--or); letter-spacing: .16em; text-transform: uppercase; }
 .fcard .fc-crit { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 13px; background: rgba(0,0,0,.55); border-radius: 8px; padding: 8px 10px; }
 .fcard .fc-crit span b { color: var(--or); font-variant-numeric: tabular-nums; margin-right: 4px; }
-.fcard .fc-club { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-size: 10px; letter-spacing: .16em; color: var(--muted); }
+.fcard .fc-club { position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%); font-family: var(--label); font-size: 10px; letter-spacing: .3em; color: var(--or); white-space: nowrap; }
 .stars { color: var(--or); letter-spacing: 1px; }
 .stars .off { color: #4a4650; }
-.record { background: linear-gradient(90deg, rgba(214,172,78,.18), transparent); border: 1px solid #5c4a1c; border-radius: 10px; padding: 10px 12px; font-weight: 600; }
+.record { background: linear-gradient(90deg, rgba(124,111,79,.45), transparent); border: 1px solid var(--sable); border-radius: 6px; padding: 10px 12px; font-weight: 600; }
 .mot { border-left: 3px solid var(--rouge); background: var(--surface-2); border-radius: 0 8px 8px 0; padding: 8px 12px; font-size: 15px; }
 .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .bdg { display: flex; gap: 8px; align-items: center; background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 10px; padding: 8px; }
-.bdg .ico { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-size: 15px; background: var(--or); color: #1b1505; }
+.bdg .ico { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: var(--label); font-weight: 600; font-size: 15px; background: var(--rouge); color: #fff; }
 .bdg.off { opacity: .45; }
 .bdg.off .ico { background: #3a3640; color: var(--muted); }
 .bdg b { display: block; font-size: 14px; }
@@ -136,12 +139,29 @@ table.stats th, table.stats td { text-align: left; padding: 7px 8px; border-bott
 table.stats th { color: var(--muted); font-weight: 500; font-size: 13px; }
 .tablebox { overflow-x: auto; }
 .hero-eq { font-size: 18px; font-weight: 600; }
+.kicker { font-family: var(--label); font-style: italic; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; font-size: 13px; color: var(--or); }
+.login-hero { max-width: 420px; margin: 28px auto 0; background: var(--sable); border-radius: 6px 6px 0 0; padding: 22px 18px 18px; text-align: center; color: #fff; position: relative; overflow: hidden; }
+.login-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(118deg, transparent 0 88%, var(--rouge) 88% 93%, transparent 93%); pointer-events: none; }
+.login-hero img { width: 66px; height: 86px; border-radius: 6px 6px 50% 50% / 6px 6px 34% 34%; }
+.login-hero .t { font-family: var(--display); font-size: 34px; line-height: 1; text-transform: uppercase; margin-top: 10px; }
+.login-hero .s { font-family: var(--label); font-size: 13px; letter-spacing: .34em; text-transform: uppercase; margin-top: 6px; }
+.login-form { max-width: 420px; margin: 0 auto 32px; border-radius: 0 0 6px 6px; border-top: 4px solid var(--rouge); }
+.av-mini { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; background: #0b0a0a; border: 1px solid var(--sable); flex: none; display: grid; place-items: center; font-family: var(--label); font-size: 13px; }
+.av-ed { display: grid; grid-template-columns: 140px 1fr; gap: 14px; align-items: start; }
+@media (max-width: 520px) { .av-ed { grid-template-columns: 1fr; justify-items: center; } }
+.av-prev { width: 140px; height: 140px; border-radius: 50%; overflow: hidden; background: linear-gradient(128deg, var(--rouge) 0 30%, #0b0a0a 30% 62%, var(--rouge) 62% 74%, #0b0a0a 74%); border: 2px solid var(--sable); }
+.av-opts { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.av-opts .lab { font-family: var(--label); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--ligne); padding: 0; }
+.sw[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px var(--rouge); }
+.opt { font-size: 13px; background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 4px; padding: 5px 10px; color: var(--muted); }
+.opt[aria-pressed="true"] { background: var(--rouge); border-color: var(--rouge); color: #fff; }
 @media (prefers-reduced-motion: no-preference) { button.card, .btn, .sc { transition: background .15s, border-color .15s; } }
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <div class="brand"><div class="badge">1925</div><div><h1>US Endoume Catalans</h1><small>Suivi des joueurs</small></div></div>
+  <div class="brand"><img class="crest" alt="Blason US Endoume Catalans" src="data:image/jpeg;base64,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"><div><h1>US Endoume Catalans</h1><small>Suivi des joueurs · depuis 1925</small></div></div>
   <div class="row" style="gap:8px"><span class="role" id="role">Chargement…</span><button class="role" id="logout" hidden style="background:none;cursor:pointer">Se déconnecter</button></div>
 </div></header>
 <main class="wrap" id="app"><p class="note" style="margin-top:24px">Chargement du suivi…</p></main>
@@ -168,7 +188,7 @@ const isTemp = fid => typeof fid === "string" && fid.startsWith("j-");
 
 const S = { db: null, user: null, me: null, admin: false, demo: false, demoAs: "coach",
   fiches: {}, loaded: false, slow: false, tab: "U19", view: "list", sel: null, saisie: null,
-  myFiche: undefined, flash: "", inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
+  myFiche: undefined, flash: "", avatars: {}, avDraft: null, avEdit: false, inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
 
 /* ---------- petits outils ---------- */
 function h(tag, attrs, ...kids) {
@@ -207,8 +227,103 @@ const initials = n => (n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w 
 const ABBR = { eng: "ENG", tech: "TEC", intel: "INT", comp: "COM", plaisir: "PLA", jeu: "JEU", respect: "RES", prise: "PRI", plac: "PLA", pied: "PIE", comm: "COM", cour: "COU" };
 function stars(v) { const r = Math.round(v || 0); const s = h("span", { class: "stars", "aria-label": `${r} sur 5` }); for (let i = 1; i <= 5; i++) s.append(i <= r ? h("span", {}, "★") : h("span", { class: "off" }, "★")); return s; }
 
+
+/* ---------- avatar ---------- */
+const AV = {
+  peau: ["#f6d5bd", "#e9b993", "#cf9468", "#a96c45", "#7b4a2c", "#4e2e1b"],
+  cheveux: ["#16100e", "#3b2416", "#6b4423", "#b07a3c", "#dcb769", "#9a9a9a"],
+  coupe: [["ras", "Rasé"], ["court", "Court"], ["degrade", "Dégradé"], ["boucle", "Bouclé"], ["afro", "Afro"], ["tresses", "Tresses"], ["long", "Long"], ["crete", "Crête"]],
+  barbe: [["non", "Aucune"], ["legere", "Légère"], ["oui", "Barbe"]],
+  maillot: [["dom", "Domicile"], ["ext", "Extérieur"], ["gb", "Gardien"]],
+  acc: [["non", "Aucun"], ["bandeau", "Bandeau"], ["lunettes", "Lunettes"]]
+};
+const AV_DEF = { peau: 2, cheveux: 0, coupe: "court", barbe: "non", maillot: "dom", num: "10", acc: "non" };
+const avClean = a => {
+  const o = { ...AV_DEF, ...(a || {}) };
+  const inList = (v, l) => l.some(x => x[0] === v);
+  return { peau: Number.isInteger(o.peau) && o.peau >= 0 && o.peau < 6 ? o.peau : 2, cheveux: Number.isInteger(o.cheveux) && o.cheveux >= 0 && o.cheveux < 6 ? o.cheveux : 0,
+    coupe: inList(o.coupe, AV.coupe) ? o.coupe : "court", barbe: inList(o.barbe, AV.barbe) ? o.barbe : "non", maillot: inList(o.maillot, AV.maillot) ? o.maillot : "dom",
+    acc: inList(o.acc, AV.acc) ? o.acc : "non", num: String(o.num || "").replace(/\D/g, "").slice(0, 2) };
+};
+let avSeq = 0;
+function avatarSVG(a0) {
+  const a = avClean(a0), k = "av" + (++avSeq);
+  const skin = AV.peau[a.peau], hair = AV.cheveux[a.cheveux];
+  const shirt = { dom: ["#e0182d", "#0b0a0a", "#fff"], ext: ["#f4f1ea", "#e0182d", "#0b0a0a"], gb: ["#f2c230", "#0b0a0a", "#0b0a0a"] }[a.maillot];
+  let back = "", top = "";
+  const cap = (op, y) => `<path d="M34 54 Q33 ${y} 60 ${y - 3} Q87 ${y} 86 54 Q80 ${y + 13} 60 ${y + 12} Q40 ${y + 13} 34 54Z" fill="${hair}" opacity="${op}"/>`;
+  switch (a.coupe) {
+    case "ras": top = cap(.5, 27); break;
+    case "court": top = cap(1, 25); break;
+    case "degrade": top = cap(.4, 27) + `<path d="M38 42 Q40 22 60 21 Q80 22 82 42 Q72 34 60 34 Q48 34 38 42Z" fill="${hair}"/>`; break;
+    case "boucle": top = cap(1, 27) + [36, 44, 52, 60, 68, 76, 84].map((x, i) => `<circle cx="${x}" cy="${i % 2 ? 26 : 30}" r="7" fill="${hair}"/>`).join(""); break;
+    case "afro": back = `<circle cx="60" cy="42" r="37" fill="${hair}"/>`; top = cap(1, 26); break;
+    case "tresses": back = [38, 46, 74, 82].map(x => `<rect x="${x - 2.5}" y="40" width="5" height="40" rx="2.5" fill="${hair}"/>`).join(""); top = cap(1, 25) + [42, 50, 58, 66, 74].map(x => `<path d="M${x} 26 L${x + 2} 42" stroke="#000" stroke-opacity=".35" stroke-width="1.5"/>`).join(""); break;
+    case "long": back = `<path d="M30 52 Q28 20 60 19 Q92 20 90 52 L92 88 Q76 82 72 66 L48 66 Q44 82 28 88Z" fill="${hair}"/>`; top = cap(1, 24); break;
+    case "crete": top = cap(.35, 27) + `<path d="M52 44 Q50 18 60 12 Q70 18 68 44 Q60 38 52 44Z" fill="${hair}"/>`; break;
+  }
+  const beard = a.barbe === "non" ? "" : `<path d="M36 60 Q38 86 60 88 Q82 86 84 60 Q80 74 72 76 Q60 72 48 76 Q40 74 36 60Z" fill="${hair}" opacity="${a.barbe === "oui" ? .95 : .4}"/>`;
+  const acc = a.acc === "bandeau" ? `<path d="M33 44 Q60 32 87 44 L87 51 Q60 39 33 51Z" fill="#e0182d"/>` : a.acc === "lunettes" ? `<g fill="none" stroke="#0b0a0a" stroke-width="2.4"><circle cx="50" cy="58" r="7"/><circle cx="70" cy="58" r="7"/><path d="M57 58 H63 M43 57 L35 54 M77 57 L85 54"/></g>` : "";
+  const num = a.num ? `<text x="60" y="114" text-anchor="middle" font-family="Oranienbaum, Georgia, serif" font-size="17" fill="${shirt[2]}">${esc(a.num)}</text>` : "";
+  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="${k}s"><path d="M12 120 C14 98 32 88 60 88 C88 88 106 98 108 120Z"/></clipPath></defs>
+${back}
+<path d="M12 120 C14 98 32 88 60 88 C88 88 106 98 108 120Z" fill="${shirt[0]}"/>
+<g clip-path="url(#${k}s)"><path d="M20 120 L58 84 L78 84 L40 120Z" fill="${shirt[1]}"/></g>
+<rect x="50" y="72" width="20" height="20" rx="6" fill="${skin}"/><path d="M50 88 L60 98 L70 88" fill="none" stroke="${shirt[1]}" stroke-width="3"/>
+<circle cx="35" cy="58" r="6" fill="${skin}"/><circle cx="85" cy="58" r="6" fill="${skin}"/>
+<ellipse cx="60" cy="55" rx="25" ry="29" fill="${skin}"/>
+${beard}
+<path d="M45 49 Q50 46 55 49 M65 49 Q70 46 75 49" fill="none" stroke="${hair}" stroke-width="2.6" stroke-linecap="round"/>
+<circle cx="50" cy="57" r="2.7" fill="#16100e"/><circle cx="70" cy="57" r="2.7" fill="#16100e"/>
+<path d="M60 60 Q58 66 61 67" fill="none" stroke="#000" stroke-opacity=".25" stroke-width="1.8" stroke-linecap="round"/>
+<path d="M52 72 Q60 78 68 72" fill="none" stroke="#5a2a1e" stroke-width="2.3" stroke-linecap="round"/>
+${top}${acc}${num}
+</svg>`;
+}
+function avatarNode(fid, nom, cls) {
+  const el = h("div", { class: cls });
+  const a = fid && S.avatars[fid];
+  if (a) el.innerHTML = avatarSVG(a); else el.textContent = initials(nom);
+  return el;
+}
+function avatarEditor(start, onChange) {
+  let a = avClean(start);
+  const prev = h("div", { class: "av-prev", role: "img", "aria-label": "Aperçu de l'avatar" });
+  const opts = h("div", { class: "av-opts" });
+  const draw = () => { prev.innerHTML = avatarSVG(a); onChange && onChange(a); paint(); };
+  const groups = [];
+  const swatch = (key, label, colors) => {
+    const row = h("div", { class: "row", style: "gap:6px;align-items:center" });
+    colors.forEach((c, i) => row.append(h("button", { type: "button", class: "sw", style: `background:${c}`, "aria-label": `${label} ${i + 1}`, "data-k": key, "data-v": String(i), onclick: () => { a = { ...a, [key]: i }; draw(); } })));
+    opts.append(h("div", {}, h("div", { class: "lab" }, label), row)); groups.push(row);
+  };
+  const choice = (key, label, list) => {
+    const row = h("div", { class: "row", style: "gap:6px" });
+    list.forEach(([v, t]) => row.append(h("button", { type: "button", class: "opt", "data-k": key, "data-v": v, onclick: () => { a = { ...a, [key]: v }; draw(); } }, t)));
+    opts.append(h("div", {}, h("div", { class: "lab" }, label), row)); groups.push(row);
+  };
+  const paint = () => groups.forEach(r => r.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(String(a[b.dataset.k]) === b.dataset.v))));
+  swatch("peau", "Peau", AV.peau);
+  choice("coupe", "Coupe", AV.coupe);
+  swatch("cheveux", "Cheveux", AV.cheveux);
+  choice("barbe", "Barbe", AV.barbe);
+  choice("maillot", "Maillot", AV.maillot);
+  choice("acc", "Accessoire", AV.acc);
+  const num = h("input", { type: "text", inputmode: "numeric", maxlength: "2", value: a.num, style: "width:70px", "aria-label": "Numéro" });
+  num.addEventListener("input", () => { a = { ...a, num: num.value.replace(/\D/g, "").slice(0, 2) }; prev.innerHTML = avatarSVG(a); onChange && onChange(a); });
+  opts.append(h("label", { class: "field" }, h("span", { class: "lab", style: "margin:0" }, "Numéro"), num));
+  draw();
+  return h("div", { class: "av-ed" }, prev, opts);
+}
+async function saveAvatar(uid, a) {
+  const d = { ...avClean(a), at: new Date().toISOString() };
+  await setDoc(fsDoc(fs, "avatars/" + uid), d);
+  S.avatars[uid] = d;
+}
+
 /* ---------- carte joueur ---------- */
-function fcard(f, parent) {
+function fcard(f, parent, fid) {
   const g = groupOf(f), G = GROUPS[g], ns = sortedNotes(f).slice(-5);
   const o = overall(f, 5);
   const card = h("div", { class: "fcard", role: "img", "aria-label": `Carte de ${f.nom || "joueur"}` });
@@ -216,7 +331,7 @@ function fcard(f, parent) {
   card.append(h("div", { class: "fc-top" },
     parent ? h("div", { class: "fc-note", style: "font-size:20px;line-height:1.1" }, o == null ? "–" : LEVELS[Math.round(o)], h("small", {}, "niveau"))
            : h("div", { class: "fc-note" }, o == null ? "–" : Math.round(o * 20), h("small", {}, "NOTE")),
-    h("div", { class: "fc-ini" }, initials(f.nom))));
+    avatarNode(fid, f.nom, "fc-ini")));
   card.append(h("div", { class: "fc-nom" }, f.nom || "Joueur"));
   card.append(h("div", { class: "fc-poste" }, [f.poste, f.sousCat || G.label].filter(Boolean).join(" · ")));
   const crit = h("div", { class: "fc-crit" });
@@ -539,14 +654,17 @@ function loginView() {
         const n = nom.value.trim(); if (!n) { msg.className = "err"; msg.textContent = "Indique ton prénom et ton nom."; go.disabled = false; return; }
         const cred = await createUserWithEmailAndPassword(auth, email.value.trim(), pass.value);
         await setDoc(fsDoc(fs, "inscriptions/" + cred.user.uid), { nom: n.slice(0, 60), email: cred.user.email || "", at: new Date().toISOString() });
+        try { await saveAvatar(cred.user.uid, S.avDraft || AV_DEF); } catch (e) {}
       }
     } catch (err) { go.disabled = false; msg.className = "err"; msg.textContent = AUTH_ERR[err && err.code] || "Échec : vérifie ta connexion et réessaie."; }
   };
-  const form = h("form", { class: "card stack", style: "max-width:420px;margin:32px auto" },
+  app.append(h("div", { class: "login-hero" }, h("img", { src: document.querySelector(".crest").src, alt: "" }), h("div", { class: "t" }, "Suivi des joueurs"), h("div", { class: "s" }, "Endoume · Catalans")));
+  const form = h("form", { class: "card stack login-form" },
     h("div", { class: "subtabs", role: "tablist" },
       h("button", { type: "button", class: "subtab", "aria-selected": String(mode === "in"), onclick: () => { S.loginMode = "in"; loginView(); } }, "Connexion"),
       h("button", { type: "button", class: "subtab", "aria-selected": String(mode === "up"), onclick: () => { S.loginMode = "up"; loginView(); } }, "Créer mon compte")),
     mode === "up" ? h("label", { class: "field" }, "Prénom et nom", nom) : null,
+    mode === "up" ? h("div", { class: "stack", style: "gap:8px" }, h("h3", { style: "margin:0" }, "Crée ton avatar"), avatarEditor(S.avDraft, a => { S.avDraft = a; }), h("p", { class: "note", style: "margin:0" }, "Il apparaîtra sur ta carte de joueur. Tu pourras le modifier plus tard.")) : null,
     h("label", { class: "field" }, "Email", email), h("label", { class: "field" }, "Mot de passe", pass), go, msg,
     mode === "in" ? h("button", { type: "button", class: "linkbtn", onclick: async () => { const e = email.value.trim(); if (!e) { msg.className = "err"; msg.textContent = "Écris ton email, puis clique à nouveau ici."; return; } try { await sendPasswordResetEmail(auth, e); msg.className = "ok"; msg.textContent = "Email de réinitialisation envoyé."; } catch (err) { msg.className = "err"; msg.textContent = AUTH_ERR[err && err.code] || "Échec : réessaie."; } } }, "Mot de passe oublié ?") : h("p", { class: "note", style: "margin:0" }, "Ton coach reliera ensuite ton compte à ta fiche. Tu ne verras que tes propres notes."));
   form.addEventListener("submit", submit);
@@ -653,7 +771,13 @@ function ficheView(fid, f, asCoach) {
       h("button", { class: "btn small", onclick: async () => { const v = mt.value.trim().slice(0, 160); try { await writeFiche(fid, { mot: v }); mm.textContent = "Mot enregistré."; } catch (e) { mm.textContent = "Échec : réessaie."; } } }, "Épingler"), mm)));
   } else if (f.mot) side.append(h("div", { class: "card" }, h("h3", {}, "Le mot du coach"), h("div", { class: "mot" }, f.mot)));
   side.append(h("div", { class: "card" }, h("h3", {}, "Badges"), badgesBox(fid, f)));
-  wrap.append(h("div", { class: "top-fiche" }, fcard(f, parent), side));
+  wrap.append(h("div", { class: "top-fiche" }, h("div", { class: "stack", style: "align-items:center" }, fcard(f, parent, fid),
+    !asCoach && fid === S.me && !S.demo ? h("button", { class: "btn ghost small", onclick: () => { S.avEdit = !S.avEdit; S.avDraft = null; render(); } }, S.avEdit ? "Fermer" : (S.avatars[fid] ? "Modifier mon avatar" : "Créer mon avatar")) : null), side));
+  if (!asCoach && fid === S.me && S.avEdit && !S.demo) {
+    const m = h("span", { class: "note" });
+    wrap.append(h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Mon avatar"), avatarEditor(S.avDraft || S.avatars[fid], a => { S.avDraft = a; }),
+      h("div", { class: "row" }, h("button", { class: "btn small", onclick: async () => { try { await saveAvatar(S.me, S.avDraft || S.avatars[fid]); S.avEdit = false; S.avDraft = null; render(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Enregistrer sur ma carte"), m)));
+  }
 
   if (asCoach && isTemp(fid)) {
     const pend = Object.entries(S.inscriptions).filter(([uid]) => !S.fiches[uid] && !S.coachs[uid]);
@@ -787,7 +911,7 @@ function coachView() {
     const all = overall(f), last = overall(f, 5), ns = sortedNotes(f);
     const trend = (all != null && last != null && ns.length >= 6) ? (last - all > 0.15 ? "En hausse" : last - all < -0.15 ? "En baisse" : "Stable") : null;
     grid.append(h("button", { class: "card", onclick: () => { S.view = "fiche"; S.sel = fid; render(); } },
-      h("div", { class: "pname" }, h("span", {}, f.nom || "Sans nom"), f.exemple ? h("span", { class: "pill ex" }, "Exemple") : (isTemp(fid) ? h("span", { class: "pill" }, "Compte non lié") : (watchAutos(fid), autoMissing(fid, f) ? h("span", { class: "pill match" }, "Auto-éval manquante") : null))),
+      h("div", { class: "pname" }, h("span", { class: "row", style: "gap:8px;align-items:center;flex-wrap:nowrap" }, avatarNode(fid, f.nom, "av-mini"), f.nom || "Sans nom"), f.exemple ? h("span", { class: "pill ex" }, "Exemple") : (isTemp(fid) ? h("span", { class: "pill" }, "Compte non lié") : (watchAutos(fid), autoMissing(fid, f) ? h("span", { class: "pill match" }, "Auto-éval manquante") : null))),
       h("div", { class: "pmeta" }, [f.age, f.sousCat, f.poste].filter(Boolean).join(" · ") || GROUPS[groupOf(f)].label),
       h("div", { class: "row", style: "justify-content:space-between;align-items:baseline" },
         h("span", { class: "avg" }, n1(last), h("small", {}, " /5 sur les 5 dernières")),
@@ -936,6 +1060,9 @@ function joueurView() {
         } }, "Envoyer au coach"), msg));
     } else card.append(h("p", { class: "note", style: "margin:0" }, `Demande envoyée au nom de ${S.myInscription.nom}.`));
     box.append(card);
+    const am = h("span", { class: "note" });
+    box.append(h("div", { class: "card stack", style: "margin-top:12px" }, h("h3", { style: "margin:0" }, S.avatars[S.me] ? "Ton avatar" : "Crée ton avatar"), avatarEditor(S.avDraft || S.avatars[S.me], a => { S.avDraft = a; }),
+      h("div", { class: "row" }, h("button", { class: "btn small", onclick: async () => { try { await saveAvatar(S.me, S.avDraft || S.avatars[S.me]); am.textContent = "Avatar enregistré : il sera sur ta carte."; } catch (e) { am.textContent = "Échec : réessaie."; } } }, "Enregistrer"), am)));
     return box;
   }
   box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, S.myFiche, false));
@@ -1009,12 +1136,14 @@ onAuthStateChanged(auth, async u => {
       softRender();
     }, err => { clearTimeout(slowT); S.loaded = true; render(); document.getElementById("app").append(h("p", { class: "err" }, "Impossible de lire les fiches pour l'instant.")); });
     db.collection("inscriptions").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.inscriptions = n; softRender(); }, () => {});
+    db.collection("avatars").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.avatars = n; softRender(); }, () => {});
     db.collection("coachs").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.coachs = n; softRender(); }, () => {});
     db.doc("championnat/u19").onSnapshot(cs => { S.champ = cs.exists ? cs.data() : null; softRender(); }, () => {});
     db.collection("equipe").onSnapshot(snap => { const next = {}; snap.docs.forEach(d => { if (d.exists) next[d.id] = d.data(); }); S.equipes = next; softRender(); }, () => {});
     watchVotes();
   } else {
     try { const ins = await getDoc(fsDoc(fs, "inscriptions/" + u.uid)); S.myInscription = ins.exists() ? ins.data() : null; } catch (e) {}
+    db.doc("avatars/" + S.me).onSnapshot(as => { if (as.exists) S.avatars[S.me] = as.data(); softRender(); }, () => {});
     db.doc("fiches/" + S.me).onSnapshot(snap => {
       clearTimeout(slowT); S.slow = false;
       S.myFiche = snap.exists ? snap.data() : null;
