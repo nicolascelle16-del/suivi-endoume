@@ -383,7 +383,7 @@ function badges(fid, f, eq) {
   if (g === "GB") add("GB", "Le Mur", "3 matchs notés à 4 ou plus", ns.filter(n => n.type === "Match" && noteAvg(n, g) >= 4).length >= 3);
   add("20", "Pilier", "20 évaluations dans la saison", ns.length >= 20);
   const hdm = ((eq && eq.hommes) || []).filter(x => x.fid === fid).length;
-  add("★", g === "U10" ? "Joueur du plateau" : "Homme du match", hdm ? `Choisi ${hdm} fois par le coach` : "Choisi par le coach après un match", hdm);
+  add("★", g === "U10" ? "Joueur du match" : "Homme du match", hdm ? `Choisi ${hdm} fois par le coach` : "Choisi par le coach après un match", hdm);
   for (const d of (Array.isArray(f.defis) ? f.defis : [])) add("D", `Défi : ${d.titre}`, `Réussi le ${fmtDate(d.date)}`, true);
   return out;
 }
@@ -492,7 +492,7 @@ function analysesCard(g, asCoach) {
 }
 
 /* ---------- votes ---------- */
-function voteLabel(type, g) { return type === "mois" ? "Joueur du mois" : (g === "U10" ? "Joueur du plateau" : "Homme du match"); }
+function voteLabel(type, g) { return type === "mois" ? "Joueur du mois" : (g === "U10" ? "Joueur du match" : "Homme du match"); }
 function watchBulletins(vid) {
   if (S.subs["b-" + vid]) return;
   if (S.admin) {
@@ -775,7 +775,7 @@ async function writeEquipe(g, patch) {
 }
 function equipeView(g, asCoach) {
   const G = GROUPS[g], eq = S.equipes[g] || {}, box = h("div", { class: "stack" });
-  const M = g === "U10" ? "plateau" : "match";
+  const M = "match";
   const players = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g).sort((a, b) => (a[1].nom || "").localeCompare(b[1].nom || "", "fr"));
   if (g === "U19") box.append(champView());
   const saveBtn = (label, fn) => { const m = h("span", { class: "note" }); const b = h("button", { class: "btn small" }, label);
@@ -794,7 +794,7 @@ function equipeView(g, asCoach) {
 
   // homme du match / joueur du mois
   const hommes = (eq.hommes || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
-  const hm = h("div", { class: "card" }, h("h3", {}, g === "U10" ? "Joueur du plateau" : "Homme du match"));
+  const hm = h("div", { class: "card" }, h("h3", {}, g === "U10" ? "Joueur du match" : "Homme du match"));
   if (hommes.length) hm.append(h("div", { class: "hero-eq" }, hommes[0].nom), h("p", { class: "note" }, `${M[0].toUpperCase() + M.slice(1)} du ${fmtLong(hommes[0].date)}`),
     hommes.length > 1 ? h("p", { class: "note" }, "Avant : " + hommes.slice(1, 5).map(x => `${x.nom} (${fmtDate(x.date)})`).join(", ")) : "");
   else hm.append(h("p", { class: "note" }, `Personne encore désigné.`));
