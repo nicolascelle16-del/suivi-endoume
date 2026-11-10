@@ -1248,20 +1248,22 @@ function saisonCard(fid, f, parent) {
   card.append(h("div", { class: "row", style: "gap:6px" }, [["", "Toutes les notes"], ...G.crit].map(([k, lab]) =>
     h("button", { type: "button", class: "opt", "aria-pressed": String(crit === k), onclick: () => { S.saisonCrit = k; render(); } }, lab))));
   // données par mois
-  const months = [...new Set(notes.map(n => monthKey(n.date)))].sort();
+  const nbM = new Set(notes.map(n => monthKey(n.date))).size, parMois = nbM >= 2;
+  const kf = parMois ? monthKey : (d => String(d).slice(0, 10)), labK = parMois ? monthLab : (k => fmtDate(k));
+  const months = [...new Set(notes.map(n => kf(n.date)))].sort();
   const rows = months.map(k => {
-    const ns = notes.filter(n => monthKey(n.date) === k);
+    const ns = notes.filter(n => kf(n.date) === k);
     const e = ns.filter(n => n.type !== "Match").map(val).filter(v => v != null), m = ns.filter(n => n.type === "Match").map(val).filter(v => v != null);
-    const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && monthKey(x.date) === k);
+    const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && kf(x.date) === k);
     return { k, e: mean(e), ne: e.length, m: mean(m), nm: m.length, pres: p.length ? p.filter(x => x.p).length / p.length : null, np: p.length };
   });
-  if (months.length < 2) { card.append(h("p", { class: "note", style: "margin:0" }, "La courbe de la saison apparaît dès qu'il y a des notes sur 2 mois différents.")); }
+  if (months.length < 2 || notes.length < 4) { card.append(h("p", { class: "note", style: "margin:0" }, `La courbe apparaît dès 4 évaluations (${notes.length} pour l'instant).`)); }
   else {
-    const W = 680, H = 230, L = 34, R = 70, T = 16, B = 30;
+    const W = 560, H = 240, L = 30, R = 104, T = 16, B = 30;
     const x = i => L + i * (W - L - R) / (months.length - 1), y = v => T + (5 - v) * (H - T - B) / 4;
-    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution mois par mois${crit ? " : " + esc(G.crit.find(c => c[0] === crit)[1]) : ""}">`;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${parMois ? "Évolution mois par mois" : "Évolution séance par séance"}${crit ? " : " + esc(G.crit.find(c => c[0] === crit)[1]) : ""}">`;
     for (let v = 1; v <= 5; v++) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#2e2a2b" stroke-width="1"/><text x="${L - 10}" y="${y(v) + 4}" fill="#aaa294" font-size="12" text-anchor="end">${v}</text>`;
-    rows.forEach((r, i) => s += `<text x="${x(i)}" y="${H - 8}" fill="#aaa294" font-size="12" text-anchor="middle">${esc(monthLab(r.k))}</text>`);
+    rows.forEach((r, i) => s += `<text x="${x(i)}" y="${H - 8}" fill="#aaa294" font-size="12" text-anchor="middle">${esc(labK(r.k))}</text>`);
     s += `<line class="xh" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#aaa294" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>`;
     const labs = [];
     for (const [key, name] of [["e", "Entraînement"], ["m", "Match"]]) {
@@ -1288,21 +1290,21 @@ function saisonCard(fid, f, parent) {
       const on = () => {
         xh.setAttribute("x1", x(i)); xh.setAttribute("x2", x(i)); xh.setAttribute("visibility", "visible");
         const sb = svg.getBoundingClientRect(), hb = host.getBoundingClientRect(), k = sb.width / W;
-        showTip(tip, host, `<b>${esc(monthLab(r.k))}</b><span><i style="background:${SER.e}"></i>Entraînement : ${r.e == null ? "–" : n1(r.e) + lv(r.e)} <em>(${r.ne})</em></span><span><i style="background:${SER.m}"></i>Match : ${r.m == null ? "–" : n1(r.m) + lv(r.m)} <em>(${r.nm})</em></span><span>Présence : ${r.pres == null ? "–" : Math.round(r.pres * 100) + " %"}</span>`, sb.left - hb.left + x(i) * k, sb.top - hb.top + T * k + 20);
+        showTip(tip, host, `<b>${esc(labK(r.k))}</b><span><i style="background:${SER.e}"></i>Entraînement : ${r.e == null ? "–" : n1(r.e) + lv(r.e)} <em>(${r.ne})</em></span><span><i style="background:${SER.m}"></i>Match : ${r.m == null ? "–" : n1(r.m) + lv(r.m)} <em>(${r.nm})</em></span><span>Présence : ${r.pres == null ? "–" : Math.round(r.pres * 100) + " %"}</span>`, sb.left - hb.left + x(i) * k, sb.top - hb.top + T * k + 20);
       };
       rc.addEventListener("pointerenter", on); rc.addEventListener("click", on);
     });
     svg.addEventListener("pointerleave", () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); });
-    card.append(h("div", { class: "legend", style: "margin:0" }, h("span", {}, h("span", { class: "dot", style: `background:${SER.e}` }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: `background:${SER.m}` }), "Match"), h("span", {}, "moyenne du mois, sur 5")), host);
+    card.append(h("div", { class: "legend", style: "margin:0" }, h("span", {}, h("span", { class: "dot", style: `background:${SER.e}` }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: `background:${SER.m}` }), "Match"), h("span", {}, parMois ? "moyenne du mois, sur 5" : "note de la séance, sur 5")), host);
   }
   if (rows.length) {
     const open = !!S.saisonTable;
-    card.append(h("button", { type: "button", class: "linkbtn", style: "align-self:flex-start", "aria-expanded": String(open), onclick: () => { S.saisonTable = !open; render(); } }, open ? "Masquer les données" : "Voir les données mois par mois"));
+    card.append(h("button", { type: "button", class: "linkbtn", style: "align-self:flex-start", "aria-expanded": String(open), onclick: () => { S.saisonTable = !open; render(); } }, open ? "Masquer les données" : parMois ? "Voir les données mois par mois" : "Voir les données séance par séance"));
     if (open) card.append(h("div", { class: "tablebox" }, h("table", { class: "stats" },
-      h("thead", {}, h("tr", {}, h("th", {}, "Mois"), h("th", {}, "Entraînement"), h("th", {}, "Match"), ...G.crit.map(c => h("th", {}, ABBR[c[0]] || c[1])), h("th", {}, "Présence"))),
+      h("thead", {}, h("tr", {}, h("th", {}, parMois ? "Mois" : "Séance"), h("th", {}, "Entraînement"), h("th", {}, "Match"), ...G.crit.map(c => h("th", {}, ABBR[c[0]] || c[1])), h("th", {}, "Présence"))),
       h("tbody", {}, rows.map(r => {
         const ns = notes.filter(n => monthKey(n.date) === r.k);
-        return h("tr", {}, h("td", {}, monthLab(r.k)), h("td", {}, r.e == null ? "–" : `${n1(r.e)} (${r.ne})`), h("td", {}, r.m == null ? "–" : `${n1(r.m)} (${r.nm})`),
+        return h("tr", {}, h("td", {}, labK(r.k)), h("td", {}, r.e == null ? "–" : `${n1(r.e)} (${r.ne})`), h("td", {}, r.m == null ? "–" : `${n1(r.m)} (${r.nm})`),
           ...G.crit.map(c => h("td", {}, n1(mean(ns.map(n => n.crit && n.crit[c[0]]).filter(v => typeof v === "number"))))),
           h("td", {}, r.pres == null ? "–" : `${Math.round(r.pres * 100)} % (${r.np})`));
       })))));
