@@ -82,8 +82,8 @@ button.card:hover { border-color: var(--rouge); }
 .bars { display: flex; flex-direction: column; gap: 10px; }
 .barline { display: grid; grid-template-columns: minmax(120px, 170px) 1fr 52px; gap: 10px; align-items: center; font-size: 14px; }
 .track { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
-.fill { height: 100%; background: linear-gradient(90deg, var(--rouge-fonce), var(--rouge)); border-radius: 999px; }
-.fill.m { background: linear-gradient(90deg, var(--sable), var(--or)); }
+.fill { height: 100%; background: #e0182d; border-radius: 999px; }
+.fill.m { background: #b08c40; }
 .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 .legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
@@ -139,6 +139,19 @@ table.stats th, table.stats td { text-align: left; padding: 7px 8px; border-bott
 table.stats th { color: var(--muted); font-weight: 500; font-size: 13px; }
 .tablebox { overflow-x: auto; }
 .hero-eq { font-size: 18px; font-weight: 600; }
+.stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.stat { background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 6px; padding: 10px 12px; }
+.stat-l { font-family: var(--label); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.stat-v { font-family: var(--display); font-size: 34px; line-height: 1.05; color: var(--texte); font-variant-numeric: tabular-nums; }
+.stat-s { font-size: 12px; color: var(--muted); }
+.tip { position: absolute; z-index: 5; pointer-events: none; background: #0b0a0a; border: 1px solid var(--ligne); border-radius: 6px; padding: 8px 10px; font-size: 13px; display: flex; flex-direction: column; gap: 2px; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
+.tip[hidden] { display: none; }
+.tip i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
+.tip em { color: var(--muted); font-style: normal; }
+table.pres td { white-space: nowrap; }
+table.pres td.c, table.pres th.c { text-align: center; padding: 7px 4px; }
+table.pres td.pr { color: #9fe0b1; } table.pres td.ab { color: #ff9aa6; font-weight: 600; } table.pres td.nr { color: #5d5658; }
+table.pres tr.clickable { cursor: pointer; } table.pres tr.clickable:hover td { background: var(--surface-2); }
 .kicker { font-family: var(--label); font-style: italic; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; font-size: 13px; color: var(--or); }
 .login-hero { max-width: 420px; margin: 28px auto 0; background: var(--sable); border-radius: 6px 6px 0 0; padding: 22px 18px 18px; text-align: center; color: #fff; position: relative; overflow: hidden; }
 .login-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(118deg, transparent 0 88%, var(--rouge) 88% 93%, transparent 93%); pointer-events: none; }
@@ -761,6 +774,175 @@ function equipeView(g, asCoach) {
 }
 
 /* ---------- graphique d'évolution ---------- */
+/* ---------- ma saison : courbe par mois + données ---------- */
+const SER = { e: "#e0182d", m: "#b08c40" };
+const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const monthKey = d => d.slice(0, 7);
+const monthLab = k => { const [y, m] = k.split("-"); return MOIS[+m - 1] + " " + y.slice(2); };
+const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+function presStats(f, from) {
+  const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && (!from || x.date >= from));
+  const ok = p.filter(x => x.p).length;
+  return { n: p.length, ok, rate: p.length ? ok / p.length : null };
+}
+function tipBox() { return h("div", { class: "tip", role: "status", hidden: true }); }
+function showTip(tip, host, html, x, y) {
+  tip.innerHTML = html; tip.hidden = false;
+  const hb = host.getBoundingClientRect(), tw = tip.offsetWidth;
+  tip.style.left = Math.max(0, Math.min(hb.width - tw, x - tw / 2)) + "px"; tip.style.top = Math.max(0, y - tip.offsetHeight - 12) + "px";
+}
+function saisonCard(fid, f, parent) {
+  const g = groupOf(f), G = GROUPS[g], notes = sortedNotes(f);
+  const crit = S.saisonCrit && G.crit.some(c => c[0] === S.saisonCrit) ? S.saisonCrit : "";
+  const val = n => crit ? (n.crit && typeof n.crit[crit] === "number" ? n.crit[crit] : null) : noteAvg(n, g);
+  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, parent ? "Sa saison en chiffres" : "Ma saison en chiffres"));
+  // tuiles
+  const all = notes.map(n => noteAvg(n, g)).filter(v => v != null);
+  const first = mean(all.slice(0, 5)), last = mean(all.slice(-5));
+  const prog = all.length >= 6 ? last - first : null;
+  let best = null; notes.forEach(n => { const v = noteAvg(n, g); if (v != null && (!best || v > best.v)) best = { v, d: n.date, t: n.type }; });
+  const ps = presStats(f);
+  const nM = notes.filter(n => n.type === "Match").length;
+  const tile = (lab, v, sub) => h("div", { class: "stat" }, h("div", { class: "stat-l" }, lab), h("div", { class: "stat-v" }, v), sub ? h("div", { class: "stat-s" }, sub) : null);
+  card.append(h("div", { class: "stats-row" },
+    tile("Moyenne saison", all.length ? n1(mean(all)) : "–", "sur 5"),
+    tile("Progression", prog == null ? "–" : (prog >= 0 ? "+" : "−") + n1(Math.abs(prog)), prog == null ? "dès 6 évaluations" : "5 dernières vs 5 premières"),
+    tile("Meilleure note", best ? n1(best.v) : "–", best ? `${fmtDate(best.d)} · ${best.t}` : null),
+    tile("Évaluations", String(notes.length), `${notes.length - nM} entraînement${notes.length - nM > 1 ? "s" : ""} · ${nM} match${nM > 1 ? "s" : ""}`),
+    tile("Présence", ps.rate == null ? "–" : Math.round(ps.rate * 100) + " %", ps.n ? `${ps.ok} séance${ps.ok > 1 ? "s" : ""} sur ${ps.n}` : "pas encore d'appel")));
+  // filtre critère
+  card.append(h("div", { class: "row", style: "gap:6px" }, [["", "Toutes les notes"], ...G.crit].map(([k, lab]) =>
+    h("button", { type: "button", class: "opt", "aria-pressed": String(crit === k), onclick: () => { S.saisonCrit = k; render(); } }, lab))));
+  // données par mois
+  const months = [...new Set(notes.map(n => monthKey(n.date)))].sort();
+  const rows = months.map(k => {
+    const ns = notes.filter(n => monthKey(n.date) === k);
+    const e = ns.filter(n => n.type !== "Match").map(val).filter(v => v != null), m = ns.filter(n => n.type === "Match").map(val).filter(v => v != null);
+    const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && monthKey(x.date) === k);
+    return { k, e: mean(e), ne: e.length, m: mean(m), nm: m.length, pres: p.length ? p.filter(x => x.p).length / p.length : null, np: p.length };
+  });
+  if (months.length < 2) { card.append(h("p", { class: "note", style: "margin:0" }, "La courbe de la saison apparaît dès qu'il y a des notes sur 2 mois différents.")); }
+  else {
+    const W = 680, H = 230, L = 34, R = 70, T = 16, B = 30;
+    const x = i => L + i * (W - L - R) / (months.length - 1), y = v => T + (5 - v) * (H - T - B) / 4;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution mois par mois${crit ? " : " + esc(G.crit.find(c => c[0] === crit)[1]) : ""}">`;
+    for (let v = 1; v <= 5; v++) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#2e2a2b" stroke-width="1"/><text x="${L - 10}" y="${y(v) + 4}" fill="#aaa294" font-size="12" text-anchor="end">${v}</text>`;
+    rows.forEach((r, i) => s += `<text x="${x(i)}" y="${H - 8}" fill="#aaa294" font-size="12" text-anchor="middle">${esc(monthLab(r.k))}</text>`);
+    s += `<line class="xh" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#aaa294" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>`;
+    const labs = [];
+    for (const [key, name] of [["e", "Entraînement"], ["m", "Match"]]) {
+      const pts = rows.map((r, i) => r[key] == null ? null : [x(i), y(r[key]), r[key]]);
+      let seg = [], d = "";
+      pts.forEach(p => { if (p) seg.push(p); else { if (seg.length) d += "M" + seg.map(q => q[0].toFixed(1) + "," + q[1].toFixed(1)).join("L"); seg = []; } });
+      if (seg.length) d += "M" + seg.map(q => q[0].toFixed(1) + "," + q[1].toFixed(1)).join("L");
+      if (d) s += `<path d="${d}" fill="none" stroke="${SER[key]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      pts.forEach(p => { if (p) s += `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="${SER[key]}" stroke="#1b1819" stroke-width="2"/>`; });
+      const lp = [...pts].reverse().find(Boolean);
+      if (lp && rows[rows.length - 1][key] != null) labs.push({ y: lp[1], x: lp[0], t: `${name} ${n1(lp[2])}` });
+    }
+    labs.sort((a, b) => a.y - b.y); if (labs.length === 2 && labs[1].y - labs[0].y < 15) { labs[0].y -= (15 - (labs[1].y - labs[0].y)) / 2; labs[1].y = labs[0].y + 15; }
+    labs.forEach(l => s += `<text x="${l.x + 9}" y="${l.y + 4}" fill="#f5f2ec" font-size="12">${esc(l.t)}</text>`);
+    const colW = (W - L - R) / (months.length - 1);
+    rows.forEach((r, i) => s += `<rect class="hit" data-i="${i}" x="${x(i) - colW / 2}" y="${T}" width="${colW}" height="${H - T - B}" fill="transparent"/>`);
+    s += `</svg>`;
+    const host = h("div", { class: "chart", style: "position:relative" }); host.innerHTML = s;
+    const tip = tipBox(); host.append(tip);
+    const svg = host.querySelector("svg"), xh = svg.querySelector(".xh");
+    const lv = v => parent && v != null ? ` (${LEVELS[Math.round(v)]})` : "";
+    svg.querySelectorAll(".hit").forEach(rc => {
+      const i = +rc.dataset.i, r = rows[i];
+      const on = () => {
+        xh.setAttribute("x1", x(i)); xh.setAttribute("x2", x(i)); xh.setAttribute("visibility", "visible");
+        const sb = svg.getBoundingClientRect(), hb = host.getBoundingClientRect(), k = sb.width / W;
+        showTip(tip, host, `<b>${esc(monthLab(r.k))}</b><span><i style="background:${SER.e}"></i>Entraînement : ${r.e == null ? "–" : n1(r.e) + lv(r.e)} <em>(${r.ne})</em></span><span><i style="background:${SER.m}"></i>Match : ${r.m == null ? "–" : n1(r.m) + lv(r.m)} <em>(${r.nm})</em></span><span>Présence : ${r.pres == null ? "–" : Math.round(r.pres * 100) + " %"}</span>`, sb.left - hb.left + x(i) * k, sb.top - hb.top + T * k + 20);
+      };
+      rc.addEventListener("pointerenter", on); rc.addEventListener("click", on);
+    });
+    svg.addEventListener("pointerleave", () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); });
+    card.append(h("div", { class: "legend", style: "margin:0" }, h("span", {}, h("span", { class: "dot", style: `background:${SER.e}` }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: `background:${SER.m}` }), "Match"), h("span", {}, "moyenne du mois, sur 5")), host);
+  }
+  if (rows.length) {
+    const open = !!S.saisonTable;
+    card.append(h("button", { type: "button", class: "linkbtn", style: "align-self:flex-start", "aria-expanded": String(open), onclick: () => { S.saisonTable = !open; render(); } }, open ? "Masquer les données" : "Voir les données mois par mois"));
+    if (open) card.append(h("div", { class: "tablebox" }, h("table", { class: "stats" },
+      h("thead", {}, h("tr", {}, h("th", {}, "Mois"), h("th", {}, "Entraînement"), h("th", {}, "Match"), ...G.crit.map(c => h("th", {}, ABBR[c[0]] || c[1])), h("th", {}, "Présence"))),
+      h("tbody", {}, rows.map(r => {
+        const ns = notes.filter(n => monthKey(n.date) === r.k);
+        return h("tr", {}, h("td", {}, monthLab(r.k)), h("td", {}, r.e == null ? "–" : `${n1(r.e)} (${r.ne})`), h("td", {}, r.m == null ? "–" : `${n1(r.m)} (${r.nm})`),
+          ...G.crit.map(c => h("td", {}, n1(mean(ns.map(n => n.crit && n.crit[c[0]]).filter(v => typeof v === "number"))))),
+          h("td", {}, r.pres == null ? "–" : `${Math.round(r.pres * 100)} % (${r.np})`));
+      })))));
+  }
+  return card;
+}
+
+/* ---------- présences (coach) ---------- */
+function presencesView(g) {
+  const box = h("div", { class: "stack" });
+  const list = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g);
+  const per = S.presPer || "saison";
+  const d0 = new Date(); const from = per === "4s" ? new Date(d0.getTime() - 28 * 864e5).toISOString().slice(0, 10) : per === "mois" ? today().slice(0, 8) + "01" : "";
+  const sessMap = new Map();
+  for (const [, f] of list) for (const p of (Array.isArray(f.presences) ? f.presences : [])) {
+    if (!p || typeof p.date !== "string" || (from && p.date < from)) continue;
+    const k = p.date + "|" + (p.type || "Entraînement"); const s = sessMap.get(k) || { date: p.date, type: p.type || "Entraînement", ok: 0, n: 0 };
+    s.n++; if (p.p) s.ok++; sessMap.set(k, s);
+  }
+  const sess = [...sessMap.values()].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  box.append(h("div", { class: "bar", style: "margin:0" }, h("h2", {}, `Présences ${GROUPS[g].label}`),
+    h("div", { class: "row", style: "gap:6px" }, [["4s", "4 dernières semaines"], ["mois", "Ce mois"], ["saison", "Saison"]].map(([k, l]) => h("button", { type: "button", class: "opt", "aria-pressed": String(per === k), onclick: () => { S.presPer = k; render(); } }, l)))));
+  if (!sess.length) { box.append(h("div", { class: "empty" }, "Aucun appel sur cette période. Les présences se remplissent avec « Noter une séance » (bouton Présent / Absent) : tu peux faire juste l'appel sans mettre de notes.")); return box; }
+  const tot = sess.reduce((a, s) => a + s.n, 0), okT = sess.reduce((a, s) => a + s.ok, 0);
+  const rowsP = list.map(([fid, f]) => {
+    const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && (!from || x.date >= from)).sort((a, b) => a.date < b.date ? -1 : 1);
+    let streak = 0; for (let i = p.length - 1; i >= 0 && !p[i].p; i--) streak++;
+    const map = new Map(p.map(x => [x.date + "|" + (x.type || "Entraînement"), x.p]));
+    return { fid, f, n: p.length, ok: p.filter(x => x.p).length, rate: p.length ? p.filter(x => x.p).length / p.length : null, streak, map };
+  }).sort((a, b) => (a.rate == null ? 2 : a.rate) - (b.rate == null ? 2 : b.rate) || (a.f.nom || "").localeCompare(b.f.nom || "", "fr"));
+  const low = rowsP.filter(r => r.rate != null && (r.rate < 0.7 || r.streak >= 3)).length;
+  const tile = (lab, v, sub) => h("div", { class: "stat" }, h("div", { class: "stat-l" }, lab), h("div", { class: "stat-v" }, v), sub ? h("div", { class: "stat-s" }, sub) : null);
+  box.append(h("div", { class: "stats-row" },
+    tile("Taux de présence", Math.round(okT / tot * 100) + " %", `${okT} présences sur ${tot}`),
+    tile("Séances", String(sess.length), `dont ${sess.filter(s => s.type === "Match").length} match${sess.filter(s => s.type === "Match").length > 1 ? "s" : ""}`),
+    tile("Par séance", n1(okT / sess.length).replace(",0", ""), `joueurs présents en moyenne`),
+    tile("À surveiller", String(low), "moins de 70 % ou 3 absences de suite")));
+  // barres : présents par séance
+  const W = 680, H = 170, L = 30, R = 10, T = 12, B = 26, maxN = Math.max(...sess.map(s => s.n));
+  const bw = Math.min(28, (W - L - R) / sess.length - 2), x = i => L + (i + 0.5) * (W - L - R) / sess.length, y = v => T + (maxN - v) * (H - T - B) / maxN;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Joueurs présents par séance">`;
+  const stepY = maxN > 12 ? 5 : 2;
+  for (let v = 0; v <= maxN; v += stepY) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#2e2a2b"/><text x="${L - 8}" y="${y(v) + 4}" fill="#aaa294" font-size="12" text-anchor="end">${v}</text>`;
+  sess.forEach((se, i) => {
+    const top = y(se.ok), hh = H - B - top;
+    if (hh > 0) s += `<path d="M${x(i) - bw / 2},${H - B} V${top + Math.min(4, hh)} q0,-4 4,-4 h${bw - 8} q4,0 4,4 V${H - B} Z" fill="${se.type === "Match" ? SER.m : SER.e}"/>`;
+    s += `<rect class="hit" data-i="${i}" x="${x(i) - (W - L - R) / sess.length / 2}" y="${T}" width="${(W - L - R) / sess.length}" height="${H - T - B}" fill="transparent"/>`;
+  });
+  const stepX = Math.max(1, Math.ceil(sess.length / 8));
+  sess.forEach((se, i) => { if (i % stepX === 0 || i === sess.length - 1) s += `<text x="${x(i)}" y="${H - 8}" fill="#aaa294" font-size="12" text-anchor="middle">${esc(fmtDate(se.date))}</text>`; });
+  s += `</svg>`;
+  const host = h("div", { class: "chart", style: "position:relative" }); host.innerHTML = s; const tip = tipBox(); host.append(tip);
+  const svg = host.querySelector("svg");
+  svg.querySelectorAll(".hit").forEach(rc => { const i = +rc.dataset.i, se = sess[i]; const on = () => { const sb = svg.getBoundingClientRect(), hb = host.getBoundingClientRect(), k = sb.width / W;
+    showTip(tip, host, `<b>${esc(fmtLong(se.date))}</b><span>${esc(se.type)}</span><span>${se.ok} présent${se.ok > 1 ? "s" : ""} sur ${se.n}</span>`, sb.left - hb.left + x(i) * k, sb.top - hb.top + y(se.ok) * k); };
+    rc.addEventListener("pointerenter", on); rc.addEventListener("click", on); });
+  svg.addEventListener("pointerleave", () => { tip.hidden = true; });
+  box.append(h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Présents par séance"),
+    h("div", { class: "legend", style: "margin:0" }, h("span", {}, h("span", { class: "dot", style: `background:${SER.e}` }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: `background:${SER.m}` }), "Match")), host));
+  // tableau joueurs
+  const lastS = sess.slice(-10);
+  const t = h("table", { class: "stats pres" },
+    h("thead", {}, h("tr", {}, h("th", {}, "Joueur"), h("th", {}, "Taux"), h("th", {}, "Présent"), h("th", {}, "Absences de suite"), ...lastS.map(se => h("th", { class: "c", title: `${fmtLong(se.date)} · ${se.type}` }, fmtDate(se.date).replace(".", ""), se.type === "Match" ? h("small", {}, " M") : null)))),
+    h("tbody", {}, rowsP.map(r => h("tr", { class: "clickable", onclick: () => { S.view = "fiche"; S.sel = r.fid; render(); } },
+      h("td", {}, h("span", { class: "row", style: "gap:8px;align-items:center;flex-wrap:nowrap" }, avatarNode(r.fid, r.f.nom, "av-mini"), r.f.nom || "Sans nom")),
+      h("td", {}, r.rate == null ? "–" : h("span", { class: "row", style: "gap:6px;align-items:center;flex-wrap:nowrap" }, h("span", { class: "track", style: "width:60px" }, h("span", { class: "fill", style: `display:block;width:${Math.round(r.rate * 100)}%` })), `${Math.round(r.rate * 100)} %`),
+        r.rate != null && r.rate < 0.7 ? h("span", { class: "pill match", style: "margin-left:6px" }, "< 70 %") : null),
+      h("td", {}, r.n ? `${r.ok} / ${r.n}` : "–"),
+      h("td", {}, r.streak ? h("span", { class: r.streak >= 3 ? "pill match" : "" }, String(r.streak)) : "0"),
+      ...lastS.map(se => { const v = r.map.get(se.date + "|" + se.type); return h("td", { class: "c " + (v === true ? "pr" : v === false ? "ab" : "nr"), title: v === true ? "Présent" : v === false ? "Absent" : "Pas noté" }, v === true ? "✓" : v === false ? "✗" : "·"); })))));
+  box.append(h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Par joueur"), h("p", { class: "note", style: "margin:0" }, `✓ présent · ✗ absent · · pas noté. Les ${lastS.length} dernières séances de la période. Clique sur un joueur pour ouvrir sa fiche.`), h("div", { class: "tablebox" }, t)));
+  return box;
+}
+
 function chart(f) {
   const g = groupOf(f);
   const pts = sortedNotes(f).map(n => ({ d: n.date, t: n.type, v: noteAvg(n, g) })).filter(p => p.v != null);
@@ -770,13 +952,13 @@ function chart(f) {
   const x = i => L + (pts.length === 1 ? 0 : i * (W - L - R) / (pts.length - 1));
   const y = v => T + (5 - v) * (H - T - B) / 4;
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution de la note moyenne">`;
-  for (let v = 1; v <= 5; v++) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#34313a" stroke-width="1"/><text x="${L - 10}" y="${y(v) + 4}" fill="#a39e94" font-size="12" text-anchor="end">${v}</text>`;
+  for (let v = 1; v <= 5; v++) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#2e2a2b" stroke-width="1"/><text x="${L - 10}" y="${y(v) + 4}" fill="#a39e94" font-size="12" text-anchor="end">${v}</text>`;
   const line = pts.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
-  s += `<polygon points="${x(0)},${y(1)} ${line} ${x(pts.length - 1)},${y(1)}" fill="rgba(208,24,47,.16)"/>`;
-  s += `<polyline points="${line}" fill="none" stroke="#d0182f" stroke-width="2.5" stroke-linejoin="round"/>`;
+  s += `<polygon points="${x(0)},${y(1)} ${line} ${x(pts.length - 1)},${y(1)}" fill="rgba(224,24,45,.14)"/>`;
+  s += `<polyline points="${line}" fill="none" stroke="#e0182d" stroke-width="2.5" stroke-linejoin="round"/>`;
   pts.forEach((p, i) => {
     const last = i === pts.length - 1;
-    s += `<circle cx="${x(i)}" cy="${y(p.v)}" r="${last ? 6 : 4}" fill="${p.t === "Match" ? "#d6ac4e" : "#d0182f"}" stroke="#0e0d0f" stroke-width="2"><title>${esc(fmtDate(p.d))} · ${esc(p.t)} · ${n1(p.v)}</title></circle>`;
+    s += `<circle cx="${x(i)}" cy="${y(p.v)}" r="${last ? 6 : 4}" fill="${p.t === "Match" ? "#b08c40" : "#e0182d"}" stroke="#0e0d0f" stroke-width="2"><title>${esc(fmtDate(p.d))} · ${esc(p.t)} · ${n1(p.v)}</title></circle>`;
   });
   const step = Math.max(1, Math.ceil(pts.length / 7));
   pts.forEach((p, i) => { if (i % step === 0 || i === pts.length - 1) s += `<text x="${x(i)}" y="${H - 8}" fill="#a39e94" font-size="12" text-anchor="middle">${esc(fmtDate(p.d))}</text>`; });
@@ -864,11 +1046,12 @@ function ficheView(fid, f, asCoach) {
     }
   }
   const moy = h("div", { class: "card" }, h("h3", {}, parent ? "Où il en est" : "Moyenne par critère, sur 5"));
-  if (!parent && hasMatch) moy.append(h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:var(--or)" }), "Match")));
+  if (!parent && hasMatch) moy.append(h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:#b08c40" }), "Match")));
   moy.append(bars);
 
-  const evo = h("div", { class: "card" }, h("h3", {}, "Évolution"), parent ? null : h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:var(--or)" }), "Match")), chart(f));
+  const evo = h("div", { class: "card" }, h("h3", {}, "Évolution"), parent ? null : h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:#b08c40" }), "Match")), chart(f));
   wrap.append(h("div", { class: "two" }, moy, evo));
+  wrap.append(saisonCard(fid, f, parent));
 
   watchAutos(fid);
   wrap.append(autoCard(fid, f, asCoach));
@@ -923,9 +1106,11 @@ function coachView() {
   if (S.view === "list") app.append(h("div", { class: "subtabs", role: "tablist" },
     h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "joueurs"), onclick: () => { S.sub = "joueurs"; render(); } }, "Joueurs"),
     h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "equipe"), onclick: () => { S.sub = "equipe"; render(); } }, "Équipe"),
+    h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "presences"), onclick: () => { S.sub = "presences"; render(); } }, "Présences"),
     h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "acces"), onclick: () => { S.sub = "acces"; render(); } }, `Accès${Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]).length ? " (" + Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]).length + ")" : ""}`)));
   if (S.view === "list" && S.sub === "acces") { app.append(accesView()); return app; }
   if (S.view === "list" && S.sub === "equipe") { app.append(equipeView(S.tab, true)); return app; }
+  if (S.view === "list" && S.sub === "presences") { app.append(presencesView(S.tab)); return app; }
   if (S.view === "saisie") { app.append(saisieView()); return app; }
   if (S.view === "ajout") { app.append(ajoutView()); return app; }
 
