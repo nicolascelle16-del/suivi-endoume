@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Endoume Avatar Studio v2 · aperçu</title>
+<link href="https://fonts.googleapis.com/css2?family=Oranienbaum&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">
+<style>html,body{margin:0;height:100%;background:#0b0a0a;color:#f5f2ec;font-family:system-ui,sans-serif}#s{position:absolute;inset:0 0 54px 0}#b{position:absolute;left:0;right:0;bottom:0;height:54px;display:flex;gap:6px;align-items:center;padding:0 10px;overflow-x:auto}button{background:#262223;color:#fff;border:1px solid #3b3536;border-radius:4px;padding:6px 10px;white-space:nowrap}#m{position:absolute;inset:0;display:grid;place-content:center}</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head><body><div id="s"><div id="m">Chargement…</div></div><div id="b"></div>
+<span style="font-family:Oranienbaum;position:absolute;opacity:0">0</span><span style="font-family:'Barlow Condensed';font-weight:600;position:absolute;opacity:0">A</span>
+<script type="module">
+import { createViewer } from "./avatar3d.js?v=1";
+const P = [
+  { peau: 4, cheveux: 0, coupe: "ras", barbe: "non", maillot: "dom", num: "10", nomDos: "ENDOUME" },
+  { peau: 6, cheveux: 0, coupe: "court", barbe: "oui", maillot: "dom", num: "9", nomDos: "BUTEUR", corps: "puissante" },
+  { peau: 1, cheveux: 3, coupe: "court", barbe: "non", maillot: "ext", num: "4", nomDos: "CAPITAINE" },
+  { peau: 2, cheveux: 1, coupe: "long", barbe: "oui", maillot: "dom", num: "8", nomDos: "MILIEU", corps: "fine" },
+  { peau: 5, cheveux: 0, coupe: "chauve", barbe: "oui", maillot: "gb", num: "1", nomDos: "GARDIEN", crampons: "#d9172e" },
+  { peau: 3, cheveux: 6, coupe: "chignons", barbe: "non", maillot: "dom", num: "7", nomDos: "AILIER", crampons: "#f3f0ea" }
+];
+try { await document.fonts.load("270px Oranienbaum"); await document.fonts.load("600 46px 'Barlow Condensed'"); } catch (e) {}
+const v = await createViewer(document.getElementById("s"), P[0]); document.getElementById("m").remove(); window.v = v; window.P = P;
+const b = document.getElementById("b"), add = (t, f) => { const x = document.createElement("button"); x.textContent = t; x.onclick = f; b.append(x); };
+P.forEach((p, i) => add("Joueur " + (i + 1), () => v.set(p)));
+add("Visage", () => v.face()); add("Dos", () => v.back()); add("Recentrer", () => v.reset()); let on = false; add("Rotation", () => v.autoRotate(on = !on));
+</script></body></html>
