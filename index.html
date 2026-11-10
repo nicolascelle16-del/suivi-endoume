@@ -789,7 +789,7 @@ function equipeView(g, asCoach) {
 
   box.append(obj);
   if (g === "U19") box.append(composCard(g, asCoach));
-  box.append(votesCard(g, asCoach));
+  if (g !== "U10") box.append(votesCard(g, asCoach));
   box.append(analysesCard(g, asCoach));
 
   // homme du match / joueur du mois
