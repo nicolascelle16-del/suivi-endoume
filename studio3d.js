@@ -32,7 +32,7 @@ function sculpt(p, S) {
   let { x, y, z } = p;
   y *= S.sy; x *= S.sx;
   if (y < 0) { const t = Math.pow(-y / S.sy, 1.35); x *= 1 - .3 * S.jaw * t; z *= 1 - .16 * t; }
-  if (y < -1.0 * S.chin) y = -1.0 * S.chin + (y + 1.0 * S.chin) * .35;
+  const cb = -.78 * S.sy * S.chin; if (y < cb) y = cb + (y - cb) * .55;
   if (z < 0) z *= 1.07;                       // crâne
   if (y > .2 && z > 0) z *= .97;              // front
   if (z > 0) {
@@ -91,7 +91,7 @@ function canvasTex(w, h, draw) {
   const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
 }
-function jerseyTexture(kit, cfg) {
+function jerseyTexture(kit, cfg, plain) {
   return canvasTex(2048, 1024, (x, W, H) => {
     x.fillStyle = kit.base; x.fillRect(0, 0, W, H);
     if (kit.stripe) {
@@ -106,7 +106,7 @@ function jerseyTexture(kit, cfg) {
     // ourlet bas
     x.fillStyle = kit.collar; x.fillRect(0, H - 34, W, 34); x.fillStyle = kit.trim; x.fillRect(0, H - 38, W, 6);
     // dos : nom + numéro (centré sur la couture u=0/1, dessiné des deux côtés)
-    const num = String(cfg.num || "").slice(0, 2), nom = String(cfg.nomDos || "").toUpperCase().slice(0, 12);
+    const num = plain ? "" : String(cfg.num || "").slice(0, 2), nom = plain ? "" : String(cfg.nomDos || "").toUpperCase().slice(0, 12);
     x.textAlign = "center"; x.textBaseline = "middle";
     for (const cx of [0, W]) {
       if (nom) { x.font = "600 64px 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif"; if (kit.numEdge) { x.lineWidth = 8; x.strokeStyle = kit.numEdge; x.strokeText(nom, cx, 250); } x.fillStyle = kit.num; x.fillText(nom, cx, 250); }
@@ -232,7 +232,7 @@ export function buildCharacter(cfg, crestTex) {
   }
   // short
   const shM = new THREE.MeshStandardMaterial({ map: shortsTexture(shortsC, kit), roughness: .75 });
-  const pel = new THREE.LatheGeometry([[.001, 1.46], [.36, 1.46], [.39, 1.36], [.4, 1.2], [.39, 1.12]].map(([r, y]) => new THREE.Vector2(r, y * H)), 40);
+  const pel = new THREE.LatheGeometry([[.001, 1.42], [.35, 1.42], [.39, 1.34], [.4, 1.2], [.39, 1.12]].map(([r, y]) => new THREE.Vector2(r, y * H)), 40);
   const pelvis = new THREE.Mesh(pel, shM); pelvis.scale.set(W, 1, .66); pelvis.castShadow = true; body.add(pelvis);
   for (const s of [-1, 1]) { const leg = limb(V3(s * .18 * W, 1.24 * H, 0), V3(s * .2 * W, .95 * H, .01), .19 * Math.min(W, 1.08), .175 * Math.min(W, 1.08), shM); leg.scale.z = .9; body.add(leg); }
 
@@ -255,12 +255,12 @@ export function buildCharacter(cfg, crestTex) {
 
   // bras
   const arms = [];
-  const sleeveM = kit.sleeve === "stripes" ? jersey : new THREE.MeshStandardMaterial({ color: kit.base, roughness: .72 });
+  const sleeveM = kit.sleeve === "stripes" ? new THREE.MeshStandardMaterial({ map: jerseyTexture(kit, cfg, true), roughness: .72 }) : new THREE.MeshStandardMaterial({ color: kit.base, roughness: .72 });
   for (const s of [-1, 1]) {
     const g = new THREE.Group(); body.add(g); arms.push(g);
     const sh = V3(s * .46 * W, 1.99 * H, 0), el = V3(s * .58 * W, 1.52 * H, -.02), wr = V3(s * .63 * W, 1.12 * H, .05);
-    g.add(limb(sh, el, .085 * T, .07 * T, skin, .01 * T));
-    g.add(limb(el, wr, .068 * T, .05 * T, skin, .008 * T));
+    g.add(limb(sh, el, .1 * T, .078 * T, skin, .014 * T));
+    g.add(limb(el, wr, .076 * T, .056 * T, skin, .012 * T));
     const sleeve = limb(sh.clone().add(V3(-s * .02, .02, 0)), sh.clone().lerp(el, .5), .14 * Math.max(T, 1), .12 * Math.max(T, 1), sleeveM); g.add(sleeve);
     const cuffP = sh.clone().lerp(el, .5);
     const cuff = new THREE.Mesh(new THREE.TorusGeometry(.12 * Math.max(T, 1), .012, 6, 24), trimM); cuff.position.copy(cuffP); cuff.quaternion.setFromUnitVectors(V3(0, 0, 1), el.clone().sub(sh).normalize()); g.add(cuff);
@@ -269,11 +269,11 @@ export function buildCharacter(cfg, crestTex) {
   }
 
   // cou (long et fin, style caricature)
-  const neck = limb(V3(0, neckBase - .08, 0), V3(0, neckBase + .3, .01), .085, .072, skin); body.add(neck);
+  const neck = limb(V3(0, neckBase - .08, 0), V3(0, neckBase + .3, .01), .105, .09, skin); body.add(neck);
   const adam = new THREE.Mesh(new THREE.SphereGeometry(.018, 10, 8), skin); adam.position.set(0, neckBase + .09, .07); body.add(adam);
 
   // tête
-  const head = new THREE.Group(); head.position.set(0, neckBase + .68, .02); body.add(head);
+  const head = new THREE.Group(); head.position.set(0, neckBase + .6, .02); body.add(head);
   const R = .42, S = headShape(cfg.visage);
   const hg = new THREE.Group(); hg.scale.setScalar(R); head.add(hg);
   const skull = new THREE.Mesh(headGeometry(S), skin); skull.castShadow = true; hg.add(skull);
@@ -292,11 +292,11 @@ export function buildCharacter(cfg, crestTex) {
   const ser = cfg.expr === "serieux", ronde = cfg.formeYeux === "rond";
   const eyes = [];
   for (const s of [-1, 1]) {
-    const e = new THREE.Group(); e.position.set(s * .34 * S.sx, .07, .76); hg.add(e);
-    const er = .16;
+    const e = new THREE.Group(); e.position.set(s * .33 * S.sx, .09, .83); hg.add(e);
+    const er = .175;
     const ball = new THREE.Mesh(new THREE.SphereGeometry(er, 32, 24), eyeWhite); e.add(ball);
     const iris = new THREE.Mesh(new THREE.SphereGeometry(er * 1.005, 32, 12, 0, Math.PI * 2, 0, .62), irisM); iris.rotation.x = Math.PI / 2; e.add(iris);
-    const hl = new THREE.Mesh(new THREE.SphereGeometry(.018, 8, 6), new THREE.MeshBasicMaterial({ color: "#ffffff" })); hl.position.set(.04, .045, er * .98); e.add(hl);
+    const hl = new THREE.Mesh(new THREE.SphereGeometry(.018, 8, 6), new THREE.MeshBasicMaterial({ color: "#ffffff" })); hl.position.set(.045, .05, er * .99); e.add(hl);
     // paupières
     const lidTop = ser ? .6 : ronde ? .25 : .42, lidBot = ronde ? 2.55 : 2.35;
     const up = new THREE.Mesh(new THREE.SphereGeometry(er * 1.09, 32, 16, 0, Math.PI * 2, 0, lidTop + .55), lidM); up.rotation.x = -.15; e.add(up);
@@ -317,7 +317,7 @@ export function buildCharacter(cfg, crestTex) {
   }
   // nez
   const nw = cfg.nez === "fin" ? .8 : cfg.nez === "large" ? 1.25 : 1;
-  const noseP = [[.001, .26], [.05, .2], [.075, .05], [.105, -.08], [.12, -.16], [.06, -.215], [.001, -.22]].map(([r, y]) => new THREE.Vector2(r, y));
+  const noseP = [[.001, .3], [.06, .22], [.085, .05], [.12, -.08], [.14, -.17], [.07, -.235], [.001, -.24]].map(([r, y]) => new THREE.Vector2(r, y));
   const nose = new THREE.Mesh(new THREE.LatheGeometry(noseP, 24), skin); nose.scale.set(nw * 1.1, 1, 1.55); nose.position.set(0, -.16, .93); nose.rotation.x = .1; hg.add(nose);
   for (const s of [-1, 1]) { const al = new THREE.Mesh(new THREE.SphereGeometry(.07 * nw, 16, 12), skin); al.position.set(s * .1 * nw, -.33, .9); hg.add(al);
     const ns = new THREE.Mesh(new THREE.SphereGeometry(.03, 8, 6), new THREE.MeshStandardMaterial({ color: mix(skinC, "#000", .6) })); ns.scale.set(1, .6, .6); ns.position.set(s * .055 * nw, -.37, .93); hg.add(ns); }
@@ -329,7 +329,7 @@ export function buildCharacter(cfg, crestTex) {
   if (cfg.expr === "dents") {
     const inside = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), new THREE.MeshStandardMaterial({ color: "#2a0e0e", side: THREE.DoubleSide }));
     inside.scale.set(.27, .11, .08); inside.position.set(0, -.575, .9); hg.add(inside);
-    const teeth = new THREE.Mesh(new THREE.BoxGeometry(.44, .06, .05, 6, 1, 1), new THREE.MeshPhysicalMaterial({ color: "#fbf8f1", roughness: .2, clearcoat: 1 })); teeth.position.set(0, -.545, .935); hg.add(teeth);
+    const teeth = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(mouthPts(-.045, .9, .005).map(p => p.add(V3(0, 0, -.015)))), 24, .045, 8, false), new THREE.MeshPhysicalMaterial({ color: "#fbf8f1", roughness: .2, clearcoat: 1 })); teeth.scale.z = .7; hg.add(teeth);
   }
   const upL = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(mouthPts(.035, .9, 0)), 24, .028, 8, false), lipM); hg.add(upL);
   const loL = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(mouthPts(cfg.expr === "dents" ? -.13 : -.035, .9, cfg.expr === "dents" ? .02 : .025)), 24, .036, 8, false), lipM); hg.add(loL);
@@ -376,8 +376,9 @@ export function buildCharacter(cfg, crestTex) {
     const long = sty === "long";
     const roots = scalpPoints(long ? 70 : 64, d => !(d.z > .45 && Math.abs(d.x) < .35 && d.y < .7) || !long);
     const g = tubeStrands(S, roots, (r, n, d) => {
-      const out = n.clone().multiplyScalar(.12), front = d.z > .35 && Math.abs(d.x) < .5;
-      const len = long ? 1.55 + .2 * Math.sin(d.x * 9) : (front ? .45 : 1.05 + .15 * Math.sin(d.x * 7 + d.z * 5));
+      const out = n.clone().multiplyScalar(.12), front = d.z > .25 && Math.abs(d.x) < .6;
+      if (front) { const p0 = r.clone().sub(n.clone().multiplyScalar(.02)), p1 = r.clone().add(out), p2 = p1.clone().add(V3(d.x * .25, .04, .1)), p3 = p2.clone().add(V3(d.x * .3, -.1, .05)); return [p0, p1, p2, p3]; }
+      const len = long ? 1.55 + .2 * Math.sin(d.x * 9) : 1.05 + .15 * Math.sin(d.x * 7 + d.z * 5);
       const side = V3(d.x, 0, d.z).normalize();
       const p0 = r.clone().sub(n.clone().multiplyScalar(.02)), p1 = r.clone().add(out);
       const sweep = front ? V3(d.x * .6, -.1, .25) : side.clone().multiplyScalar(.3);
