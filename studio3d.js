@@ -237,7 +237,7 @@ export function buildCharacter(cfg, crestTex) {
   for (const s of [-1, 1]) { const leg = limb(V3(s * .18 * W, 1.24 * H, 0), V3(s * .2 * W, .95 * H, .01), .19 * Math.min(W, 1.08), .175 * Math.min(W, 1.08), shM); leg.scale.z = .9; body.add(leg); }
 
   // torse (maillot)
-  const prof = [[.001, 1.36], [.36, 1.36], [.39, 1.5], [.41, 1.7], [.45, 1.88], [.5, 2.0], [.49, 2.07], [.4, 2.13], [.22, 2.18], [.13, 2.2]].map(([r, y]) => new THREE.Vector2(r, 1.36 * H + (y - 1.36) * H));
+  const prof = [[.001, 1.36], [.36, 1.36], [.39, 1.5], [.41, 1.7], [.45, 1.86], [.475, 1.96], [.475, 2.03], [.44, 2.09], [.34, 2.15], [.2, 2.19], [.12, 2.2]].map(([r, y]) => new THREE.Vector2(r, 1.36 * H + (y - 1.36) * H));
   const torsoG = new THREE.LatheGeometry(prof, 64, Math.PI, Math.PI * 2);
   const torso = new THREE.Mesh(torsoG, jersey); torso.scale.set(W, 1, .62); torso.castShadow = true; body.add(torso);
   const neckBase = 2.2 * H;
@@ -355,17 +355,16 @@ export function buildCharacter(cfg, crestTex) {
     if (sty === "ras" || sty === "crete") addShell(hairline, capThick, new THREE.MeshStandardMaterial({ color: mix(hairC, skinC, .38), roughness: .95 }));
     else if (sty === "degrade") { addShell(hairline, .015, fadeM); addShell(d => hairline(d) && d.y > .42, .07, hairM); }
     else if (sty === "nattes") addShell(hairline, .012, fadeM);
-    else addShell(hairline, d => capThick * (d.y > .3 ? 1 : .6), hairM);
+    else if (sty !== "afro") addShell(hairline, d => capThick * (d.y > .3 ? 1 : .6), hairM);
   }
   if (sty === "flattop") {
     const ft = new THREE.Mesh(new THREE.CylinderGeometry(.74 * S.sx, .82 * S.sx, .55, 40, 1), hairM); ft.position.y = .98 * S.sy; ft.scale.z = .95; ft.castShadow = true; hg.add(ft);
     const top = new THREE.Mesh(new THREE.CylinderGeometry(.74 * S.sx, .74 * S.sx, .02, 40), new THREE.MeshStandardMaterial({ color: mix(hairC, "#fff", .15), roughness: .9 })); top.position.y = 1.26 * S.sy; top.scale.z = .95; hg.add(top);
   }
   if (sty === "afro") {
-    const ag = new THREE.SphereGeometry(1, 64, 48), p = ag.attributes.position, v = new THREE.Vector3();
-    for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const n = 1 + .05 * Math.sin(v.x * 17) * Math.sin(v.y * 15) * Math.sin(v.z * 13) + .03 * Math.sin(v.x * 31 + v.y * 23); p.setXYZ(i, v.x * n, v.y * n, v.z * n); }
-    ag.computeVertexNormals();
-    const af = new THREE.Mesh(ag, new THREE.MeshStandardMaterial({ color: hairC, roughness: 1 })); af.scale.set(1.42 * S.sx, 1.22, 1.3); af.position.set(0, .48, -.12); af.castShadow = true; hg.add(af);
+    const noise = d => 1 + .1 * Math.sin(d.x * 19) * Math.sin(d.y * 17) * Math.sin(d.z * 15) + .06 * Math.sin(d.x * 37 + d.y * 29 + d.z * 23);
+    const vol = d => (.1 + .5 * sstep(-.45, .75, d.y) * (d.z > .3 ? 1 - .55 * sstep(.3, .9, d.z) * sstep(.75, .2, d.y) : 1)) * noise(d);
+    const af = new THREE.Mesh(shellGeometry(S, hairline, vol), new THREE.MeshStandardMaterial({ color: hairC, roughness: 1, side: THREE.DoubleSide })); af.castShadow = true; hg.add(af);
   }
   if (sty === "boucle" || sty === "long") {
     const pts = scalpPoints(sty === "long" ? 120 : 160, d => d.y > (sty === "long" ? .25 : .1));

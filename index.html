@@ -438,7 +438,7 @@ const STUDIO_OPTS = {
 };
 const ST_COLORS = { yeux: ["#3a2316", "#6b4423", "#2f6a96", "#3f7a48", "#6f6f6f"], tissu: ["#0c0b0b", "#f3f0ea", "#d9172e", "#b08c40"], crampons: ["#111111", "#f3f0ea", "#d9172e", "#c9a85a", "#2e4f9a", "#ff4f8b"] };
 let studioMod = null;
-async function loadStudio() { if (!studioMod) studioMod = await import("./studio3d.js?v=2"); return studioMod; }
+async function loadStudio() { if (!studioMod) studioMod = await import("./studio3d.js?v=3"); return studioMod; }
 function closeStudio() { const o = document.getElementById("studio"); if (o) { if (o._eng) o._eng.dispose(); o.remove(); } document.body.style.overflow = ""; }
 async function openStudio(uid) {
   closeStudio();
