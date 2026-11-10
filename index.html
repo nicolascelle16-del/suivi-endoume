@@ -189,6 +189,7 @@ table.pres tr.clickable { cursor: pointer; } table.pres tr.clickable:hover td { 
 .st-grp input[type=range] { flex: 1; accent-color: var(--rouge); }
 .st-save { padding: 12px 14px; border-top: 1px solid var(--ligne); display: flex; flex-direction: column; gap: 6px; flex: none; }
 @media (max-width: 820px) { .st-body { grid-template-columns: 1fr; grid-template-rows: minmax(260px, 46vh) 1fr; } .st-left { min-height: 260px; } .st-panel { border-left: 0; border-top: 1px solid var(--ligne); } .studio.nopanel .st-body { grid-template-rows: 1fr; } .st-tools .note { display: none; } }
+.pill.ok { border-color: #2f6b41; color: #9fe0b1; } .pill.no { border-color: #8e0e1c; color: #ff9aa6; }
 .kicker { font-family: var(--label); font-style: italic; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; font-size: 13px; color: var(--or); }
 .login-hero { max-width: 420px; margin: 28px auto 0; background: var(--sable); border-radius: 6px 6px 0 0; padding: 22px 18px 18px; text-align: center; color: #fff; position: relative; overflow: hidden; }
 .login-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(118deg, transparent 0 88%, var(--rouge) 88% 93%, transparent 93%); pointer-events: none; }
@@ -239,7 +240,7 @@ const isTemp = fid => typeof fid === "string" && fid.startsWith("j-");
 
 const S = { db: null, user: null, me: null, admin: false, demo: false, demoAs: "coach",
   fiches: {}, loaded: false, slow: false, tab: "U19", view: "list", sel: null, saisie: null,
-  myFiche: undefined, flash: "", avatars: {}, objectifs: {}, avDraft: null, avEdit: false, inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, votants: {}, convoc: {}, compoDraft: {}, compoSel: {}, voteDraft: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
+  myFiche: undefined, flash: "", avatars: {}, objectifs: {}, avDraft: null, avEdit: false, inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, votants: {}, seances: {}, reponses: {}, convoc: {}, compoDraft: {}, compoSel: {}, voteDraft: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
 
 /* ---------- petits outils ---------- */
 { const _ap = Element.prototype.append; Element.prototype.append = function (...k) { return _ap.apply(this, k.filter(x => x != null && x !== false)); }; }
@@ -1287,6 +1288,74 @@ function saisonCard(fid, f, parent) {
   return card;
 }
 
+/* ---------- séances à venir : les joueurs annoncent présent / absent ---------- */
+const jourLong = d => { try { const t = new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); return t.charAt(0).toUpperCase() + t.slice(1); } catch (e) { return d; } };
+const seanceTitre = s => [jourLong(s.date), s.type, s.heure ? s.heure.replace(":", "h") : ""].filter(Boolean).join(" · ");
+const seancesOf = (g, upcoming) => Object.entries(S.seances).filter(([, s]) => s && s.groupe === g && (!upcoming || s.date >= today())).sort((a, b) => (a[1].date + (a[1].heure || "")) < (b[1].date + (b[1].heure || "")) ? -1 : 1);
+function watchSeance(sid) {
+  if (S.subs["r-" + sid] || S.demo) return;
+  if (S.admin) S.subs["r-" + sid] = S.db.collection("seances/" + sid + "/reponses").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.reponses[sid] = n; softRender(); }, () => {});
+  else S.subs["r-" + sid] = S.db.doc("seances/" + sid + "/reponses/" + S.me).onSnapshot(d => { S.reponses[sid] = d.exists ? { [S.me]: d.data() } : {}; softRender(); }, () => {});
+}
+function dispoCard(g, parent) {
+  const list = seancesOf(g, true).slice(0, 6);
+  if (!list.length) return null;
+  const card = h("div", { class: "card stack", style: "margin-bottom:12px" }, h("h3", { style: "margin:0" }, "Prochaines séances"), h("p", { class: "note", style: "margin:0" }, parent ? "Indique si ton enfant sera là : ça aide le coach à préparer la séance." : "Dis au coach si tu seras là : ça l'aide à préparer la séance."));
+  for (const [sid, s] of list) {
+    watchSeance(sid);
+    const cur = (S.reponses[sid] || {})[S.me], m = h("span", { class: "note" });
+    const send = async (p, motif) => {
+      m.className = "note"; m.textContent = "Envoi…";
+      try { const d = { p, motif: p ? "" : String(motif || "").slice(0, 200), at: new Date().toISOString() }; await setDoc(fsDoc(fs, "seances/" + sid + "/reponses/" + S.me), d); S.reponses[sid] = { [S.me]: d }; render(); }
+      catch (e) { m.className = "err"; m.textContent = "Échec : réessaie."; }
+    };
+    const item = h("div", { class: "hitem stack", style: "gap:8px" }, h("div", { class: "hhead" }, h("strong", {}, seanceTitre(s)), cur ? h("span", { class: "pill " + (cur.p ? "ok" : "no") }, cur.p ? "Tu as répondu : présent" : "Tu as répondu : absent") : h("span", { class: "pill" }, "Pas encore répondu")));
+    if (s.note) item.append(h("p", { class: "note", style: "margin:0" }, s.note));
+    item.append(h("div", { class: "row", style: "align-items:center" },
+      h("button", { class: "toggle", "aria-pressed": String(!!cur && cur.p === true), onclick: () => send(true) }, "Présent"),
+      h("button", { class: "toggle", "aria-pressed": String(!!cur && cur.p === false), onclick: () => send(false, cur && cur.motif) }, "Absent"), m));
+    if (cur && cur.p === false) {
+      const mo = h("input", { type: "text", maxlength: "200", id: "motif-" + sid, placeholder: "Raison (facultatif) : blessure, travail, école…", value: cur.motif || "", style: "flex:1;min-width:200px" });
+      item.append(h("div", { class: "row", style: "align-items:center" }, mo, h("button", { class: "btn ghost small", onclick: () => send(false, mo.value) }, "Envoyer la raison")));
+    }
+    card.append(item);
+  }
+  return card;
+}
+function seancesCoachCard(g) {
+  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Séances à venir : qui sera là ?"));
+  const date = h("input", { type: "date", id: "sc-date", value: today() }), heure = h("input", { type: "time", id: "sc-heure" });
+  const type = h("select", { id: "sc-type" }, h("option", { value: "Entraînement" }, "Entraînement"), h("option", { value: "Match" }, "Match"));
+  const note = h("input", { type: "text", id: "sc-note", maxlength: "120", placeholder: "Info (facultatif) : lieu, rendez-vous…", style: "flex:1;min-width:200px" });
+  const msg = h("span", { class: "note" });
+  const go = h("button", { class: "btn small" }, "Annoncer la séance");
+  go.onclick = async () => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date.value)) { msg.className = "err"; msg.textContent = "Choisis une date."; return; }
+    if (seancesOf(g).some(([, s]) => s.date === date.value && s.type === type.value)) { msg.className = "err"; msg.textContent = "Cette séance est déjà annoncée."; return; }
+    go.disabled = true;
+    try { await S.db.doc("seances/" + nid()).set({ groupe: g, date: date.value, type: type.value, heure: heure.value || "", note: note.value.trim().slice(0, 120), at: new Date().toISOString() }); note.value = ""; msg.className = "ok"; msg.textContent = "Séance annoncée : les joueurs peuvent répondre."; }
+    catch (e) { msg.className = "err"; msg.textContent = "Échec : réessaie."; }
+    go.disabled = false;
+  };
+  card.append(h("div", { class: "row", style: "align-items:flex-end" }, h("label", { class: "field" }, "Date", date), h("label", { class: "field" }, "Heure", heure), h("label", { class: "field" }, "Type", type), h("label", { class: "field", style: "flex:1;min-width:200px" }, "Info", note)),
+    h("div", { class: "row", style: "align-items:center" }, go, msg));
+  const list = seancesOf(g, true);
+  if (!list.length) { card.append(h("p", { class: "note", style: "margin:0" }, "Aucune séance annoncée. Annonce la prochaine : chaque joueur verra la question « Présent / Absent » en ouvrant le site.")); return card; }
+  const players = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g).sort((a, b) => (a[1].nom || "").localeCompare(b[1].nom || "", "fr"));
+  for (const [sid, s] of list) {
+    watchSeance(sid);
+    const rep = S.reponses[sid] || {}, oui = [], non = [], rien = [], sans = [];
+    for (const [fid, f] of players) { const r = rep[fid]; if (isTemp(fid)) sans.push(f.nom); else if (!r) rien.push(f.nom); else if (r.p) oui.push(f.nom); else non.push(f.nom + (r.motif ? ` (${r.motif})` : "")); }
+    const line = (lab, cls, arr) => h("div", {}, h("span", { class: "pill " + cls, style: "margin-right:8px" }, `${lab} · ${arr.length}`), h("span", { style: "font-size:14px" }, arr.join(", ") || "–"));
+    const del = h("button", { class: "linkbtn danger" }, "Supprimer");
+    del.onclick = async () => { if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer la suppression"; return; }
+      try { for (const uid of Object.keys(rep)) { try { await S.db.doc("seances/" + sid + "/reponses/" + uid).delete(); } catch (e) {} } await S.db.doc("seances/" + sid).delete(); } catch (e) { del.textContent = "Échec"; } };
+    card.append(h("div", { class: "hitem stack", style: "gap:8px" }, h("div", { class: "hhead" }, h("strong", {}, seanceTitre(s)), del), s.note ? h("p", { class: "note", style: "margin:0" }, s.note) : null,
+      line("Présents", "ok", oui), line("Absents", "no", non), line("Sans réponse", "", rien), sans.length ? line("Compte non relié", "", sans) : null));
+  }
+  return card;
+}
+
 /* ---------- présences (coach) ---------- */
 function presencesView(g) {
   const box = h("div", { class: "stack" });
@@ -1302,6 +1371,7 @@ function presencesView(g) {
   const sess = [...sessMap.values()].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
   box.append(h("div", { class: "bar", style: "margin:0" }, h("h2", {}, `Présences ${GROUPS[g].label}`),
     h("div", { class: "row", style: "gap:6px" }, [["4s", "4 dernières semaines"], ["mois", "Ce mois"], ["saison", "Saison"]].map(([k, l]) => h("button", { type: "button", class: "opt", "aria-pressed": String(per === k), onclick: () => { S.presPer = k; render(); } }, l)))));
+  box.append(seancesCoachCard(g));
   if (!sess.length) { box.append(h("div", { class: "empty" }, "Aucun appel sur cette période. Les présences se remplissent avec « Noter une séance » (bouton Présent / Absent) : tu peux faire juste l'appel sans mettre de notes.")); return box; }
   const tot = sess.reduce((a, s) => a + s.n, 0), okT = sess.reduce((a, s) => a + s.ok, 0);
   const rowsP = list.map(([fid, f]) => {
@@ -1552,16 +1622,25 @@ function saisieView() {
   const date = h("input", { type: "date", id: "s-date", value: s.date, oninput: e => s.date = e.target.value });
   const type = h("select", { id: "s-type", onchange: e => s.type = e.target.value },
     h("option", { value: "Entraînement", selected: s.type === "Entraînement" }, "Entraînement"),
-    h("option", { value: "Match", selected: s.type === "Match" }, S.tab === "U10" ? "Plateau / match" : "Match"));
+    h("option", { value: "Match", selected: s.type === "Match" }, "Match"));
+  date.addEventListener("change", () => render()); type.addEventListener("change", () => render());
+  const annS = seancesOf(S.tab).find(([, x]) => x.date === s.date && x.type === s.type), ann = annS ? (watchSeance(annS[0]), S.reponses[annS[0]] || {}) : null;
   box.append(h("div", { class: "card row" }, h("label", { class: "field" }, "Date", date), h("label", { class: "field" }, "Type", type),
     h("p", { class: "note", style: "margin:0;flex:1;min-width:200px" }, "Touche une note de 1 à 5 par critère. Les joueurs marqués absents ne sont pas enregistrés.")));
   const ids = Object.keys(s.rows).sort((a, b) => (S.fiches[a].nom || "").localeCompare(S.fiches[b].nom || "", "fr"));
+  if (ann) {
+    const nNo = ids.filter(fid => ann[fid] && ann[fid].p === false).length, nYes = ids.filter(fid => ann[fid] && ann[fid].p === true).length;
+    box.append(h("div", { class: "card row", style: "align-items:center" }, h("span", { style: "flex:1;min-width:200px" }, `Réponses des joueurs pour cette séance : ${nYes} présent${nYes > 1 ? "s" : ""}, ${nNo} absent${nNo > 1 ? "s" : ""}, ${ids.length - nYes - nNo} sans réponse.`),
+      h("button", { class: "btn ghost small", onclick: () => { ids.forEach(fid => { if (ann[fid]) s.rows[fid].present = ann[fid].p !== false; }); render(); } }, "Pré-cocher selon les réponses")));
+  }
   for (const fid of ids) {
     const r = s.rows[fid], f = S.fiches[fid];
     const card = h("div", { class: "card saisie-p" + (r.present ? "" : " absent") });
     const tog = h("button", { class: "toggle", "aria-pressed": String(r.present) }, r.present ? "Présent" : "Absent");
     tog.onclick = () => { r.present = !r.present; tog.setAttribute("aria-pressed", String(r.present)); tog.textContent = r.present ? "Présent" : "Absent"; card.classList.toggle("absent", !r.present); };
-    card.append(h("div", { class: "saisie-head" }, h("strong", {}, f.nom || "Sans nom"), tog));
+    const a = ann && ann[fid];
+    card.append(h("div", { class: "saisie-head" }, h("span", { class: "row", style: "gap:8px;align-items:center" }, h("strong", {}, f.nom || "Sans nom"),
+      ann ? (a ? h("span", { class: "pill " + (a.p ? "ok" : "no") }, a.p ? "Avait dit : présent" : "Avait dit : absent" + (a.motif ? ` · ${a.motif}` : "")) : h("span", { class: "pill" }, isTemp(fid) ? "Compte non relié" : "Sans réponse")) : null), tog));
     const crits = h("div", { class: "crits" });
     for (const [k, lab] of G.crit) {
       const sc = h("div", { class: "scale", role: "group", "aria-label": lab });
@@ -1682,6 +1761,7 @@ function joueurView() {
         h("div", {}, h("button", { class: "btn small", onclick: () => openStudio(S.me) }, S.avatars[S.me] && S.avatars[S.me].img ? "Modifier mon avatar 3D" : "Créer mon avatar 3D")))));
     return box;
   }
+  box.append(dispoCard(groupOf(S.myFiche), !!GROUPS[groupOf(S.myFiche)].parent));
   box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, S.myFiche, false));
   if (S.psub !== "equipe" && !S.demo) box.append(h("div", { style: "margin-top:12px" }, monCompteCard()));
   return box;
@@ -1766,6 +1846,7 @@ onAuthStateChanged(auth, async u => {
     db.doc("championnat/u19").onSnapshot(cs => { S.champ = cs.exists ? cs.data() : null; softRender(); }, () => {});
     db.collection("equipe").onSnapshot(snap => { const next = {}; snap.docs.forEach(d => { if (d.exists) next[d.id] = d.data(); }); S.equipes = next; softRender(); }, () => {});
     watchVotes();
+    db.collection("seances").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.seances = n; softRender(); }, () => {});
   } else {
     try { S.blocked = (await getDoc(fsDoc(fs, "bloques/" + u.uid))).exists(); } catch (e) { S.blocked = false; }
     if (S.blocked) { clearTimeout(slowT); render(); return; }
@@ -1780,6 +1861,7 @@ onAuthStateChanged(auth, async u => {
         S.eqSub = db.doc("equipe/" + g).onSnapshot(es => { if (es.exists) S.equipes[g] = es.data(); else delete S.equipes[g]; softRender(); }, () => {});
         if (g === "U19") db.doc("championnat/u19").onSnapshot(cs => { S.champ = cs.exists ? cs.data() : null; softRender(); }, () => {});
         watchVotes();
+        db.collection("seances").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.seances = n; softRender(); }, () => {});
       }
       softRender();
     }, err => { clearTimeout(slowT); S.myFiche = null; render(); });
