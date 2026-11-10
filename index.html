@@ -503,7 +503,21 @@ function accesView() {
     cc.append(h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, x.nom || x.email || "Coach"), h("span", { class: "note" }, x.email || "")),
       uid === S.me ? h("span", { class: "note" }, "C'est toi") : h("button", { class: "linkbtn danger", onclick: async () => { try { await S.db.doc("coachs/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Retirer l'accès coach"), m));
   }
-  box.append(pc, cc);
+  const imp = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Importer des données"), h("p", { class: "note", style: "margin:0" }, "Fichier JSON préparé par Jarvis. Les fiches qui existent déjà ne sont pas écrasées."));
+  const fi = h("input", { type: "file", id: "import-file", accept: ".json,application/json" });
+  const im = h("p", { class: "note", style: "margin:0" });
+  fi.onchange = async () => {
+    const f = fi.files && fi.files[0]; if (!f) return;
+    im.className = "note"; im.textContent = "Import en cours…";
+    try {
+      const data = JSON.parse(await f.text()); let n = 0, skip = 0;
+      for (const [id, d] of Object.entries(data.fiches || {})) { const ref = S.db.doc("fiches/" + id); if ((await ref.get()).exists) { skip++; continue; } await ref.set(d); n++; }
+      for (const [col, docs] of Object.entries({ championnat: data.championnat || {}, equipe: data.equipe || {} })) for (const [id, d] of Object.entries(docs)) { await S.db.doc(col + "/" + id).set(d); n++; }
+      im.className = "ok"; im.textContent = `${n} élément${n > 1 ? "s" : ""} importé${n > 1 ? "s" : ""}${skip ? `, ${skip} fiche${skip > 1 ? "s" : ""} déjà présente${skip > 1 ? "s" : ""}` : ""}.`;
+    } catch (e) { im.className = "err"; im.textContent = "Échec de l'import : " + (e && e.message ? e.message : "fichier illisible"); }
+  };
+  imp.append(fi, im);
+  box.append(pc, cc, imp);
   return box;
 }
 
