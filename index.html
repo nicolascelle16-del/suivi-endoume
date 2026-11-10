@@ -600,17 +600,52 @@ function autoCard(fid, f, asCoach) {
 }
 
 /* ---------- accès (coachs et comptes en attente) ---------- */
+const normName = n => (n || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z ]/g, " ").split(/\s+/).filter(w => w.length > 1);
+function guessFiche(nom) {
+  const w = normName(nom); if (!w.length) return "";
+  let best = "", score = 0;
+  for (const [fid, f] of Object.entries(S.fiches)) {
+    if (!isTemp(fid)) continue;
+    const fw = normName(f.nom), sc = w.filter(x => fw.includes(x)).length;
+    if (sc > score) { score = sc; best = fid; }
+  }
+  return best;
+}
+async function linkAccount(fid, uid) {
+  const data = { ...S.fiches[fid], linkedAt: new Date().toISOString() };
+  const ref = S.db.doc("fiches/" + uid); if ((await ref.get()).exists) throw new Error("exists");
+  await ref.set(data); await S.db.doc("fiches/" + fid).delete(); await S.db.doc("inscriptions/" + uid).delete();
+  return data;
+}
 function accesView() {
   const box = h("div", { class: "stack" });
+  if (S.flash) { box.append(h("p", { class: "ok", style: "margin:0" }, S.flash)); S.flash = ""; }
   const pend = Object.entries(S.inscriptions).filter(([uid]) => !S.fiches[uid] && !S.coachs[uid]);
   const pc = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, `Comptes en attente · ${pend.length}`),
-    h("p", { class: "note", style: "margin:0" }, "Un joueur ou un parent qui crée son compte apparaît ici. Relie-le à sa fiche depuis la fiche du joueur, ou donne-lui un accès coach s'il s'agit d'un adjoint."));
+    h("p", { class: "note", style: "margin:0" }, "Un joueur ou un parent qui crée son compte apparaît ici. Choisis sa fiche dans la liste et clique sur Relier : il verra uniquement sa fiche et son équipe (U19, U10 ou gardiens). L'accès coach est réservé à tes adjoints."));
+  const free = Object.entries(S.fiches).filter(([fid]) => isTemp(fid)).sort((a, b) => (a[1].nom || "").localeCompare(b[1].nom || "", "fr"));
   for (const [uid, x] of pend) {
     const m = h("span", { class: "note" });
-    pc.append(h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, x.nom || "Sans nom"), h("span", { class: "note" }, x.email || "")),
-      h("div", { class: "row" },
-        h("button", { class: "btn ghost small", onclick: async () => { try { await S.db.doc("coachs/" + uid).set({ nom: x.nom || "", email: x.email || "", at: new Date().toISOString() }); await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Donner l'accès coach"),
-        h("button", { class: "linkbtn danger", onclick: async () => { try { await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Refuser"), m)));
+    const sel = h("select", { id: "acc-link-" + uid, "aria-label": "Fiche à relier" }, h("option", { value: "" }, free.length ? "Choisir sa fiche…" : "Aucune fiche libre"),
+      ["U19", "U10", "GB"].map(g => { const l = free.filter(([, f]) => groupOf(f) === g); return l.length ? h("optgroup", { label: GROUPS[g].label }, l.map(([fid, f]) => h("option", { value: fid }, f.nom || "Sans nom"))) : null; }));
+    sel.value = guessFiche(x.nom);
+    const lb = h("button", { class: "btn small" }, "Relier");
+    lb.onclick = async () => {
+      const fid = sel.value; if (!fid) { m.className = "err"; m.textContent = "Choisis sa fiche."; return; }
+      lb.disabled = true; m.className = "note"; m.textContent = "Liaison…";
+      try { const d = await linkAccount(fid, uid); S.flash = `${d.nom} est relié à son compte : il voit maintenant sa fiche et son équipe.`; render(); }
+      catch (e) { lb.disabled = false; m.className = "err"; m.textContent = e && e.message === "exists" ? "Ce compte a déjà une fiche." : "Échec : réessaie."; }
+    };
+    let armed = false;
+    const cb = h("button", { class: "linkbtn" }, "C'est un adjoint ?");
+    cb.onclick = async () => {
+      if (!armed) { armed = true; cb.className = "btn ghost small"; cb.textContent = `Confirmer : donner l'accès coach à ${x.nom || "ce compte"}`; return; }
+      try { await S.db.doc("coachs/" + uid).set({ nom: x.nom || "", email: x.email || "", at: new Date().toISOString() }); await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; }
+    };
+    pc.append(h("div", { class: "hitem" },
+      h("div", { class: "hhead" }, h("span", { class: "row", style: "gap:8px;align-items:center;flex-wrap:nowrap" }, avatarNode(uid, x.nom, "av-mini"), h("strong", {}, x.nom || "Sans nom")), h("span", { class: "note" }, x.email || "")),
+      h("div", { class: "row", style: "align-items:center" }, h("label", { class: "field", style: "flex:1;min-width:200px" }, sel), lb),
+      h("div", { class: "row", style: "align-items:center;justify-content:space-between" }, h("span", {}, cb, " "), h("button", { class: "linkbtn danger", onclick: async () => { try { await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Refuser")), m));
   }
   const cc = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Coachs"), h("p", { class: "note", style: "margin:0" }, "Les coachs voient et modifient toutes les fiches."));
   for (const [uid, x] of Object.entries(S.coachs)) {
@@ -652,11 +687,10 @@ function loginView() {
       if (mode === "in") await signInWithEmailAndPassword(auth, email.value.trim(), pass.value);
       else {
         const n = nom.value.trim(); if (!n) { msg.className = "err"; msg.textContent = "Indique ton prénom et ton nom."; go.disabled = false; return; }
-        const cred = await createUserWithEmailAndPassword(auth, email.value.trim(), pass.value);
-        await setDoc(fsDoc(fs, "inscriptions/" + cred.user.uid), { nom: n.slice(0, 60), email: cred.user.email || "", at: new Date().toISOString() });
-        try { await saveAvatar(cred.user.uid, S.avDraft || AV_DEF); } catch (e) {}
+        S.pendingSignup = { nom: n.slice(0, 60), avatar: S.avDraft || AV_DEF };
+        await createUserWithEmailAndPassword(auth, email.value.trim(), pass.value);
       }
-    } catch (err) { go.disabled = false; msg.className = "err"; msg.textContent = AUTH_ERR[err && err.code] || "Échec : vérifie ta connexion et réessaie."; }
+    } catch (err) { S.pendingSignup = null; go.disabled = false; msg.className = "err"; msg.textContent = AUTH_ERR[err && err.code] || "Échec : vérifie ta connexion et réessaie."; }
   };
   app.append(h("div", { class: "login-hero" }, h("img", { src: document.querySelector(".crest").src, alt: "" }), h("div", { class: "t" }, "Suivi des joueurs"), h("div", { class: "s" }, "Endoume · Catalans")));
   const form = h("form", { class: "card stack login-form" },
@@ -788,9 +822,7 @@ function ficheView(fid, f, asCoach) {
       const c = sel.value; if (!c) { lm.className = "err"; lm.textContent = "Choisis un compte."; return; }
       lb.disabled = true; lm.className = "note"; lm.textContent = "Liaison…";
       try {
-        const data = { ...S.fiches[fid], linkedAt: new Date().toISOString() };
-        const ref = S.db.doc("fiches/" + c); if ((await ref.get()).exists) throw new Error("exists");
-        await ref.set(data); await S.db.doc("fiches/" + fid).delete(); await S.db.doc("inscriptions/" + c).delete();
+        const data = await linkAccount(fid, c);
         S.sel = c; S.flash = `${data.nom} est relié à son compte.`; render();
       } catch (e) { lb.disabled = false; lm.className = "err"; lm.textContent = e && e.message === "exists" ? "Ce compte a déjà une fiche." : "Échec : réessaie."; }
     };
@@ -1119,9 +1151,15 @@ document.getElementById("logout").onclick = async () => { await signOut(auth); l
 let started = false;
 onAuthStateChanged(auth, async u => {
   if (!u) { if (started) location.reload(); document.getElementById("logout").hidden = true; loginView(); return; }
-  if (started) return; started = true;
+  if (started) { if (u.uid !== S.me) location.reload(); return; }
+  started = true;
   document.getElementById("logout").hidden = false;
   const db = DB; S.db = db; S.me = u.uid; S.email = u.email || "";
+  if (S.pendingSignup) {
+    const ps = S.pendingSignup; S.pendingSignup = null;
+    try { await setDoc(fsDoc(fs, "inscriptions/" + u.uid), { nom: ps.nom, email: u.email || "", at: new Date().toISOString() }); } catch (e) {}
+    try { await saveAvatar(u.uid, ps.avatar); } catch (e) {}
+  }
   try { S.admin = (await getDoc(fsDoc(fs, "coachs/" + u.uid))).exists(); } catch (e) { S.admin = false; }
   const slowT = setTimeout(() => { S.slow = true; render(); }, 10000);
   render();
