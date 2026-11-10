@@ -88,7 +88,7 @@ button.card:hover { border-color: var(--rouge); }
 .legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 .chart { width: 100%; overflow-x: auto; }
-.chart svg { width: 100%; min-width: 420px; height: auto; display: block; }
+.chart svg { width: 100%; height: auto; display: block; }
 .hist { display: flex; flex-direction: column; gap: 10px; }
 .hitem { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
 .hitem .hhead { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -97,6 +97,7 @@ button.card:hover { border-color: var(--rouge); }
 .chip b { color: var(--or); font-variant-numeric: tabular-nums; }
 .com-text { font-size: 15px; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.two > *, .stack > *, .card { min-width: 0; }
 @media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
 .stack { display: flex; flex-direction: column; gap: 12px; }
 .obj { border-left: 3px solid var(--or); padding: 6px 12px; background: var(--surface-2); border-radius: 0 8px 8px 0; }
@@ -190,6 +191,28 @@ table.pres tr.clickable { cursor: pointer; } table.pres tr.clickable:hover td { 
 .st-save { padding: 12px 14px; border-top: 1px solid var(--ligne); display: flex; flex-direction: column; gap: 6px; flex: none; }
 @media (max-width: 820px) { .st-body { grid-template-columns: 1fr; grid-template-rows: minmax(260px, 46vh) 1fr; } .st-left { min-height: 260px; } .st-panel { border-left: 0; border-top: 1px solid var(--ligne); } .studio.nopanel .st-body { grid-template-rows: 1fr; } .st-tools .note { display: none; } }
 .pill.ok { border-color: #2f6b41; color: #9fe0b1; } .pill.no { border-color: #8e0e1c; color: #ff9aa6; }
+[hidden] { display: none !important; }
+.wa-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; background: none; border: 0; padding: 0; color: inherit; text-align: left; width: 100%; cursor: pointer; }
+.wa-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; }
+.wa-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 6px; padding: 6px 8px; }
+.wa-nom { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.wa-btns { display: flex; gap: 6px; flex: none; }
+.wa-btns .toggle { min-width: 56px; min-height: 40px; }
+.wa-oui[aria-pressed="true"] { background: #2f6b41 !important; border-color: #2f6b41 !important; color: #fff !important; }
+.wa-non[aria-pressed="true"] { background: var(--rouge) !important; border-color: var(--rouge) !important; color: #fff !important; }
+.save-bar { position: sticky; bottom: 0; z-index: 5; background: linear-gradient(180deg, rgba(16,14,15,0), var(--noir) 30%); padding: 14px 0 12px; align-items: center; }
+@media (max-width: 600px) {
+  .subtabs { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .subtabs::-webkit-scrollbar { display: none; }
+  .subtab { flex: none; white-space: nowrap; padding: 10px 10px; font-size: 14px; letter-spacing: .06em; }
+  .barline { grid-template-columns: minmax(78px, 110px) minmax(0, 1fr) 34px; gap: 8px; font-size: 13px; }
+  .card { padding: 12px; }
+  .btn, .toggle, .opt, select, input[type=text], input[type=email], input[type=password], input[type=date], input[type=time] { min-height: 42px; }
+  .save-bar .btn { flex: 1; }
+  .crit-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .sc { width: 36px; height: 40px; }
+  table.pres th.c, table.pres td.c { padding: 7px 3px; }
+}
 .kicker { font-family: var(--label); font-style: italic; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; font-size: 13px; color: var(--or); }
 .login-hero { max-width: 420px; margin: 28px auto 0; background: var(--sable); border-radius: 6px 6px 0 0; padding: 22px 18px 18px; text-align: center; color: #fff; position: relative; overflow: hidden; }
 .login-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(118deg, transparent 0 88%, var(--rouge) 88% 93%, transparent 93%); pointer-events: none; }
@@ -217,7 +240,6 @@ table.pres tr.clickable { cursor: pointer; } table.pres tr.clickable:hover td { 
 </div></header>
 <main class="wrap" id="app"><p class="note" style="margin-top:24px">Chargement du suivi…</p></main>
 
-<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
 <script type="module">
 "use strict";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -391,8 +413,7 @@ ${top}${shine}${acc}${num}
 function avatarNode(fid, nom, cls) {
   const el = h("div", { class: cls });
   const a = fid && S.avatars[fid];
-  if (a && typeof a.img === "string" && a.img.startsWith("data:image/jpeg")) el.append(h("img", { src: a.img, alt: "", style: "width:100%;height:100%;object-fit:cover;display:block;border-radius:50%" }));
-  else if (a) el.innerHTML = avatarSVG(a); else el.textContent = initials(nom);
+  if (a) el.innerHTML = avatarSVG(a); else el.textContent = initials(nom);
   return el;
 }
 function avatarEditor(start, onChange) {
@@ -838,6 +859,7 @@ async function linkAccount(fid, uid) {
   if (ins && ins.email) data.email = String(ins.email).slice(0, 120);
   const ref = S.db.doc("fiches/" + uid); if ((await ref.get()).exists) throw new Error("exists");
   await ref.set(data); await S.db.doc("fiches/" + fid).delete(); await S.db.doc("inscriptions/" + uid).delete();
+  for (const [sid, se] of Object.entries(S.seances)) { const d = ditOf(se); if (fid in d) { const n = { ...d, [uid]: d[fid] }; delete n[fid]; try { await S.db.doc("seances/" + sid).update({ dit: n }); } catch (e) {} } }
   return data;
 }
 function accesView() {
@@ -1288,70 +1310,53 @@ function saisonCard(fid, f, parent) {
   return card;
 }
 
-/* ---------- séances à venir : les joueurs annoncent présent / absent ---------- */
+/* ---------- réponses au sondage WhatsApp (saisies par le coach) ---------- */
 const jourLong = d => { try { const t = new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); return t.charAt(0).toUpperCase() + t.slice(1); } catch (e) { return d; } };
 const seanceTitre = s => [jourLong(s.date), s.type, s.heure ? s.heure.replace(":", "h") : ""].filter(Boolean).join(" · ");
-const seancesOf = (g, upcoming) => Object.entries(S.seances).filter(([, s]) => s && s.groupe === g && (!upcoming || s.date >= today())).sort((a, b) => (a[1].date + (a[1].heure || "")) < (b[1].date + (b[1].heure || "")) ? -1 : 1);
-function watchSeance(sid) {
-  if (S.subs["r-" + sid] || S.demo) return;
-  if (S.admin) S.subs["r-" + sid] = S.db.collection("seances/" + sid + "/reponses").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.reponses[sid] = n; softRender(); }, () => {});
-  else S.subs["r-" + sid] = S.db.doc("seances/" + sid + "/reponses/" + S.me).onSnapshot(d => { S.reponses[sid] = d.exists ? { [S.me]: d.data() } : {}; softRender(); }, () => {});
-}
-function dispoCard(g, parent) {
-  const list = seancesOf(g, true).slice(0, 6);
-  if (!list.length) return null;
-  const card = h("div", { class: "card stack", style: "margin-bottom:12px" }, h("h3", { style: "margin:0" }, "Prochaines séances"), h("p", { class: "note", style: "margin:0" }, parent ? "Indique si ton enfant sera là : ça aide le coach à préparer la séance." : "Dis au coach si tu seras là : ça l'aide à préparer la séance."));
-  for (const [sid, s] of list) {
-    watchSeance(sid);
-    const cur = (S.reponses[sid] || {})[S.me], m = h("span", { class: "note" });
-    const send = async (p, motif) => {
-      m.className = "note"; m.textContent = "Envoi…";
-      try { const d = { p, motif: p ? "" : String(motif || "").slice(0, 200), at: new Date().toISOString() }; await setDoc(fsDoc(fs, "seances/" + sid + "/reponses/" + S.me), d); S.reponses[sid] = { [S.me]: d }; render(); }
-      catch (e) { m.className = "err"; m.textContent = "Échec : réessaie."; }
-    };
-    const item = h("div", { class: "hitem stack", style: "gap:8px" }, h("div", { class: "hhead" }, h("strong", {}, seanceTitre(s)), cur ? h("span", { class: "pill " + (cur.p ? "ok" : "no") }, cur.p ? "Tu as répondu : présent" : "Tu as répondu : absent") : h("span", { class: "pill" }, "Pas encore répondu")));
-    if (s.note) item.append(h("p", { class: "note", style: "margin:0" }, s.note));
-    item.append(h("div", { class: "row", style: "align-items:center" },
-      h("button", { class: "toggle", "aria-pressed": String(!!cur && cur.p === true), onclick: () => send(true) }, "Présent"),
-      h("button", { class: "toggle", "aria-pressed": String(!!cur && cur.p === false), onclick: () => send(false, cur && cur.motif) }, "Absent"), m));
-    if (cur && cur.p === false) {
-      const mo = h("input", { type: "text", maxlength: "200", id: "motif-" + sid, placeholder: "Raison (facultatif) : blessure, travail, école…", value: cur.motif || "", style: "flex:1;min-width:200px" });
-      item.append(h("div", { class: "row", style: "align-items:center" }, mo, h("button", { class: "btn ghost small", onclick: () => send(false, mo.value) }, "Envoyer la raison")));
-    }
-    card.append(item);
-  }
-  return card;
-}
+const ilYa = n => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+const seancesOf = (g, recent) => Object.entries(S.seances).filter(([, s]) => s && s.groupe === g && (!recent || s.date >= ilYa(7))).sort((a, b) => (a[1].date + (a[1].heure || "")) < (b[1].date + (b[1].heure || "")) ? -1 : 1);
+const ditOf = s => (s && s.dit && typeof s.dit === "object") ? s.dit : {};
 function seancesCoachCard(g) {
-  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Séances à venir : qui sera là ?"));
+  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Sondage WhatsApp : qui a dit oui ?"),
+    h("p", { class: "note", style: "margin:0" }, "Crée la séance, puis reporte ce que chaque joueur a répondu au sondage. Au moment de l'appel (« Noter une séance »), tu verras s'il est venu ou pas."));
   const date = h("input", { type: "date", id: "sc-date", value: today() }), heure = h("input", { type: "time", id: "sc-heure" });
   const type = h("select", { id: "sc-type" }, h("option", { value: "Entraînement" }, "Entraînement"), h("option", { value: "Match" }, "Match"));
-  const note = h("input", { type: "text", id: "sc-note", maxlength: "120", placeholder: "Info (facultatif) : lieu, rendez-vous…", style: "flex:1;min-width:200px" });
   const msg = h("span", { class: "note" });
-  const go = h("button", { class: "btn small" }, "Annoncer la séance");
+  const go = h("button", { class: "btn small" }, "Créer la séance");
   go.onclick = async () => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date.value)) { msg.className = "err"; msg.textContent = "Choisis une date."; return; }
-    if (seancesOf(g).some(([, s]) => s.date === date.value && s.type === type.value)) { msg.className = "err"; msg.textContent = "Cette séance est déjà annoncée."; return; }
-    go.disabled = true;
-    try { await S.db.doc("seances/" + nid()).set({ groupe: g, date: date.value, type: type.value, heure: heure.value || "", note: note.value.trim().slice(0, 120), at: new Date().toISOString() }); note.value = ""; msg.className = "ok"; msg.textContent = "Séance annoncée : les joueurs peuvent répondre."; }
+    if (seancesOf(g).some(([, s]) => s.date === date.value && s.type === type.value)) { msg.className = "err"; msg.textContent = "Cette séance existe déjà."; return; }
+    go.disabled = true; const id = nid();
+    try { await S.db.doc("seances/" + id).set({ groupe: g, date: date.value, type: type.value, heure: heure.value || "", dit: {}, at: new Date().toISOString() }); S.waOpen = id; msg.className = "ok"; msg.textContent = "Séance créée : coche les réponses ci-dessous."; }
     catch (e) { msg.className = "err"; msg.textContent = "Échec : réessaie."; }
     go.disabled = false;
   };
-  card.append(h("div", { class: "row", style: "align-items:flex-end" }, h("label", { class: "field" }, "Date", date), h("label", { class: "field" }, "Heure", heure), h("label", { class: "field" }, "Type", type), h("label", { class: "field", style: "flex:1;min-width:200px" }, "Info", note)),
-    h("div", { class: "row", style: "align-items:center" }, go, msg));
+  card.append(h("div", { class: "row", style: "align-items:flex-end" }, h("label", { class: "field" }, "Date", date), h("label", { class: "field" }, "Heure", heure), h("label", { class: "field" }, "Type", type), go), msg);
   const list = seancesOf(g, true);
-  if (!list.length) { card.append(h("p", { class: "note", style: "margin:0" }, "Aucune séance annoncée. Annonce la prochaine : chaque joueur verra la question « Présent / Absent » en ouvrant le site.")); return card; }
+  if (!list.length) { card.append(h("p", { class: "note", style: "margin:0" }, "Aucune séance cette semaine.")); return card; }
   const players = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g).sort((a, b) => (a[1].nom || "").localeCompare(b[1].nom || "", "fr"));
-  for (const [sid, s] of list) {
-    watchSeance(sid);
-    const rep = S.reponses[sid] || {}, oui = [], non = [], rien = [], sans = [];
-    for (const [fid, f] of players) { const r = rep[fid]; if (isTemp(fid)) sans.push(f.nom); else if (!r) rien.push(f.nom); else if (r.p) oui.push(f.nom); else non.push(f.nom + (r.motif ? ` (${r.motif})` : "")); }
-    const line = (lab, cls, arr) => h("div", {}, h("span", { class: "pill " + cls, style: "margin-right:8px" }, `${lab} · ${arr.length}`), h("span", { style: "font-size:14px" }, arr.join(", ") || "–"));
-    const del = h("button", { class: "linkbtn danger" }, "Supprimer");
-    del.onclick = async () => { if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer la suppression"; return; }
-      try { for (const uid of Object.keys(rep)) { try { await S.db.doc("seances/" + sid + "/reponses/" + uid).delete(); } catch (e) {} } await S.db.doc("seances/" + sid).delete(); } catch (e) { del.textContent = "Échec"; } };
-    card.append(h("div", { class: "hitem stack", style: "gap:8px" }, h("div", { class: "hhead" }, h("strong", {}, seanceTitre(s)), del), s.note ? h("p", { class: "note", style: "margin:0" }, s.note) : null,
-      line("Présents", "ok", oui), line("Absents", "no", non), line("Sans réponse", "", rien), sans.length ? line("Compte non relié", "", sans) : null));
+  if (!S.waOpen || !list.some(([sid]) => sid === S.waOpen)) S.waOpen = (list.find(([, s]) => s.date >= today()) || list[list.length - 1])[0];
+  for (const [sid, s] of list.slice().reverse()) {
+    const dit = ditOf(s), oui = players.filter(([fid]) => dit[fid] === true).length, non = players.filter(([fid]) => dit[fid] === false).length, open = S.waOpen === sid;
+    const head = h("button", { type: "button", class: "wa-head", "aria-expanded": String(open), onclick: () => { S.waOpen = open ? "" : sid; render(); } },
+      h("strong", {}, seanceTitre(s)), h("span", { class: "row", style: "gap:6px;flex-wrap:nowrap" }, h("span", { class: "pill ok" }, `Oui ${oui}`), h("span", { class: "pill no" }, `Non ${non}`), h("span", { class: "pill" }, `? ${players.length - oui - non}`)));
+    const item = h("div", { class: "hitem stack", style: "gap:8px" }, head);
+    if (open) {
+      const setDit = async (fid, v) => { const n = { ...ditOf(S.seances[sid]) }; if (v === null) delete n[fid]; else n[fid] = v; S.seances[sid] = { ...S.seances[sid], dit: n }; render();
+        try { await S.db.doc("seances/" + sid).update({ dit: n }); } catch (e) { S.flashWa = "Échec de l'enregistrement : vérifie ta connexion."; render(); } };
+      const rows = h("div", { class: "wa-list" });
+      for (const [fid, f] of players) {
+        const v = dit[fid];
+        rows.append(h("div", { class: "wa-row" }, h("span", { class: "wa-nom" }, f.nom || "Sans nom"),
+          h("span", { class: "wa-btns" }, h("button", { type: "button", class: "toggle wa-oui", "aria-pressed": String(v === true), onclick: () => setDit(fid, v === true ? null : true) }, "Oui"),
+            h("button", { type: "button", class: "toggle wa-non", "aria-pressed": String(v === false), onclick: () => setDit(fid, v === false ? null : false) }, "Non"))));
+      }
+      const del = h("button", { class: "linkbtn danger" }, "Supprimer la séance");
+      del.onclick = async () => { if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer la suppression"; return; } try { await S.db.doc("seances/" + sid).delete(); } catch (e) { del.textContent = "Échec"; } };
+      item.append(h("div", { class: "row", style: "gap:10px" }, h("button", { class: "linkbtn", onclick: async () => { const n = { ...dit }; players.forEach(([fid]) => { if (n[fid] === undefined) n[fid] = true; }); S.seances[sid] = { ...S.seances[sid], dit: n }; render(); try { await S.db.doc("seances/" + sid).update({ dit: n }); } catch (e) { S.flashWa = "Échec de l'enregistrement : vérifie ta connexion."; render(); } } }, "Mettre « oui » à ceux sans réponse")), rows, del);
+      if (S.flashWa) { item.append(h("p", { class: "err", style: "margin:0" }, S.flashWa)); S.flashWa = ""; }
+    }
+    card.append(item);
   }
   return card;
 }
@@ -1469,7 +1474,7 @@ function ficheView(fid, f, asCoach) {
   } else if (f.mot) side.append(h("div", { class: "card" }, h("h3", {}, "Le mot du coach"), h("div", { class: "mot" }, f.mot)));
   side.append(h("div", { class: "card" }, h("h3", {}, "Badges"), badgesBox(fid, f)));
   wrap.append(h("div", { class: "top-fiche" }, h("div", { class: "stack", style: "align-items:center" }, fcard(f, parent, fid),
-    !asCoach && fid === S.me && !S.demo ? h("button", { class: "btn small", onclick: () => openStudio(S.me) }, S.avatars[fid] ? "Modifier mon avatar 3D" : "Créer mon avatar 3D") : null), side));
+    !asCoach && fid === S.me && !S.demo ? h("button", { class: "btn ghost small", onclick: () => { S.avEdit = !S.avEdit; S.avDraft = null; render(); } }, S.avEdit ? "Fermer" : (S.avatars[fid] ? "Modifier mon avatar" : "Créer mon avatar")) : null), side));
   if (!asCoach && fid === S.me && S.avEdit && !S.demo) {
     const m = h("span", { class: "note" });
     wrap.append(h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Mon avatar"), avatarEditor(S.avDraft || S.avatars[fid], a => { S.avDraft = a; }),
@@ -1624,14 +1629,14 @@ function saisieView() {
     h("option", { value: "Entraînement", selected: s.type === "Entraînement" }, "Entraînement"),
     h("option", { value: "Match", selected: s.type === "Match" }, "Match"));
   date.addEventListener("change", () => render()); type.addEventListener("change", () => render());
-  const annS = seancesOf(S.tab).find(([, x]) => x.date === s.date && x.type === s.type), ann = annS ? (watchSeance(annS[0]), S.reponses[annS[0]] || {}) : null;
+  const annS = seancesOf(S.tab).find(([, x]) => x.date === s.date && x.type === s.type), ann = annS ? Object.fromEntries(Object.entries(ditOf(annS[1])).map(([k, v]) => [k, { p: v }])) : null;
   box.append(h("div", { class: "card row" }, h("label", { class: "field" }, "Date", date), h("label", { class: "field" }, "Type", type),
     h("p", { class: "note", style: "margin:0;flex:1;min-width:200px" }, "Touche une note de 1 à 5 par critère. Les joueurs marqués absents ne sont pas enregistrés.")));
   const ids = Object.keys(s.rows).sort((a, b) => (S.fiches[a].nom || "").localeCompare(S.fiches[b].nom || "", "fr"));
   if (ann) {
     const nNo = ids.filter(fid => ann[fid] && ann[fid].p === false).length, nYes = ids.filter(fid => ann[fid] && ann[fid].p === true).length;
-    box.append(h("div", { class: "card row", style: "align-items:center" }, h("span", { style: "flex:1;min-width:200px" }, `Réponses des joueurs pour cette séance : ${nYes} présent${nYes > 1 ? "s" : ""}, ${nNo} absent${nNo > 1 ? "s" : ""}, ${ids.length - nYes - nNo} sans réponse.`),
-      h("button", { class: "btn ghost small", onclick: () => { ids.forEach(fid => { if (ann[fid]) s.rows[fid].present = ann[fid].p !== false; }); render(); } }, "Pré-cocher selon les réponses")));
+    box.append(h("div", { class: "card row", style: "align-items:center" }, h("span", { style: "flex:1;min-width:200px" }, `Sondage WhatsApp : ${nYes} oui, ${nNo} non, ${ids.length - nYes - nNo} sans réponse.`),
+      h("button", { class: "btn ghost small", onclick: () => { ids.forEach(fid => { if (ann[fid]) s.rows[fid].present = ann[fid].p !== false; }); render(); } }, "Pré-cocher selon le sondage")));
   }
   for (const fid of ids) {
     const r = s.rows[fid], f = S.fiches[fid];
@@ -1640,7 +1645,7 @@ function saisieView() {
     tog.onclick = () => { r.present = !r.present; tog.setAttribute("aria-pressed", String(r.present)); tog.textContent = r.present ? "Présent" : "Absent"; card.classList.toggle("absent", !r.present); };
     const a = ann && ann[fid];
     card.append(h("div", { class: "saisie-head" }, h("span", { class: "row", style: "gap:8px;align-items:center" }, h("strong", {}, f.nom || "Sans nom"),
-      ann ? (a ? h("span", { class: "pill " + (a.p ? "ok" : "no") }, a.p ? "Avait dit : présent" : "Avait dit : absent" + (a.motif ? ` · ${a.motif}` : "")) : h("span", { class: "pill" }, isTemp(fid) ? "Compte non relié" : "Sans réponse")) : null), tog));
+      ann ? (a ? h("span", { class: "pill " + (a.p ? "ok" : "no") }, a.p ? "A dit oui" : "A dit non") : h("span", { class: "pill" }, "Pas répondu")) : null), tog));
     const crits = h("div", { class: "crits" });
     for (const [k, lab] of G.crit) {
       const sc = h("div", { class: "scale", role: "group", "aria-label": lab });
@@ -1682,7 +1687,7 @@ function saisieView() {
     S.flash = `Séance du ${fmtDate(s.date)} enregistrée : ${rated} joueur${rated > 1 ? "s" : ""} noté${rated > 1 ? "s" : ""}, présences à jour.`;
     S.view = "list"; S.saisie = null; render();
   };
-  box.append(h("div", { class: "row" }, save, msg));
+  box.append(h("div", { class: "row save-bar" }, save, msg));
   return box;
 }
 async function writeFicheQuiet(fid, patch) {
@@ -1756,12 +1761,10 @@ function joueurView() {
     } else card.append(h("p", { class: "note", style: "margin:0" }, `Demande envoyée au nom de ${S.myInscription.nom}.`));
     box.append(card);
     const am = h("span", { class: "note" });
-    box.append(h("div", { class: "card row", style: "margin-top:12px;align-items:center;gap:14px" }, avatarNode(S.me, S.myInscription && S.myInscription.nom, "av-big"),
-      h("div", { class: "stack", style: "gap:6px;flex:1;min-width:200px" }, h("h3", { style: "margin:0" }, "Mon avatar 3D"), h("p", { class: "note", style: "margin:0" }, "Crée ton joueur en 3D avec le maillot d'Endoume : il apparaîtra sur ta carte et dans les compos."),
-        h("div", {}, h("button", { class: "btn small", onclick: () => openStudio(S.me) }, S.avatars[S.me] && S.avatars[S.me].img ? "Modifier mon avatar 3D" : "Créer mon avatar 3D")))));
+    box.append(h("div", { class: "card stack", style: "margin-top:12px" }, h("h3", { style: "margin:0" }, S.avatars[S.me] ? "Ton avatar" : "Crée ton avatar"), avatarEditor(S.avDraft || S.avatars[S.me], a => { S.avDraft = a; }),
+      h("div", { class: "row" }, h("button", { class: "btn small", onclick: async () => { try { await saveAvatar(S.me, S.avDraft || S.avatars[S.me]); am.textContent = "Avatar enregistré : il sera sur ta carte."; } catch (e) { am.textContent = "Échec : réessaie."; } } }, "Enregistrer"), am)));
     return box;
   }
-  box.append(dispoCard(groupOf(S.myFiche), !!GROUPS[groupOf(S.myFiche)].parent));
   box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, S.myFiche, false));
   if (S.psub !== "equipe" && !S.demo) box.append(h("div", { style: "margin-top:12px" }, monCompteCard()));
   return box;
@@ -1861,7 +1864,6 @@ onAuthStateChanged(auth, async u => {
         S.eqSub = db.doc("equipe/" + g).onSnapshot(es => { if (es.exists) S.equipes[g] = es.data(); else delete S.equipes[g]; softRender(); }, () => {});
         if (g === "U19") db.doc("championnat/u19").onSnapshot(cs => { S.champ = cs.exists ? cs.data() : null; softRender(); }, () => {});
         watchVotes();
-        db.collection("seances").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.seances = n; softRender(); }, () => {});
       }
       softRender();
     }, err => { clearTimeout(slowT); S.myFiche = null; render(); });
