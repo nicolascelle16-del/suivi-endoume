@@ -68,6 +68,21 @@ button.card:hover { border-color: var(--rouge); }
 .empty { color: var(--muted); padding: 24px; border: 1px dashed var(--ligne); border-radius: 12px; text-align: center; }
 .crit-row { display: grid; grid-template-columns: minmax(130px, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--ligne); }
 .crit-row:first-of-type { border-top: 0; }
+details.crit-d { min-width: 0; }
+.crit-row > details.crit-d[open], .barline > details.crit-d[open] { grid-column: 1 / -1; }
+.crit-row > details.crit-d[open] + .scale { grid-column: 1 / -1; justify-self: end; }
+.barline > details.crit-d[open] + .track { grid-column: 1 / 3; }
+.barline > details.crit-d[open] + .track + .val { grid-column: 3; }
+details.crit-d summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 7px; }
+details.crit-d summary::-webkit-details-marker { display: none; }
+.crit-i { display: inline-grid; place-items: center; width: 18px; height: 18px; flex: 0 0 18px; border-radius: 50%; border: 1px solid var(--or); color: var(--or); font: 600 11px/1 var(--body); font-style: italic; }
+details.crit-d[open] .crit-i { background: var(--or); color: var(--noir); }
+details.crit-d p { margin: 6px 0 2px; padding: 6px 9px; font-size: 13.5px; line-height: 1.4; color: var(--texte); background: rgba(205,189,143,.10); border-left: 2px solid var(--or); border-radius: 0 6px 6px 0; }
+.bars-t { font-family: var(--label); text-transform: uppercase; letter-spacing: .06em; font-size: 13px; color: var(--or); margin: 10px 0 2px; }
+.bars-t:first-child { margin-top: 0; }
+.stats-in { gap: 8px; margin-top: 6px; }
+.stat-in { flex: 1 1 90px; min-width: 0; }
+.stat-in input { width: 100%; }
 .scale { display: flex; gap: 4px; }
 .sc { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--ligne); background: var(--surface-2); font-weight: 600; font-variant-numeric: tabular-nums; }
 .sc[aria-pressed="true"] { background: var(--rouge); color: #fff; border-color: var(--rouge); }
@@ -123,6 +138,8 @@ button.card:hover { border-color: var(--rouge); }
 .fcard .fc-poste { text-align: center; font-family: var(--label); font-style: italic; font-size: 13px; color: var(--or); letter-spacing: .16em; text-transform: uppercase; }
 .fcard .fc-crit { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 13px; background: rgba(0,0,0,.55); border-radius: 8px; padding: 8px 10px; }
 .fcard .fc-crit span b { color: var(--or); font-variant-numeric: tabular-nums; margin-right: 4px; }
+.fcard .fc-crit.par > span { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 11.5px; white-space: nowrap; }
+.fcard .fc-crit.par .stars { font-size: 10px; letter-spacing: -.5px; }
 .fcard .fc-club { position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%); font-family: var(--label); font-size: 10px; letter-spacing: .3em; color: var(--or); white-space: nowrap; }
 .stars { color: var(--or); letter-spacing: 1px; }
 .stars .off { color: #4a4650; }
@@ -256,6 +273,43 @@ const GROUPS = {
   U10: { label: "U10", parent: true, crit: [["plaisir","Plaisir et engagement"],["tech","Technique balle au pied"],["jeu","Compréhension du jeu"],["respect","Respect et écoute"]] },
   GB:  { label: "Gardiens", crit: [["prise","Prise de balle"],["plac","Placement"],["pied","Jeu au pied"],["comm","Communication"],["cour","Courage"]] }
 };
+/* grilles d'évaluation : entraînement (E) et match (M) ; GROUPS[g].crit = ancienne grille (U19/U10) ou grille unique (Gardiens) */
+const GRILLES = {
+  U19: {
+    E: [["int","Intensité","Répète les efforts, va au duel, ne marche pas dans les exercices."],
+        ["app","Application des consignes","Respecte le thème et les exigences de la séance."],
+        ["qtec","Qualité technique","Justesse des passes et des contrôles, même sous pression."],
+        ["info","Prise d'information","Regarde avant de recevoir et fait le bon choix."],
+        ["att","Attitude","Ponctualité, écoute, communication avec les partenaires."]],
+    M: [["role","Rôle à son poste","Tient ce qu'on attend de son poste dans le 4-3-3."],
+        ["tac","Discipline tactique","Placement, bloc équipe, replis et transitions."],
+        ["imp","Impact","Duels gagnés, ballons récupérés, actions décisives."],
+        ["ment","Mental","Réagit après une erreur, reste concentré tout le match, se maîtrise face à l'arbitre."],
+        ["vol","Volume athlétique","Tient l'intensité jusqu'au bout."]]
+  },
+  U10: {
+    E: [["envie","Envie","Participe à fond, n'abandonne pas."],
+        ["ballon","Maîtrise du ballon","Conduite, contrôle, utilise ses deux pieds."],
+        ["ecoute","Écoute","Comprend et applique la consigne."],
+        ["partage","Jouer avec les autres","Fait des passes, partage le ballon."],
+        ["resp","Respect","Envers ses partenaires, les éducateurs et le matériel."]],
+    M: [["ose","Ose","Tente le dribble ou la frappe, n'a pas peur de se tromper."],
+        ["collectif","Joue collectif","Cherche un partenaire démarqué."],
+        ["attdef","Attaque et défense","Se replace et aide quand on perd le ballon."],
+        ["fair","Fair-play","Envers l'adversaire et l'arbitre, qu'on gagne ou qu'on perde."]]
+  }
+};
+const DESC = {}, LABEL = {}, NEWK = {}, OLDK = {};
+for (const [g, G] of Object.entries(GROUPS)) { OLDK[g] = new Set(G.crit.map(c => c[0])); for (const [k, l] of G.crit) LABEL[k] = LABEL[k] || l; }
+for (const [g, R] of Object.entries(GRILLES)) { NEWK[g] = new Set(); for (const c of [...R.E, ...R.M]) { NEWK[g].add(c[0]); LABEL[c[0]] = c[1]; DESC[c[0]] = c[2]; } }
+const critsOf = (g, type) => GRILLES[g] ? (type === "Match" ? GRILLES[g].M : GRILLES[g].E) : GROUPS[g].crit;
+const isOldNote = (n, g) => !!GRILLES[g] && !!n && !!n.crit && Object.keys(n.crit).some(k => OLDK[g].has(k) && !NEWK[g].has(k));
+const critsForNote = (n, g) => isOldNote(n, g) ? GROUPS[g].crit : critsOf(g, n && n.type);
+function critLabel(k, lab) {
+  const d = DESC[k];
+  if (!d) return h("span", {}, lab);
+  return h("details", { class: "crit-d" }, h("summary", {}, lab, h("span", { class: "crit-i", "aria-hidden": "true" }, "i")), h("p", {}, d));
+}
 const LEVELS = ["", "À travailler", "En progrès", "Correct", "Bien", "Très bien"];
 const SEG = /^[A-Za-z0-9_\-.~:@+]{1,200}$/;
 const isTemp = fid => typeof fid === "string" && fid.startsWith("j-");
@@ -285,7 +339,7 @@ const nid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(
 const groupOf = f => GROUPS[f && f.groupe] ? f.groupe : "U19";
 const sortedNotes = f => [...((f && Array.isArray(f.notes)) ? f.notes : [])].filter(n => n && typeof n.date === "string").sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 function noteAvg(n, g) {
-  const v = GROUPS[g].crit.map(c => n.crit && n.crit[c[0]]).filter(x => typeof x === "number" && x >= 1 && x <= 5);
+  const v = critsForNote(n, g).map(c => n.crit && n.crit[c[0]]).filter(x => typeof x === "number" && x >= 1 && x <= 5);
   return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
 }
 function critAvg(notes, k, type) {
@@ -299,7 +353,9 @@ function overall(f, last) {
 }
 const n1 = x => x == null ? "–" : x.toFixed(1).replace(".", ",");
 const initials = n => (n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
-const ABBR = { eng: "ENG", tech: "TEC", intel: "INT", comp: "COM", plaisir: "PLA", jeu: "JEU", respect: "RES", prise: "PRI", plac: "PLA", pied: "PIE", comm: "COM", cour: "COU" };
+const ABBR = { eng: "ENG", tech: "TEC", intel: "INT", comp: "COM", plaisir: "PLA", jeu: "JEU", respect: "RES", prise: "PRI", plac: "PLA", pied: "PIE", comm: "COM", cour: "COU",
+  int: "INT", app: "APP", qtec: "TEC", info: "INF", att: "ATT", role: "ROL", tac: "TAC", imp: "IMP", ment: "MEN", vol: "VOL",
+  envie: "ENV", ballon: "BAL", ecoute: "ECO", partage: "PAR", resp: "RES", ose: "OSE", collectif: "COL", attdef: "A/D", fair: "FAI" };
 function stars(v) { const r = Math.round(v || 0); const s = h("span", { class: "stars", "aria-label": `${r} sur 5` }); for (let i = 1; i <= 5; i++) s.append(i <= r ? h("span", {}, "★") : h("span", { class: "off" }, "★")); return s; }
 
 
@@ -547,11 +603,14 @@ function fcard(f, parent, fid) {
     avatarNode(fid, f.nom, "fc-ini")));
   card.append(h("div", { class: "fc-nom" }, f.nom || "Joueur"));
   card.append(h("div", { class: "fc-poste" }, [f.poste, f.sousCat || G.label].filter(Boolean).join(" · ")));
-  const crit = h("div", { class: "fc-crit" });
-  for (const [k] of G.crit) {
-    const a = critAvg(ns, k);
-    crit.append(parent ? h("span", {}, ABBR[k] || k, " ", stars(a)) : h("span", {}, h("b", {}, a == null ? "–" : Math.round(a * 20)), ABBR[k] || k));
-  }
+  const crit = h("div", { class: "fc-crit" + (parent ? " par" : "") });
+  const cell = (lab, a) => parent ? h("span", {}, lab, " ", stars(a)) : h("span", {}, h("b", {}, a == null ? "–" : Math.round(a * 20)), lab);
+  const all = sortedNotes(f), nouv = GRILLES[g] ? all.filter(n => !isOldNote(n, g) && n.crit && Object.keys(n.crit).length) : [];
+  if (nouv.length) {
+    const ent = nouv.filter(n => n.type !== "Match").slice(-5), mat = nouv.filter(n => n.type === "Match").slice(-5);
+    for (const [k] of GRILLES[g].E) crit.append(cell(ABBR[k] || k, critAvg(ent, k)));
+    crit.append(cell("MATCH", mean(mat.map(n => noteAvg(n, g)).filter(v => v != null))));
+  } else for (const [k] of G.crit) crit.append(cell(ABBR[k] || k, critAvg(ns, k)));
   card.append(crit);
   return card;
 }
@@ -577,10 +636,10 @@ function badges(fid, f, eq) {
 function records(f, parent) {
   const g = groupOf(f), ns = sortedNotes(f), last = ns[ns.length - 1], msgs = [];
   if (!last || ns.length < 3) return msgs;
-  for (const [k, lab] of GROUPS[g].crit) {
+  for (const [k, lab] of critsForNote(last, g)) {
     const v = last.crit && last.crit[k]; if (typeof v !== "number") continue;
     const prev = ns.slice(0, -1).map(n => n.crit && n.crit[k]).filter(x => typeof x === "number");
-    if (prev.length >= 2 && v > Math.max(...prev)) msgs.push(parent ? `Son meilleur niveau en ${lab.toLowerCase()} depuis le ${fmtLong(ns[0].date)}.` : `Ta meilleure note en ${lab.toLowerCase()} depuis le ${fmtLong(ns[0].date)}.`);
+    if (prev.length >= 2 && v > Math.max(...prev)) msgs.push(parent ? `Son meilleur niveau en « ${lab} » depuis le ${fmtLong(ns[0].date)}.` : `Ta meilleure note en « ${lab} » depuis le ${fmtLong(ns[0].date)}.`);
   }
   return msgs;
 }
@@ -805,16 +864,21 @@ function autoCard(fid, f, asCoach) {
     const type = h("select", { id: "au-type" }, h("option", { value: "Semaine" }, "Ma semaine"), h("option", { value: "Match" }, "Mon match"));
     const date = h("input", { type: "date", id: "au-date", value: today() });
     const crits = h("div", {});
-    for (const [k, lab] of G.crit) {
-      const sc = h("div", { class: "scale", role: "group", "aria-label": lab });
-      for (let v = 1; v <= 5; v++) { const b = h("button", { class: "sc", "aria-pressed": "false", title: LEVELS[v] }, v); b.onclick = () => { st.crit[k] = st.crit[k] === v ? undefined : v; if (st.crit[k] === undefined) delete st.crit[k]; sc.querySelectorAll(".sc").forEach((x, i) => x.setAttribute("aria-pressed", String(st.crit[k] === i + 1))); }; sc.append(b); }
-      crits.append(h("div", { class: "crit-row" }, h("span", {}, lab), sc));
-    }
+    let grille = critsOf(g, type.value);
+    const drawCrits = () => {
+      grille = critsOf(g, type.value); st.crit = {}; crits.replaceChildren();
+      for (const [k, lab] of grille) {
+        const sc = h("div", { class: "scale", role: "group", "aria-label": lab });
+        for (let v = 1; v <= 5; v++) { const b = h("button", { class: "sc", "aria-pressed": "false", title: LEVELS[v] }, v); b.onclick = () => { st.crit[k] = st.crit[k] === v ? undefined : v; if (st.crit[k] === undefined) delete st.crit[k]; sc.querySelectorAll(".sc").forEach((x, i) => x.setAttribute("aria-pressed", String(st.crit[k] === i + 1))); }; sc.append(b); }
+        crits.append(h("div", { class: "crit-row" }, critLabel(k, lab), sc));
+      }
+    };
+    drawCrits(); type.addEventListener("change", drawCrits);
     const com = h("textarea", { id: "au-com", rows: "3", maxlength: "1000", placeholder: "Ce que tu as bien fait, ce que tu dois travailler" });
     const msg = h("span", { class: "note" });
     const go = h("button", { class: "btn small" }, "Envoyer mon auto-évaluation");
     go.onclick = async () => {
-      if (Object.keys(st.crit).length < G.crit.length) { msg.className = "err"; msg.textContent = "Note-toi sur tous les critères."; return; }
+      if (Object.keys(st.crit).length < grille.length) { msg.className = "err"; msg.textContent = "Note-toi sur tous les critères."; return; }
       go.disabled = true;
       try { await S.db.doc("fiches/" + S.me + "/auto/" + nid()).set({ date: date.value || today(), type: type.value, crit: { ...st.crit }, com: com.value.trim().slice(0, 1000), at: new Date().toISOString() }); msg.className = "ok"; msg.textContent = "Envoyé au coach."; }
       catch (e) { go.disabled = false; msg.className = "err"; msg.textContent = "Échec : réessaie."; }
@@ -826,10 +890,10 @@ function autoCard(fid, f, asCoach) {
   } else if (autoMissing(fid, f)) card.append(h("span", { class: "pill match" }, "Auto-évaluation du dernier match manquante"));
   if (!autos.length) card.append(h("p", { class: "note", style: "margin:0" }, "Aucune auto-évaluation pour l'instant."));
   for (const a of autos.slice(0, 12)) {
-    const coach = notes.filter(n => n.date <= a.date && (a.type !== "Match" || n.type === "Match")).pop();
+    const coach = notes.filter(n => n.date <= a.date && (a.type === "Match" ? n.type === "Match" : n.type !== "Match")).pop();
     const rows = h("div", { class: "chips" });
-    for (const [k, lab] of G.crit) {
-      const mine = a.crit && a.crit[k], co = coach && coach.crit && coach.crit[k];
+    for (const k of Object.keys(a.crit || {})) {
+      const lab = LABEL[k] || k, mine = a.crit[k], co = coach && coach.crit && coach.crit[k];
       if (typeof mine !== "number") continue;
       rows.append(h("span", { class: "chip" }, `${lab} `, h("b", {}, `${mine}`), co ? h("span", { class: "note" }, ` · coach ${co}`) : null));
     }
@@ -1227,7 +1291,8 @@ function showTip(tip, host, html, x, y) {
 }
 function saisonCard(fid, f, parent) {
   const g = groupOf(f), G = GROUPS[g], notes = sortedNotes(f);
-  const crit = S.saisonCrit && G.crit.some(c => c[0] === S.saisonCrit) ? S.saisonCrit : "";
+  const listeC = GRILLES[g] ? [...GRILLES[g].E.map(c => [c[0], c[1], "Entraînement"]), ...GRILLES[g].M.map(c => [c[0], c[1], "Match"])] : G.crit;
+  const crit = S.saisonCrit && listeC.some(c => c[0] === S.saisonCrit) ? S.saisonCrit : "";
   const val = n => crit ? (n.crit && typeof n.crit[crit] === "number" ? n.crit[crit] : null) : noteAvg(n, g);
   const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, parent ? "Sa saison en chiffres" : "Ma saison en chiffres"));
   // tuiles
@@ -1243,10 +1308,18 @@ function saisonCard(fid, f, parent) {
     tile("Progression", prog == null ? "–" : (prog >= 0 ? "+" : "−") + n1(Math.abs(prog)), prog == null ? "dès 6 évaluations" : "5 dernières vs 5 premières"),
     tile("Meilleure note", best ? n1(best.v) : "–", best ? `${fmtDate(best.d)} · ${best.t}` : null),
     tile("Évaluations", String(notes.length), `${notes.length - nM} entraînement${notes.length - nM > 1 ? "s" : ""} · ${nM} match${nM > 1 ? "s" : ""}`),
-    tile("Présence", ps.rate == null ? "–" : Math.round(ps.rate * 100) + " %", ps.n ? `${ps.ok} séance${ps.ok > 1 ? "s" : ""} sur ${ps.n}` : "pas encore d'appel")));
+    tile("Présence", ps.rate == null ? "–" : Math.round(ps.rate * 100) + " %", ps.n ? `${ps.ok} séance${ps.ok > 1 ? "s" : ""} sur ${ps.n}` : "pas encore d'appel"),
+    ...(g === "U19" ? (() => { const st = notes.filter(n => n.type === "Match" && n.stats); if (!st.length) return [];
+      const sum = k => st.reduce((a, n) => a + (typeof n.stats[k] === "number" ? n.stats[k] : 0), 0), nmin = st.filter(n => typeof n.stats.min === "number").length;
+      return [tile("Buts", String(sum("buts")), `${sum("pd")} passe${sum("pd") > 1 ? "s" : ""} décisive${sum("pd") > 1 ? "s" : ""}`), tile("Temps de jeu", nmin ? `${sum("min")} min` : "–", nmin ? `sur ${nmin} match${nmin > 1 ? "s" : ""} renseigné${nmin > 1 ? "s" : ""}` : null)]; })() : [])));
   // filtre critère
-  card.append(h("div", { class: "row", style: "gap:6px" }, [["", "Toutes les notes"], ...G.crit].map(([k, lab]) =>
-    h("button", { type: "button", class: "opt", "aria-pressed": String(crit === k), onclick: () => { S.saisonCrit = k; render(); } }, lab))));
+  const optB = ([k, lab]) => h("button", { type: "button", class: "opt", "aria-pressed": String(crit === k), onclick: () => { S.saisonCrit = k; render(); } }, lab);
+  if (GRILLES[g]) {
+    card.append(h("div", { class: "row", style: "gap:6px" }, optB(["", "Toutes les notes"])));
+    card.append(h("div", { class: "row", style: "gap:6px;align-items:center" }, h("span", { class: "note" }, "Entraînement :"), GRILLES[g].E.map(optB)));
+    card.append(h("div", { class: "row", style: "gap:6px;align-items:center" }, h("span", { class: "note" }, "Match :"), GRILLES[g].M.map(optB)));
+    if (crit && DESC[crit]) card.append(h("p", { class: "note", style: "margin:0" }, `${LABEL[crit]} : ${DESC[crit]}`));
+  } else card.append(h("div", { class: "row", style: "gap:6px" }, [["", "Toutes les notes"], ...G.crit].map(optB)));
   // données par mois
   const nbM = new Set(notes.map(n => monthKey(n.date))).size, parMois = nbM >= 2;
   const kf = parMois ? monthKey : (d => String(d).slice(0, 10)), labK = parMois ? monthLab : (k => fmtDate(k));
@@ -1261,7 +1334,7 @@ function saisonCard(fid, f, parent) {
   else {
     const W = 560, H = 240, L = 30, R = 104, T = 16, B = 30;
     const x = i => L + i * (W - L - R) / (months.length - 1), y = v => T + (5 - v) * (H - T - B) / 4;
-    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${parMois ? "Évolution mois par mois" : "Évolution séance par séance"}${crit ? " : " + esc(G.crit.find(c => c[0] === crit)[1]) : ""}">`;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${parMois ? "Évolution mois par mois" : "Évolution séance par séance"}${crit ? " : " + esc(LABEL[crit] || crit) : ""}">`;
     for (let v = 1; v <= 5; v++) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#2e2a2b" stroke-width="1"/><text x="${L - 10}" y="${y(v) + 4}" fill="#aaa294" font-size="12" text-anchor="end">${v}</text>`;
     rows.forEach((r, i) => s += `<text x="${x(i)}" y="${H - 8}" fill="#aaa294" font-size="12" text-anchor="middle">${esc(labK(r.k))}</text>`);
     s += `<line class="xh" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#aaa294" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>`;
@@ -1301,11 +1374,11 @@ function saisonCard(fid, f, parent) {
     const open = !!S.saisonTable;
     card.append(h("button", { type: "button", class: "linkbtn", style: "align-self:flex-start", "aria-expanded": String(open), onclick: () => { S.saisonTable = !open; render(); } }, open ? "Masquer les données" : parMois ? "Voir les données mois par mois" : "Voir les données séance par séance"));
     if (open) card.append(h("div", { class: "tablebox" }, h("table", { class: "stats" },
-      h("thead", {}, h("tr", {}, h("th", {}, parMois ? "Mois" : "Séance"), h("th", {}, "Entraînement"), h("th", {}, "Match"), ...G.crit.map(c => h("th", {}, ABBR[c[0]] || c[1])), h("th", {}, "Présence"))),
+      h("thead", {}, h("tr", {}, h("th", {}, parMois ? "Mois" : "Séance"), h("th", {}, "Entraînement"), h("th", {}, "Match"), ...(GRILLES[g] ? [] : G.crit.map(c => h("th", {}, ABBR[c[0]] || c[1]))), h("th", {}, "Présence"))),
       h("tbody", {}, rows.map(r => {
-        const ns = notes.filter(n => monthKey(n.date) === r.k);
+        const ns = notes.filter(n => kf(n.date) === r.k);
         return h("tr", {}, h("td", {}, labK(r.k)), h("td", {}, r.e == null ? "–" : `${n1(r.e)} (${r.ne})`), h("td", {}, r.m == null ? "–" : `${n1(r.m)} (${r.nm})`),
-          ...G.crit.map(c => h("td", {}, n1(mean(ns.map(n => n.crit && n.crit[c[0]]).filter(v => typeof v === "number"))))),
+          ...(GRILLES[g] ? [] : G.crit.map(c => h("td", {}, n1(mean(ns.map(n => n.crit && n.crit[c[0]]).filter(v => typeof v === "number")))))),
           h("td", {}, r.pres == null ? "–" : `${Math.round(r.pres * 100)} % (${r.np})`));
       })))));
   }
@@ -1509,7 +1582,24 @@ function ficheView(fid, f, asCoach) {
   // moyennes par critère
   const hasMatch = notes.some(n => n.type === "Match");
   const bars = h("div", { class: "bars" });
-  for (const [k, lab] of G.crit) {
+  const barRow = (k, lab, a, cls) => parent
+    ? [h("div", { class: "barline" }, critLabel(k, lab), h("div", { class: "track" }, h("div", { class: "fill" + (cls || ""), style: `width:${a ? a / 5 * 100 : 0}%` })), h("span", { class: "val", style: "width:auto" }, "")),
+       h("div", { class: "pmeta", style: "margin:-6px 0 2px" }, a == null ? "–" : LEVELS[Math.round(a)])]
+    : [h("div", { class: "barline" }, critLabel(k, lab), h("div", { class: "track" }, h("div", { class: "fill" + (cls || ""), style: `width:${a ? a / 5 * 100 : 0}%` })), h("span", { class: "val" }, n1(a)))];
+  const anciennes = GRILLES[g] ? notes.filter(n => isOldNote(n, g)) : [], nouvelles = GRILLES[g] ? notes.filter(n => !isOldNote(n, g)) : [];
+  if (GRILLES[g]) {
+    const ne = nouvelles.filter(n => n.type !== "Match"), nm = nouvelles.filter(n => n.type === "Match");
+    bars.append(h("div", { class: "bars-t" }, "À l'entraînement"));
+    if (ne.length) for (const [k, lab] of GRILLES[g].E) bars.append(...barRow(k, lab, critAvg(ne, k)));
+    else bars.append(h("p", { class: "note", style: "margin:0" }, "Pas encore d'entraînement noté avec cette grille."));
+    bars.append(h("div", { class: "bars-t" }, "En match"));
+    if (nm.length) for (const [k, lab] of GRILLES[g].M) bars.append(...barRow(k, lab, critAvg(nm, k), " m"));
+    else bars.append(h("p", { class: "note", style: "margin:0" }, "Pas encore de match noté avec cette grille."));
+    if (anciennes.length) {
+      bars.append(h("div", { class: "bars-t" }, `Ancienne grille (${anciennes.length} évaluation${anciennes.length > 1 ? "s" : ""})`));
+      for (const [k, lab] of G.crit) bars.append(...barRow(k, lab, critAvg(anciennes, k)));
+    }
+  } else for (const [k, lab] of G.crit) {
     const e = critAvg(notes, k, "Entraînement"), m = critAvg(notes, k, "Match"), a = critAvg(notes, k);
     if (parent) {
       const lv = a == null ? "–" : LEVELS[Math.round(a)];
@@ -1521,7 +1611,8 @@ function ficheView(fid, f, asCoach) {
     }
   }
   const moy = h("div", { class: "card" }, h("h3", {}, parent ? "Où il en est" : "Moyenne par critère, sur 5"));
-  if (!parent && hasMatch) moy.append(h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:#b08c40" }), "Match")));
+  if (GRILLES[g]) moy.append(h("p", { class: "note", style: "margin:0 0 6px" }, "Touche un critère pour voir ce qu'il veut dire."));
+  if (!parent && hasMatch && !GRILLES[g]) moy.append(h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:#b08c40" }), "Match")));
   moy.append(bars);
 
   const evo = h("div", { class: "card" }, h("h3", {}, "Évolution"), parent ? null : h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:#b08c40" }), "Match")), chart(f));
@@ -1534,13 +1625,17 @@ function ficheView(fid, f, asCoach) {
   const hist = h("div", { class: "hist" });
   for (const n of [...notes].reverse()) {
     const chips = h("div", { class: "chips" });
-    for (const [k, lab] of G.crit) {
+    for (const [k, lab] of critsForNote(n, g)) {
       const v = n.crit && n.crit[k];
       if (typeof v !== "number") continue;
       chips.append(h("span", { class: "chip" }, `${lab} `, h("b", {}, parent ? LEVELS[v] : `${v}/5`)));
     }
+    const stt = n.stats || {};
+    if (typeof stt.min === "number") chips.append(h("span", { class: "chip" }, "Temps de jeu ", h("b", {}, `${stt.min} min`)));
+    if (typeof stt.buts === "number" && stt.buts) chips.append(h("span", { class: "chip" }, "Buts ", h("b", {}, String(stt.buts))));
+    if (typeof stt.pd === "number" && stt.pd) chips.append(h("span", { class: "chip" }, "Passes déc. ", h("b", {}, String(stt.pd))));
     const item = h("div", { class: "hitem" },
-      h("div", { class: "hhead" }, h("strong", {}, fmtLong(n.date)), h("span", { class: "pill" + (n.type === "Match" ? " match" : "") }, n.type === "Match" ? (g === "U10" ? "Plateau" : "Match") : "Entraînement")),
+      h("div", { class: "hhead" }, h("strong", {}, fmtLong(n.date)), h("span", { class: "pill" + (n.type === "Match" ? " match" : "") }, n.type === "Match" ? "Match" : "Entraînement"), isOldNote(n, g) ? h("span", { class: "pill" }, "Ancienne grille") : null),
       chips, n.com ? h("div", { class: "com-text" }, n.com) : null);
     if (asCoach) {
       const del = h("button", { class: "linkbtn danger" }, "Supprimer cette évaluation");
@@ -1616,7 +1711,7 @@ function coachView() {
 
 function startSaisie() {
   const rows = {};
-  for (const [fid, f] of Object.entries(S.fiches)) if (groupOf(f) === S.tab) rows[fid] = { present: true, crit: {}, com: "" };
+  for (const [fid, f] of Object.entries(S.fiches)) if (groupOf(f) === S.tab) rows[fid] = { present: true, crit: {}, com: "", stats: {} };
   S.saisie = { date: today(), type: "Entraînement", rows, msg: "" };
   S.view = "saisie"; render();
 }
@@ -1649,7 +1744,7 @@ function saisieView() {
     card.append(h("div", { class: "saisie-head" }, h("span", { class: "row", style: "gap:8px;align-items:center" }, h("strong", {}, f.nom || "Sans nom"),
       ann ? (a ? h("span", { class: "pill " + (a.p ? "ok" : "no") }, a.p ? "A dit oui" : "A dit non") : h("span", { class: "pill" }, "Pas répondu")) : null), tog));
     const crits = h("div", { class: "crits" });
-    for (const [k, lab] of G.crit) {
+    for (const [k, lab] of critsOf(S.tab, s.type)) {
       const sc = h("div", { class: "scale", role: "group", "aria-label": lab });
       for (let v = 1; v <= 5; v++) {
         const b = h("button", { class: "sc", "aria-pressed": String(r.crit[k] === v), title: LEVELS[v] }, v);
@@ -1659,7 +1754,13 @@ function saisieView() {
         };
         sc.append(b);
       }
-      crits.append(h("div", { class: "crit-row" }, h("span", {}, lab), sc));
+      crits.append(h("div", { class: "crit-row" }, critLabel(k, lab), sc));
+    }
+    if (S.tab === "U19" && s.type === "Match") {
+      r.stats = r.stats || {};
+      const num = (key, lab, max) => { const i = h("input", { type: "number", inputmode: "numeric", min: "0", max: String(max), id: `st-${key}-${fid}`, placeholder: "–" }); if (typeof r.stats[key] === "number") i.value = r.stats[key];
+        i.oninput = () => { const v = parseInt(i.value, 10); if (isNaN(v)) delete r.stats[key]; else r.stats[key] = Math.max(0, Math.min(max, v)); }; return h("label", { class: "field stat-in" }, lab, i); };
+      crits.append(h("div", { class: "row stats-in" }, num("min", "Temps de jeu (min)", 130), num("buts", "Buts", 20), num("pd", "Passes déc.", 20)));
     }
     const com = h("input", { class: "com", type: "text", maxlength: "500", id: "com-" + fid, placeholder: G.parent ? "Un mot pour les parents (facultatif)" : "Commentaire (facultatif)", oninput: e => r.com = e.target.value });
     com.value = r.com;
@@ -1677,8 +1778,10 @@ function saisieView() {
       const r = s.rows[fid], f = S.fiches[fid];
       const pres = (Array.isArray(f.presences) ? f.presences : []).filter(p => !(p.date === s.date && p.type === s.type));
       const patch = { presences: [...pres, { date: s.date, type: s.type, p: r.present }] };
-      if (r.present && (Object.keys(r.crit).length || r.com.trim())) {
-        patch.notes = [...sortedNotes(f), { id: nid(), date: s.date, type: s.type, crit: { ...r.crit }, com: r.com.trim().slice(0, 500), at: new Date().toISOString() }];
+      const keys = new Set(critsOf(S.tab, s.type).map(c => c[0])), crit = Object.fromEntries(Object.entries(r.crit).filter(([k]) => keys.has(k)));
+      const stats = (S.tab === "U19" && s.type === "Match" && r.stats && Object.keys(r.stats).length) ? { ...r.stats } : null;
+      if (r.present && (Object.keys(crit).length || r.com.trim() || stats)) {
+        patch.notes = [...sortedNotes(f), { id: nid(), date: s.date, type: s.type, crit, com: r.com.trim().slice(0, 500), at: new Date().toISOString(), ...(stats ? { stats } : {}) }];
         rated++;
       }
       try { await writeFicheQuiet(fid, patch); ok++; } catch (e) { ko++; }
@@ -1793,8 +1896,8 @@ function demoData() {
     const base = 2.4 + rnd() * 1.2;
     for (let i = 0; i < 9; i++) {
       const d = new Date(2026, 8, 8 + i * 7 + (i % 2 ? 3 : 0)).toISOString().slice(0, 10);
-      const crit = {}; for (const [k] of G.crit) crit[k] = Math.max(1, Math.min(5, Math.round(base + i * 0.12 + (rnd() - 0.5) * 1.6)));
-      notes.push({ id: "ex" + i + nom, date: d, type: i % 3 === 2 ? "Match" : "Entraînement", crit, com: i === 8 ? (groupe === "U10" ? "Très appliqué aujourd'hui, il a osé demander le ballon." : "Bonne séance, continue à parler avec tes partenaires.") : "" });
+      const ty = i % 3 === 2 ? "Match" : "Entraînement", crit = {}; for (const [k] of critsOf(groupe, ty)) crit[k] = Math.max(1, Math.min(5, Math.round(base + i * 0.12 + (rnd() - 0.5) * 1.6)));
+      notes.push({ id: "ex" + i + nom, date: d, type: ty, crit, ...(groupe === "U19" && ty === "Match" ? { stats: { min: 60 + i * 3, buts: i % 2, pd: (i + 1) % 2 } } : {}), com: i === 8 ? (groupe === "U10" ? "Très appliqué aujourd'hui, il a osé demander le ballon." : "Bonne séance, continue à parler avec tes partenaires.") : "" });
     }
     const presences = notes.filter(n => n.type === "Entraînement").map(n => ({ date: n.date, type: n.type, p: true }));
     for (let i = 0; i < 6; i++) presences.push({ date: new Date(2026, 9, 1 + i * 3).toISOString().slice(0, 10), type: "Entraînement", p: rnd() > 0.15 });
