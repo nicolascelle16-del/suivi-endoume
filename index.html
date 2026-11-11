@@ -355,13 +355,14 @@ details.bmf-vol > summary { cursor: pointer; }
 "use strict";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, reauthenticateWithCredential, EmailAuthProvider, verifyBeforeUpdateEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc as fsDoc, collection as fsCol, onSnapshot as fsSnap, getDoc, getDocs, setDoc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc as fsDoc, collection as fsCol, onSnapshot as fsSnap, getDoc, getDocs, setDoc, updateDoc, deleteDoc, writeBatch, query as fsQuery, where as fsWhere } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const FIREBASE_CONFIG = {"apiKey": "AIzaSyA06TpNjasBn1vQLlp36_ImHEQ-JW3LBPE", "authDomain": "suivi-endoume.firebaseapp.com", "projectId": "suivi-endoume", "storageBucket": "suivi-endoume.firebasestorage.app", "messagingSenderId": "117976790225", "appId": "1:117976790225:web:e74232bf5749edcdff81f0"};
 const fbApp = initializeApp(FIREBASE_CONFIG), auth = getAuth(fbApp), fs = getFirestore(fbApp);
 const wrapDoc = x => ({ id: x.id, exists: x.exists(), data: () => x.data() });
 function docRef(path) { const r = fsDoc(fs, path); return { id: r.id, path, get: async () => wrapDoc(await getDoc(r)), set: d => setDoc(r, d), update: d => updateDoc(r, d), delete: () => deleteDoc(r), onSnapshot: (n, e) => fsSnap(r, x => n(wrapDoc(x)), e) }; }
 function colRef(path) { const r = fsCol(fs, path); return { path, get: async () => { const q = await getDocs(r); return { docs: q.docs.map(wrapDoc) }; }, onSnapshot: (n, e) => fsSnap(r, q => n({ docs: q.docs.map(wrapDoc), size: q.size, empty: q.empty }), e), doc: id => docRef(path + "/" + id) }; }
-const DB = { doc: docRef, collection: colRef };
+function whereRef(path, field, val) { const q = fsQuery(fsCol(fs, path), fsWhere(field, "==", val)); return { onSnapshot: (n, e) => fsSnap(q, x => n({ docs: x.docs.map(wrapDoc), size: x.size, empty: x.empty }), e) }; }
+const DB = { doc: docRef, collection: colRef, where: whereRef };
 const GROUPS = {
   U19: { label: "U19", crit: [["eng","Engagement"],["tech","Technique"],["intel","Intelligence de jeu"],["comp","Comportement"]] },
   U10: { label: "U10", parent: true, crit: [["plaisir","Plaisir et engagement"],["tech","Technique balle au pied"],["jeu","Compréhension du jeu"],["respect","Respect et écoute"]] },
@@ -431,7 +432,33 @@ const fmtDate = d => { const x = new Date(d + "T12:00:00"); return isNaN(x) ? d 
 const fmtLong = d => { const x = new Date(d + "T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); };
 const nid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 const groupOf = f => GROUPS[f && f.groupe] ? f.groupe : "U19";
-const sortedNotes = f => [...((f && Array.isArray(f.notes)) ? f.notes : [])].filter(n => n && typeof n.date === "string").sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+const byDate = (a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+const rawNotes = f => [...((f && Array.isArray(f.notes)) ? f.notes : [])].filter(n => n && typeof n.date === "string").sort(byDate);
+const adjNotes = f => [...((f && Array.isArray(f.notesAdj)) ? f.notesAdj : [])].filter(n => n && typeof n.date === "string");
+const POIDS = { coach: 2, adj: 1 };
+function combineNotes(m, adjs) {
+  const base = m || adjs[0], crit = {};
+  const keys = new Set([...Object.keys((m && m.crit) || {}), ...adjs.flatMap(a => Object.keys(a.crit || {}))]);
+  for (const k of keys) {
+    let sum = 0, w = 0;
+    if (m && m.crit && typeof m.crit[k] === "number") { sum += m.crit[k] * POIDS.coach; w += POIDS.coach; }
+    for (const a of adjs) if (a.crit && typeof a.crit[k] === "number") { sum += a.crit[k] * POIDS.adj; w += POIDS.adj; }
+    if (w) crit[k] = Math.round(sum / w * 10) / 10;
+  }
+  const stats = (m && m.stats) || (adjs.find(a => a.stats) || {}).stats;
+  const out = { ...base, crit, com: [m && m.com, ...adjs.map(a => a.com)].filter(Boolean).join(" · "), detail: { coach: m ? m.crit || {} : null, adj: adjs.map(a => ({ nom: a.parNom || "Adjoint", crit: a.crit || {} })) } };
+  if (stats) out.stats = stats; else delete out.stats;
+  return out;
+}
+const sortedNotes = f => {
+  const main = rawNotes(f), adj = adjNotes(f);
+  if (!adj.length) return main;
+  const key = n => n.date + "|" + n.type, A = {};
+  for (const n of adj) (A[key(n)] = A[key(n)] || []).push(n);
+  const out = main.map(n => { const a = A[key(n)]; if (!a) return n; delete A[key(n)]; return combineNotes(n, a); });
+  for (const k of Object.keys(A)) out.push(combineNotes(null, A[k]));
+  return out.sort(byDate);
+};
 function noteAvg(n, g) {
   const v = critsForNote(n, g).map(c => n.crit && n.crit[c[0]]).filter(x => typeof x === "number" && x >= 1 && x <= 5);
   return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
@@ -1045,15 +1072,22 @@ function accesView() {
       if (!armed) { armed = true; cb.className = "btn ghost small"; cb.textContent = `Confirmer : donner l'accès coach à ${x.nom || "ce compte"}`; return; }
       try { await S.db.doc("coachs/" + uid).set({ nom: x.nom || "", email: x.email || "", at: new Date().toISOString() }); await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; }
     };
+    let armedU = false;
+    const cu = h("button", { class: "linkbtn" }, "Adjoint U19 uniquement");
+    cu.onclick = async () => {
+      if (!armedU) { armedU = true; cu.className = "btn ghost small"; cu.textContent = `Confirmer : ${x.nom || "ce compte"} adjoint U19 (fiches et équipe U19, notes à 1/3)`; return; }
+      try { await S.db.doc("coachs/" + uid).set({ nom: x.nom || "", email: x.email || "", at: new Date().toISOString(), groupes: ["U19"] }); await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; }
+    };
     pc.append(h("div", { class: "hitem" },
       h("div", { class: "hhead" }, h("span", { class: "row", style: "gap:8px;align-items:center;flex-wrap:nowrap" }, avatarNode(uid, x.nom, "av-mini"), h("strong", {}, x.nom || "Sans nom"), x.groupe ? h("span", { class: "pill" }, [GROUPS[x.groupe] ? (x.groupe === "U10" ? "Parent U10" : GROUPS[x.groupe].label) : x.groupe, x.poste && x.groupe === "U19" ? x.poste : ""].filter(Boolean).join(" · ")) : null), h("span", { class: "note" }, x.email || "")),
       h("div", { class: "row", style: "align-items:center" }, h("label", { class: "field", style: "flex:1;min-width:200px" }, sel), lb),
-      h("div", { class: "row", style: "align-items:center;justify-content:space-between" }, h("span", {}, cb, " "), h("button", { class: "linkbtn danger", onclick: async () => { try { await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Refuser")), m));
+      h("div", { class: "row", style: "align-items:center;justify-content:space-between" }, h("span", { class: "row", style: "gap:12px" }, cb, cu), h("button", { class: "linkbtn danger", onclick: async () => { try { await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Refuser")), m));
   }
-  const cc = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Coachs"), h("p", { class: "note", style: "margin:0" }, "Les coachs voient et modifient toutes les fiches."));
+  const cc = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Coachs"), h("p", { class: "note", style: "margin:0" }, "Accès complet : toutes les fiches. Adjoint U19 : fiches et équipe U19 seulement, ses notes comptent pour 1/3 de la note finale (les tiennes 2/3)."));
   for (const [uid, x] of Object.entries(S.coachs)) {
-    const m = h("span", { class: "note" });
-    cc.append(h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, x.nom || x.email || "Coach"), h("span", { class: "note" }, x.email || "")),
+    const m = h("span", { class: "note" }), lim = Array.isArray(x.groupes) && x.groupes.length;
+    const tog = uid === S.me ? null : h("button", { class: "linkbtn", onclick: async () => { try { const d = { nom: x.nom || "", email: x.email || "", at: x.at || new Date().toISOString() }; if (!lim) d.groupes = ["U19"]; await S.db.doc("coachs/" + uid).set(d); } catch (e) { m.textContent = "Échec : réessaie."; } } }, lim ? "Donner l'accès complet" : "Limiter aux U19");
+    cc.append(h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, x.nom || x.email || "Coach"), h("span", { class: "pill" }, lim ? `Adjoint ${x.groupes.map(g => (GROUPS[g] || {}).label || g).join(", ")}` : "Accès complet"), h("span", { class: "note" }, x.email || "")), tog,
       uid === S.me ? h("span", { class: "note" }, "C'est toi") : h("button", { class: "linkbtn danger", onclick: async () => { try { await S.db.doc("coachs/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Retirer l'accès coach"), m));
   }
   const imp = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Importer des données"), h("p", { class: "note", style: "margin:0" }, "Fichier JSON préparé par Jarvis. Les fiches qui existent déjà ne sont pas écrasées."));
@@ -1635,7 +1669,7 @@ function ficheView(fid, f, asCoach) {
   // carte, records, mot du coach
   const side = h("div", { class: "stack" });
   for (const r of records(f, parent)) side.append(h("div", { class: "record" }, r));
-  if (asCoach) {
+  if (asCoach && !S.scope) {
     const mt = h("input", { id: "mot-" + fid, maxlength: "160", placeholder: "Un mot personnel, épinglé en haut de sa fiche" }); mt.value = f.mot || "";
     const mm = h("span", { class: "note" });
     side.append(h("div", { class: "card" }, h("h3", {}, "Mot du coach"), h("label", { class: "field" }, mt), h("div", { class: "row", style: "margin-top:8px" },
@@ -1667,7 +1701,7 @@ function ficheView(fid, f, asCoach) {
       h("p", { class: "note", style: "margin:0 0 8px" }, "Le joueur crée son compte sur ce site, puis il apparaît dans cette liste. Ses notes et badges sont gardés lors de la liaison."),
       h("label", { class: "field" }, sel), h("div", { class: "row", style: "margin-top:8px" }, lb, lm)));
   }
-  if (asCoach && !isTemp(fid) && !f.exemple && !S.demo) wrap.append(compteCard(fid, f));
+  if (asCoach && !S.scope && !isTemp(fid) && !f.exemple && !S.demo) wrap.append(compteCard(fid, f));
   // objectif individuel : U19 uniquement, choisi par le joueur
   if (g === "U19") wrap.append(objectifCard(fid, f, asCoach));
 
@@ -1722,7 +1756,11 @@ function ficheView(fid, f, asCoach) {
     for (const [k, lab] of critsForNote(n, g)) {
       const v = n.crit && n.crit[k];
       if (typeof v !== "number") continue;
-      chips.append(h("span", { class: "chip" }, `${lab} `, h("b", {}, parent ? LEVELS[v] : `${v}/5`)));
+      chips.append(h("span", { class: "chip" }, `${lab} `, h("b", {}, parent ? LEVELS[Math.round(v)] : `${String(v).replace(".", ",")}/5`)));
+    }
+    if (asCoach && n.detail) {
+      const moy = c => { const v = critsForNote(n, g).map(x => c && c[x[0]]).filter(x => typeof x === "number"); return v.length ? n1(mean(v)) : "–"; };
+      chips.append(h("span", { class: "chip", style: "border-style:dashed" }, n.detail.coach ? `Coach ${moy(n.detail.coach)} · ` : "", n.detail.adj.map(a => `${a.nom} ${moy(a.crit)}`).join(" · "), h("b", {}, n.detail.coach ? " (2/3 – 1/3)" : "")));
     }
     const stt = n.stats || {};
     if (typeof stt.min === "number") chips.append(h("span", { class: "chip" }, "Temps de jeu ", h("b", {}, `${stt.min} min`)));
@@ -1731,11 +1769,11 @@ function ficheView(fid, f, asCoach) {
     const item = h("div", { class: "hitem" },
       h("div", { class: "hhead" }, h("strong", {}, fmtLong(n.date)), h("span", { class: "pill" + (n.type === "Match" ? " match" : "") }, n.type === "Match" ? "Match" : "Entraînement"), isOldNote(n, g) ? h("span", { class: "pill" }, "Ancienne grille") : null),
       chips, n.com ? h("div", { class: "com-text" }, n.com) : null);
-    if (asCoach) {
+    if (asCoach && !S.scope) {
       const del = h("button", { class: "linkbtn danger" }, "Supprimer cette évaluation");
       del.onclick = async () => {
         if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer la suppression"; return; }
-        try { await writeFiche(fid, { notes: sortedNotes(f).filter(x => x.id !== n.id) }); } catch (e) { del.textContent = "Échec : réessaie"; }
+        try { await writeFiche(fid, { notes: rawNotes(f).filter(x => x.id !== n.id), notesAdj: adjNotes(f).filter(x => !(x.date === n.date && x.type === n.type)) }); } catch (e) { del.textContent = "Échec : réessaie"; }
       };
       item.append(del);
     }
@@ -1743,7 +1781,7 @@ function ficheView(fid, f, asCoach) {
   }
   wrap.append(h("div", { class: "card" }, h("h3", {}, "Historique"), hist));
 
-  if (asCoach) {
+  if (asCoach && !S.scope) {
     const rm = h("button", { class: "linkbtn danger" }, "Supprimer cette fiche");
     rm.onclick = async () => {
       if (rm.dataset.c !== "1") { rm.dataset.c = "1"; rm.textContent = "Confirmer : la fiche et toutes ses notes seront effacées"; return; }
@@ -2206,12 +2244,14 @@ function dashView() {
 
 function coachView() {
   const app = h("div");
+  if (S.scope) { S.dash = false; S.bmf = false; if (!S.scope.includes(S.tab)) S.tab = S.scope[0]; }
   if (S.dash === undefined) S.dash = true;
   app.append(h("div", { class: "tabs", role: "tablist" },
-    h("button", { class: "tab", role: "tab", "aria-selected": String(!!S.dash && !S.bmf), onclick: () => { S.dash = true; S.bmf = false; S.view = "list"; S.sel = null; render(); } }, "Accueil"),
-    Object.entries(GROUPS).map(([k, G]) =>
+    S.scope ? null : h("button", { class: "tab", role: "tab", "aria-selected": String(!!S.dash && !S.bmf), onclick: () => { S.dash = true; S.bmf = false; S.view = "list"; S.sel = null; render(); } }, "Accueil"),
+    Object.entries(GROUPS).filter(([k]) => !S.scope || S.scope.includes(k)).map(([k, G]) =>
     h("button", { class: "tab", role: "tab", "aria-selected": String(!S.dash && !S.bmf && S.tab === k), onclick: () => { S.dash = false; S.bmf = false; S.tab = k; S.view = "list"; S.sel = null; render(); } }, G.label)),
-    h("button", { class: "tab", role: "tab", "aria-selected": String(!!S.bmf), onclick: () => { S.dash = false; S.bmf = true; S.view = "list"; S.sel = null; render(); } }, "BMF")));
+    S.scope ? null : h("button", { class: "tab", role: "tab", "aria-selected": String(!!S.bmf), onclick: () => { S.dash = false; S.bmf = true; S.view = "list"; S.sel = null; render(); } }, "BMF")));
+  if (S.scope) app.append(h("p", { class: "note", style: "margin:-6px 0 10px" }, `Accès adjoint ${S.scope.map(g => GROUPS[g].label).join(", ")}. Tes notes comptent pour 1/3 de la note finale.`));
   if (S.bmf) { app.append(carnetView()); return app; }
   if (S.dash) { app.append(dashView()); return app; }
   if (S.view === "list" && S.sub === "joueurs") { /* liste */ }
@@ -2221,8 +2261,8 @@ function coachView() {
     h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "joueurs"), onclick: () => { S.sub = "joueurs"; render(); } }, "Joueurs"),
     h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "equipe"), onclick: () => { S.sub = "equipe"; render(); } }, "Équipe"),
     h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "presences"), onclick: () => { S.sub = "presences"; render(); } }, "Présences"),
-    h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "acces"), onclick: () => { S.sub = "acces"; render(); } }, `Accès${Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]).length ? " (" + Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]).length + ")" : ""}`)));
-  if (S.view === "list" && S.sub === "acces") { app.append(accesView()); return app; }
+    S.scope ? null : h("button", { class: "subtab", role: "tab", "aria-selected": String(S.sub === "acces"), onclick: () => { S.sub = "acces"; render(); } }, `Accès${Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]).length ? " (" + Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]).length + ")" : ""}`)));
+  if (S.view === "list" && S.sub === "acces" && !S.scope) { app.append(accesView()); return app; }
   if (S.view === "list" && S.sub === "equipe") { app.append(equipeView(S.tab, true)); return app; }
   if (S.view === "list" && S.sub === "presences") { app.append(presencesView(S.tab)); return app; }
   if (S.view === "saisie") { app.append(saisieView()); return app; }
@@ -2232,10 +2272,10 @@ function coachView() {
   app.append(h("div", { class: "bar" },
     h("h2", {}, `${GROUPS[S.tab].label} · ${list.length} joueur${list.length > 1 ? "s" : ""}`),
     h("div", { class: "row" },
-      h("button", { class: "btn ghost", onclick: () => { S.view = "ajout"; render(); } }, "Ajouter un joueur"),
+      S.scope ? null : h("button", { class: "btn ghost", onclick: () => { S.view = "ajout"; render(); } }, "Ajouter un joueur"),
       h("button", { class: "btn", disabled: !list.length, onclick: () => startSaisie() }, "Noter une séance"))));
   if (S.flash) { app.append(h("p", { class: "ok" }, S.flash)); S.flash = ""; }
-  if (S.postSaisie && S.postSaisie.g === S.tab) {
+  if (S.postSaisie && S.postSaisie.g === S.tab && !S.scope) {
     const ps = S.postSaisie, kind = ps.type === "Match" ? "match" : "seance";
     const ex = carnetList().find(e => e.groupe === ps.g && e.kind === kind && e.date === ps.date);
     app.append(h("div", { class: "card row", style: "align-items:center;border-color:var(--or)" },
@@ -2333,7 +2373,9 @@ function saisieView() {
       const keys = new Set(critsOf(S.tab, s.type).map(c => c[0])), crit = Object.fromEntries(Object.entries(r.crit).filter(([k]) => keys.has(k)));
       const stats = (S.tab === "U19" && s.type === "Match" && r.stats && Object.keys(r.stats).length) ? { ...r.stats } : null;
       if (r.present && (Object.keys(crit).length || r.com.trim() || stats)) {
-        patch.notes = [...sortedNotes(f), { id: nid(), date: s.date, type: s.type, crit, com: r.com.trim().slice(0, 500), at: new Date().toISOString(), ...(stats ? { stats } : {}) }];
+        const nn = { id: nid(), date: s.date, type: s.type, crit, com: r.com.trim().slice(0, 500), at: new Date().toISOString(), ...(stats ? { stats } : {}) };
+        if (S.scope) patch.notesAdj = [...adjNotes(f).filter(x => !(x.par === S.me && x.date === s.date && x.type === s.type)), { ...nn, par: S.me, parNom: ((S.coachs[S.me] || {}).nom || "Adjoint").split(" ")[0] }];
+        else patch.notes = [...rawNotes(f), nn];
         rated++;
       }
       try { await writeFicheQuiet(fid, patch); ok++; } catch (e) { ko++; }
@@ -2487,11 +2529,33 @@ onAuthStateChanged(auth, async u => {
     try { const ins = { nom: ps.nom, email: u.email || "", at: new Date().toISOString() }; if (ps.groupe) ins.groupe = ps.groupe; if (ps.poste) ins.poste = ps.poste; await setDoc(fsDoc(fs, "inscriptions/" + u.uid), ins); } catch (e) {}
     try { await saveAvatar(u.uid, ps.avatar); } catch (e) {}
   }
-  try { S.admin = (await getDoc(fsDoc(fs, "coachs/" + u.uid))).exists(); } catch (e) { S.admin = false; }
+  let coachData = null;
+  try { const cs = await getDoc(fsDoc(fs, "coachs/" + u.uid)); S.admin = cs.exists(); coachData = S.admin ? cs.data() : null; } catch (e) { S.admin = false; }
+  S.scope = coachData && Array.isArray(coachData.groupes) && coachData.groupes.length ? coachData.groupes.filter(g => GROUPS[g]) : null;
   const slowT = setTimeout(() => { S.slow = true; render(); }, 10000);
   render();
   const watchVotes = () => db.collection("votes").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.votes = n; softRender(); }, () => {});
-  if (S.admin) {
+  if (S.admin && S.scope) {
+    S.coachs = { [S.me]: coachData }; S.dash = false; S.tab = S.scope[0];
+    const parG = { fiches: {}, seances: {}, votes: {} };
+    const merge = k => Object.assign({}, ...Object.values(parG[k]));
+    for (const g of S.scope) {
+      DB.where("fiches", "groupe", g).onSnapshot(snap => {
+        clearTimeout(slowT); S.slow = false;
+        const next = {}; snap.docs.forEach(d => { if (d.exists) next[d.id] = d.data(); });
+        parG.fiches[g] = next; S.fiches = merge("fiches"); S.loaded = true;
+        for (const fid of Object.keys(next)) if (!S.subs["o-" + fid]) S.subs["o-" + fid] = db.doc("objectifs/" + fid).onSnapshot(os => { if (os.exists) S.objectifs[fid] = os.data(); softRender(); }, () => {});
+        if (S.view === "saisie" || S.view === "ajout") return;
+        if (S.view === "fiche" && !S.fiches[S.sel]) { S.view = "list"; S.sel = null; }
+        softRender();
+      }, err => { clearTimeout(slowT); S.loaded = true; render(); document.getElementById("app").append(h("p", { class: "err" }, "Impossible de lire les fiches pour l'instant.")); });
+      DB.where("seances", "groupe", g).onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); parG.seances[g] = n; S.seances = merge("seances"); softRender(); }, () => {});
+      DB.where("votes", "groupe", g).onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); parG.votes[g] = n; S.votes = merge("votes"); softRender(); }, () => {});
+      db.doc("equipe/" + g).onSnapshot(es => { if (es.exists) S.equipes[g] = es.data(); else delete S.equipes[g]; softRender(); }, () => {});
+    }
+    db.collection("avatars").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.avatars = n; softRender(); }, () => {});
+    if (S.scope.includes("U19")) db.doc("championnat/u19").onSnapshot(cs => { S.champ = cs.exists ? cs.data() : null; softRender(); }, () => {});
+  } else if (S.admin) {
     db.collection("fiches").onSnapshot(snap => {
       clearTimeout(slowT); S.slow = false;
       const next = {}; snap.docs.forEach(d => { if (d.exists) next[d.id] = d.data(); });
