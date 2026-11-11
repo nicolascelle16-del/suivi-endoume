@@ -248,6 +248,65 @@ table.pres tr.clickable { cursor: pointer; } table.pres tr.clickable:hover td { 
 .opt { font-size: 13px; background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 4px; padding: 5px 10px; color: var(--muted); }
 .opt[aria-pressed="true"] { background: var(--rouge); border-color: var(--rouge); color: #fff; }
 @media (prefers-reduced-motion: no-preference) { button.card, .btn, .sc { transition: background .15s, border-color .15s; } }
+
+/* tableau de bord */
+@media (max-width: 600px) { .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .tabs .tab { flex: 0 0 auto; padding-left: 10px; padding-right: 10px; } }
+.dash { display: flex; flex-direction: column; gap: 26px; }
+.d-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.d-head h2 { margin: 0; }
+.d-sec { display: flex; flex-direction: column; gap: 8px; }
+.d-t { font-family: var(--label); font-weight: 600; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--or); margin: 0 0 2px; }
+.d-sub { font-size: 13px; color: var(--muted); }
+.d-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--ligne); }
+.d-row:first-of-type { border-top: 1px solid var(--ligne); }
+.d-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.d-main b { font-weight: 600; }
+.d-g { flex: 0 0 auto; font-family: var(--label); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--gc, var(--muted)); border: 1px solid var(--gc, var(--ligne)); border-radius: 999px; padding: 1px 8px; min-width: 50px; text-align: center; }
+.d-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--ligne); border: 1px solid var(--ligne); border-radius: 8px; overflow: hidden; }
+.d-tile { background: var(--surface); padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.d-l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-family: var(--label); }
+.d-v { font-family: var(--display); font-size: 38px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.d-tile .d-sub { font-size: 12px; }
+.d-grps { display: flex; flex-direction: column; border-top: 1px solid var(--ligne); }
+.d-grp { display: grid; grid-template-columns: 74px minmax(0, 1fr) repeat(3, 70px) 16px; align-items: center; gap: 8px; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--ligne); padding: 12px 4px 12px 12px; border-left: 3px solid var(--gc); }
+.d-grp:hover { background: var(--surface); }
+.d-gn { font-family: var(--display); font-size: 22px; }
+.d-gs { font-size: 13px; color: var(--muted); }
+.d-gk { display: flex; flex-direction: column; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.d-gk b { font-size: 18px; color: var(--texte); letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.d-gk.warn b { color: #ff9aa6; }
+.d-go { color: var(--muted); font-size: 20px; }
+.d-chips { display: flex; gap: 6px; }
+.d-zoom { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.d-card { background: var(--surface); border: 1px solid var(--ligne); border-radius: 8px; padding: 16px; min-width: 0; }
+.d-card h4 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+.d-bar { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 30px; gap: 8px; align-items: center; padding: 4px 0; font-size: 14px; }
+.d-bar .track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.d-bar .fill { height: 100%; background: var(--muted); border-radius: 3px; }
+.d-bar.low .fill { background: var(--rouge); }
+.d-bar.low summary { color: #ff9aa6; }
+.d-bar .val { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
+.d-bar > details.crit-d[open] { grid-column: 1 / -1; }
+.d-bar > details.crit-d[open] + .track { grid-column: 1 / 3; }
+.d-weeks { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; align-items: end; }
+.d-wk { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.d-wt { width: 100%; height: 90px; display: flex; align-items: flex-end; }
+.d-wf { width: 100%; border-radius: 3px 3px 0 0; }
+.d-wf.none { background: var(--ligne) !important; }
+.d-wv { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 14px; }
+.d-wl { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.d-list { margin: 0; padding: 0 0 0 20px; display: flex; flex-direction: column; gap: 4px; }
+.d-list li { padding-left: 2px; }
+.d-list li > b { float: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) {
+  .d-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .d-zoom { grid-template-columns: 1fr; }
+  .d-grp { grid-template-columns: minmax(0, 1fr) repeat(3, 56px) 12px; padding-left: 10px; }
+  .d-gs { display: none; }
+  .d-v { font-size: 32px; }
+  .d-row { gap: 10px; }
+  .d-row .btn { padding-left: 10px; padding-right: 10px; }
+}
 </style>
 </head>
 <body>
@@ -1666,10 +1725,185 @@ async function writeFiche(fid, patch) {
 }
 
 /* ---------- vue coach ---------- */
+
+/* ---------- tableau de bord coach ---------- */
+const GCOL = { U19: "#e0182d", U10: "#cdbd8f", GB: "#9a8f78" };
+const dFiches = g => Object.entries(S.fiches).filter(([, f]) => (!g || groupOf(f) === g) && (S.demo || !f.exemple));
+const moisDe = (k, delta) => { const [y, m] = k.split("-").map(Number); const d = new Date(y, m - 1 + delta, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+const avgNotes = (list, g) => mean(list.map(n => noteAvg(n, g)).filter(v => v != null));
+function groupMonth(g, mk) { const v = []; for (const [, f] of dFiches(g)) for (const n of sortedNotes(f)) if (monthKey(n.date) === mk) { const a = noteAvg(n, g); if (a != null) v.push(a); } return mean(v); }
+function presRange(g, from, to) { let ok = 0, n = 0; for (const [, f] of dFiches(g)) for (const p of (Array.isArray(f.presences) ? f.presences : [])) if (p && typeof p.date === "string" && p.date >= from && (!to || p.date <= to)) { n++; if (p.p) ok++; } return n ? ok / n : null; }
+function fiabilite(g) {
+  let venu = 0, total = 0;
+  for (const [, se] of Object.entries(S.seances)) {
+    if (!se || (g && se.groupe !== g)) continue;
+    for (const [fid, oui] of Object.entries(ditOf(se))) {
+      if (!oui || !S.fiches[fid]) continue;
+      const pr = (S.fiches[fid].presences || []).find(p => p && p.date === se.date && p.type === se.type);
+      if (!pr) continue; total++; if (pr.p) venu++;
+    }
+  }
+  return { rate: total ? venu / total : null, total };
+}
+function ouiAbsents() {
+  const c = {};
+  for (const [, se] of Object.entries(S.seances)) for (const [fid, oui] of Object.entries(ditOf(se))) {
+    if (!oui || !S.fiches[fid]) continue;
+    const pr = (S.fiches[fid].presences || []).find(p => p && p.date === se.date && p.type === se.type);
+    if (pr && !pr.p) c[fid] = (c[fid] || 0) + 1;
+  }
+  return c;
+}
+function dashAlertes() {
+  const out = [], nom = fid => (S.fiches[fid] && S.fiches[fid].nom) || "?";
+  const go = (g, fid) => () => { S.dash = false; S.tab = g; if (fid) { S.view = "fiche"; S.sel = fid; } else { S.view = "list"; S.sub = "joueurs"; } render(); };
+  // auto-évaluations du dernier match (U19, comptes reliés)
+  const manq = dFiches("U19").filter(([fid, f]) => !isTemp(fid) && !f.exemple && (watchAutos(fid), autoMissing(fid, f)));
+  if (manq.length) out.push({ g: "U19", t: `${manq.length} auto-évaluation${manq.length > 1 ? "s" : ""} du dernier match manquante${manq.length > 1 ? "s" : ""}`, d: manq.map(([fid]) => nom(fid)).join(", "), go: go("U19") });
+  // comptes en attente
+  const att = Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]);
+  if (att.length) out.push({ g: null, t: `${att.length} compte${att.length > 1 ? "s" : ""} en attente de liaison`, d: att.map(u => S.inscriptions[u].nom).filter(Boolean).join(", "), go: () => { S.dash = false; S.view = "list"; S.sub = "acces"; render(); }, lab: "Relier" });
+  // a dit oui mais pas venu (2 fois ou plus)
+  for (const [fid, n] of Object.entries(ouiAbsents())) if (n >= 2) { const g = groupOf(S.fiches[fid]); out.push({ g, t: `${nom(fid)} a dit oui sans venir ${n} fois`, d: "D'après le sondage WhatsApp et ton appel.", go: go(g, fid) }); }
+  for (const [fid, f] of dFiches()) {
+    const g = groupOf(f), ns = sortedNotes(f).map(n => noteAvg(n, g)).filter(v => v != null);
+    // en baisse
+    if (ns.length >= 6) { const r = mean(ns.slice(-3)), a = mean(ns.slice(0, -3)); if (a - r >= 0.6) out.push({ g, t: `${nom(fid)} est en baisse`, d: `${n1(r)} sur ses 3 dernières notes, contre ${n1(a)} avant.`, go: go(g, fid) }); }
+    // absent depuis 2 semaines
+    const pr = (Array.isArray(f.presences) ? f.presences : []).filter(p => p && typeof p.date === "string").sort((a, b) => a.date < b.date ? -1 : 1);
+    const lastOk = pr.filter(p => p.p).pop(), depuis = pr.filter(p => !lastOk || p.date > lastOk.date);
+    if (pr.length && depuis.length >= 2 && (!lastOk || lastOk.date < ilYa(14))) out.push({ g, t: `${nom(fid)} n'est pas venu depuis ${lastOk ? "le " + fmtLong(lastOk.date) : "le début"}`, d: `${depuis.length} absence${depuis.length > 1 ? "s" : ""} de suite.`, go: go(g, fid) });
+  }
+  return out;
+}
+function dashLineChart(series, keys) {
+  const W = 560, H = 210, L = 28, R = 74, T = 14, B = 28;
+  const x = i => keys.length < 2 ? L + (W - L - R) / 2 : L + i * (W - L - R) / (keys.length - 1), y = v => T + (5 - v) / 4 * (H - T - B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Moyenne des trois groupes, mois par mois">`;
+  for (const v of [1, 2, 3, 4, 5]) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#3b3536" stroke-width="1"/><text x="${L - 8}" y="${y(v) + 4}" fill="#aaa294" font-size="11" text-anchor="end">${v}</text>`;
+  keys.forEach((k, i) => s += `<text x="${x(i)}" y="${H - 8}" fill="#aaa294" font-size="11" text-anchor="middle">${esc(monthLab(k))}</text>`);
+  const ends = [];
+  for (const se of series) {
+    const pts = se.v.map((v, i) => v == null ? null : [x(i), y(v), v, keys[i]]).filter(Boolean);
+    if (!pts.length) continue;
+    s += `<polyline fill="none" stroke="${se.c}" stroke-width="2" stroke-linejoin="round" points="${pts.map(p => p[0] + "," + p[1]).join(" ")}"/>`;
+    for (const p of pts) s += `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${se.c}" stroke="#1b1819" stroke-width="2"><title>${esc(se.n)} · ${esc(monthLab(p[3]))} : ${n1(p[2])} sur 5</title></circle>`;
+    const l = pts[pts.length - 1]; ends.push({ x: l[0], y: l[1] + 4, n: se.n, c: se.c });
+  }
+  ends.sort((a, b) => a.y - b.y); for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+  for (const e of ends) s += `<text x="${e.x + 9}" y="${e.y}" fill="${e.c}" font-size="12" font-weight="600">${esc(e.n)}</text>`;
+  const el = h("div", { class: "chart" }); el.innerHTML = s + "</svg>"; return el;
+}
+function dashView() {
+  const box = h("div", { class: "dash" });
+  const mk = today().slice(0, 7), prevMk = moisDe(mk, -1), debMois = mk + "-01";
+  const sec = (titre, ...kids) => h("section", { class: "d-sec" }, h("h3", { class: "d-t" }, titre), ...kids);
+  const gpill = g => g ? h("span", { class: "d-g", style: `--gc:${GCOL[g]}` }, GROUPS[g].label) : h("span", { class: "d-g" }, "Club");
+  box.append(h("div", { class: "d-head" }, h("h2", {}, "Tableau de bord"), h("span", { class: "note" }, jourLong(today()))));
+  if (S.flash) { box.append(h("p", { class: "ok" }, S.flash)); S.flash = ""; }
+
+  // 1. prochainement
+  const prochaines = Object.entries(S.seances).filter(([, x]) => x && GROUPS[x.groupe] && x.date >= today()).sort((a, b) => (a[1].date + (a[1].heure || "")) < (b[1].date + (b[1].heure || "")) ? -1 : 1).slice(0, 4);
+  const lignes = prochaines.map(([sid, se]) => {
+    const d = ditOf(se), eff = dFiches(se.groupe).length, oui = Object.values(d).filter(v => v === true).length, non = Object.values(d).filter(v => v === false).length;
+    return h("div", { class: "d-row" }, gpill(se.groupe),
+      h("div", { class: "d-main" }, h("b", {}, seanceTitre(se)), h("span", { class: "d-sub" }, `Sondage : ${oui} oui · ${non} non · ${Math.max(0, eff - oui - non)} sans réponse`)),
+      h("button", { class: "btn small ghost", onclick: () => { S.dash = false; S.tab = se.groupe; startSaisie(); S.saisie.date = se.date; S.saisie.type = se.type; render(); } }, "Faire l'appel"));
+  });
+  const c = S.champ, ME = c && (c.equipe || "USM ENDOUME CATALANS");
+  const nextM = c && Array.isArray(c.matchs) ? c.matchs.slice().sort((a, b) => a.date < b.date ? -1 : 1).find(m => !m.score) : null;
+  if (nextM) {
+    const dom = nextM.h === ME, opp = dom ? nextM.a : nextM.h, sh = t => (c.noms && c.noms[t]) || t, r = (c.classement || []).find(x => x.t === opp), moi = (c.classement || []).find(x => x.t === ME);
+    lignes.push(h("div", { class: "d-row" }, gpill("U19"), h("div", { class: "d-main" }, h("b", {}, `J${nextM.j} · ${dom ? "contre" : "à"} ${sh(opp)}`), h("span", { class: "d-sub" }, `${fmtLong(nextM.date)}${nextM.heure ? " à " + nextM.heure : ""} · ${dom ? "domicile" : "extérieur"}${r ? ` · ${r.rang}e, ${r.pts} pts` : ""}${moi ? ` · nous : ${moi.rang}e` : ""}`))));
+  }
+  box.append(sec("Prochainement", lignes.length ? lignes : h("p", { class: "note", style: "margin:0" }, "Aucune séance à venir. Crée-la dans Présences, avec les réponses au sondage.")));
+
+  // 2. à traiter
+  const al = dashAlertes();
+  box.append(sec(`À traiter${al.length ? " · " + al.length : ""}`, al.length ? al.slice(0, S.dashAll ? 99 : 6).map(a => h("div", { class: "d-row" }, gpill(a.g), h("div", { class: "d-main" }, h("b", {}, a.t), a.d ? h("span", { class: "d-sub" }, a.d) : null), h("button", { class: "btn small ghost", onclick: a.go }, a.lab || "Voir")))
+    : h("p", { class: "note", style: "margin:0" }, "Rien à signaler. Tout est à jour."),
+    al.length > 6 ? h("button", { class: "linkbtn", onclick: () => { S.dashAll = !S.dashAll; render(); } }, S.dashAll ? "Afficher moins" : `Voir les ${al.length - 6} autres`) : null));
+
+  // 3. chiffres clés (3 groupes)
+  const moyM = mean(Object.keys(GROUPS).map(g => groupMonth(g, mk)).filter(v => v != null)), moyP = mean(Object.keys(GROUPS).map(g => groupMonth(g, prevMk)).filter(v => v != null));
+  const delta = moyM != null && moyP != null ? moyM - moyP : null;
+  const pres = presRange(null, debMois), fi = fiabilite(null);
+  const nbS = new Set(dFiches().flatMap(([, f]) => sortedNotes(f).filter(n => n.date >= debMois).map(n => groupOf(f) + n.date + n.type))).size;
+  const tile = (lab, v, sub, tone) => h("div", { class: "d-tile" }, h("span", { class: "d-l" }, lab), h("span", { class: "d-v" + (tone ? " " + tone : "") }, v), h("span", { class: "d-sub" }, sub));
+  box.append(sec(`Ce mois-ci · ${monthLab(mk)}`, h("div", { class: "d-tiles" },
+    tile("Moyenne", moyM == null ? "–" : n1(moyM), delta == null ? "sur 5" : `${delta >= 0 ? "↑ +" : "↓ −"}${n1(Math.abs(delta))} vs ${monthLab(prevMk)}`, delta == null ? "" : delta >= 0 ? "up" : "down"),
+    tile("Présence", pres == null ? "–" : Math.round(pres * 100) + " %", "aux appels du mois"),
+    tile("Sondage fiable", fi.rate == null ? "–" : Math.round(fi.rate * 100) + " %", fi.total ? `des « oui » sont venus (${fi.total})` : "pas encore de comparaison"),
+    tile("Séances notées", String(nbS), "tous groupes"))));
+
+  // 4. les 3 groupes
+  const rowsG = Object.entries(GROUPS).map(([g, G]) => {
+    const n = dFiches(g).length, m = groupMonth(g, mk), p = presRange(g, debMois), a = al.filter(x => x.g === g).length;
+    return h("button", { class: "d-grp", style: `--gc:${GCOL[g]}`, onclick: () => { S.dash = false; S.tab = g; S.view = "list"; S.sub = "joueurs"; render(); } },
+      h("span", { class: "d-gn" }, G.label), h("span", { class: "d-gs" }, `${n} joueur${n > 1 ? "s" : ""}`),
+      h("span", { class: "d-gk" }, h("b", {}, m == null ? "–" : n1(m)), "moyenne"), h("span", { class: "d-gk" }, h("b", {}, p == null ? "–" : Math.round(p * 100) + "%"), "présence"),
+      h("span", { class: "d-gk" + (a ? " warn" : "") }, h("b", {}, String(a)), a > 1 ? "alertes" : "alerte"), h("span", { class: "d-go", "aria-hidden": "true" }, "›"));
+  });
+  box.append(sec("Les groupes", h("div", { class: "d-grps" }, rowsG)));
+
+  // 5. évolution de la saison
+  const allMk = [...new Set(dFiches().flatMap(([, f]) => sortedNotes(f).map(n => monthKey(n.date))))].sort();
+  const series = Object.entries(GROUPS).map(([g, G]) => ({ n: G.label, c: GCOL[g], v: allMk.map(k => groupMonth(g, k)) }));
+  box.append(sec("La saison des 3 groupes", allMk.length ? dashLineChart(series, allMk) : h("p", { class: "note", style: "margin:0" }, "La courbe apparaîtra avec les premières notes."),
+    allMk.length ? h("p", { class: "d-sub", style: "margin:4px 0 0" }, "Moyenne du mois, sur 5. Touche un point pour la valeur.") : null));
+
+  // 6. zoom sur un groupe
+  const zg = GROUPS[S.dashG] ? S.dashG : "U19";
+  const chips = h("div", { class: "d-chips", role: "tablist" }, Object.entries(GROUPS).map(([g, G]) => h("button", { class: "opt", role: "tab", "aria-pressed": String(zg === g), onclick: () => { S.dashG = g; render(); } }, G.label)));
+  const z = h("div", { class: "d-zoom" });
+  // point faible du moment
+  const recent = dFiches(zg).flatMap(([, f]) => sortedNotes(f).filter(n => n.date >= ilYa(30)));
+  const blocs = GRILLES[zg] ? [["À l'entraînement", GRILLES[zg].E, recent.filter(n => n.type !== "Match" && !isOldNote(n, zg))], ["En match", GRILLES[zg].M, recent.filter(n => n.type === "Match" && !isOldNote(n, zg))]] : [["Toutes séances", GROUPS[zg].crit, recent]];
+  const pf = h("div", { class: "d-card" }, h("h4", {}, "Point faible du moment"), h("p", { class: "d-sub", style: "margin:0 0 6px" }, "Moyenne par critère sur les 30 derniers jours."));
+  let vide = true;
+  for (const [lab, crits, ns] of blocs) {
+    const vals = crits.map(([k, l]) => [k, l, critAvg(ns, k)]).filter(x => x[2] != null);
+    if (!vals.length) continue; vide = false;
+    const min = Math.min(...vals.map(v => v[2]));
+    pf.append(h("div", { class: "bars-t" }, lab));
+    for (const [k, l, a] of vals) pf.append(h("div", { class: "d-bar" + (a === min ? " low" : "") }, critLabel(k, l), h("div", { class: "track" }, h("div", { class: "fill", style: `width:${a / 5 * 100}%` })), h("span", { class: "val" }, n1(a))));
+  }
+  if (vide) pf.append(h("p", { class: "note", style: "margin:0" }, "Pas de note ces 30 derniers jours."));
+  // présence semaine par semaine
+  const wk = h("div", { class: "d-card" }, h("h4", {}, "Présence, 8 dernières semaines"));
+  const lundi = d => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.toISOString().slice(0, 10); };
+  const sems = []; for (let i = 7; i >= 0; i--) { const deb = lundi(ilYa(i * 7)), fin = new Date(deb + "T12:00:00"); fin.setDate(fin.getDate() + 6); sems.push([deb, fin.toISOString().slice(0, 10)]); }
+  const wb = h("div", { class: "d-weeks" });
+  for (const [deb, fin] of sems) { const r = presRange(zg, deb, fin); wb.append(h("div", { class: "d-wk", title: `Semaine du ${fmtDate(deb)} : ${r == null ? "pas d'appel" : Math.round(r * 100) + " %"}` }, h("span", { class: "d-wv" }, r == null ? "" : Math.round(r * 100)), h("div", { class: "d-wt" }, h("div", { class: "d-wf" + (r == null ? " none" : ""), style: `height:${r == null ? 4 : Math.max(4, r * 100)}%;background:${GCOL[zg]}` })), h("span", { class: "d-wl" }, fmtDate(deb)))); }
+  wk.append(wb, h("p", { class: "d-sub", style: "margin:6px 0 0" }, "En % de présents aux appels de la semaine."));
+  // top et progressions
+  const parJ = dFiches(zg).map(([fid, f]) => { const ns = sortedNotes(f); return { fid, nom: f.nom || "?", m: avgNotes(ns.filter(n => monthKey(n.date) === mk), zg), nm: ns.filter(n => monthKey(n.date) === mk).length, p: avgNotes(ns.filter(n => monthKey(n.date) === prevMk), zg) }; });
+  const ouvrir = fid => () => { S.dash = false; S.tab = zg; S.view = "fiche"; S.sel = fid; render(); };
+  const top = parJ.filter(j => j.m != null && j.nm >= 2).sort((a, b) => b.m - a.m).slice(0, 3);
+  const prog = parJ.filter(j => j.m != null && j.p != null && j.m - j.p > 0).sort((a, b) => (b.m - b.p) - (a.m - a.p)).slice(0, 3);
+  const liste = (arr, val) => arr.length ? h("ol", { class: "d-list" }, arr.map(j => h("li", {}, h("button", { class: "linkbtn", onclick: ouvrir(j.fid) }, j.nom), h("b", {}, val(j))))) : h("p", { class: "note", style: "margin:0" }, "Pas encore assez de notes ce mois-ci.");
+  const joueurs = h("div", { class: "d-card" }, h("h4", {}, `Top 3 de ${monthLab(mk)}`), liste(top, j => n1(j.m)), h("h4", { style: "margin-top:14px" }, "Plus fortes progressions"), h("p", { class: "d-sub", style: "margin:0 0 4px" }, `Ce mois-ci par rapport à ${monthLab(prevMk)}.`), liste(prog, j => "+" + n1(j.m - j.p)));
+  z.append(pf, wk, joueurs);
+  if (zg === "U19") {
+    const st = dFiches("U19").map(([fid, f]) => { const ms = sortedNotes(f).filter(n => n.type === "Match" && n.stats); return { fid, nom: f.nom || "?", b: ms.reduce((a, n) => a + (n.stats.buts || 0), 0), pd: ms.reduce((a, n) => a + (n.stats.pd || 0), 0) }; });
+    const bt = st.filter(j => j.b).sort((a, b) => b.b - a.b).slice(0, 3), ps = st.filter(j => j.pd).sort((a, b) => b.pd - a.pd).slice(0, 3);
+    const hom = ((S.equipes.U19 && S.equipes.U19.hommes) || []).slice().sort((a, b) => a.date < b.date ? 1 : -1)[0];
+    const lst = (arr, k) => arr.length ? h("ol", { class: "d-list" }, arr.map(j => h("li", {}, h("button", { class: "linkbtn", onclick: ouvrir(j.fid) }, j.nom), h("b", {}, String(j[k]))))) : h("p", { class: "note", style: "margin:0" }, "Rien de saisi pour l'instant.");
+    z.append(h("div", { class: "d-card" }, h("h4", {}, "Buteurs"), lst(bt, "b"), h("h4", { style: "margin-top:14px" }, "Passeurs"), lst(ps, "pd"),
+      h("h4", { style: "margin-top:14px" }, "Dernier homme du match"), hom ? h("p", { style: "margin:0" }, h("b", {}, hom.nom), h("span", { class: "d-sub" }, ` · ${fmtLong(hom.date)}`)) : h("p", { class: "note", style: "margin:0" }, "Pas encore désigné.")));
+  }
+  box.append(sec("Zoom sur un groupe", chips, z));
+  return box;
+}
+
 function coachView() {
   const app = h("div");
-  app.append(h("div", { class: "tabs", role: "tablist" }, Object.entries(GROUPS).map(([k, G]) =>
-    h("button", { class: "tab", role: "tab", "aria-selected": String(S.tab === k), onclick: () => { S.tab = k; S.view = "list"; S.sel = null; render(); } }, G.label))));
+  if (S.dash === undefined) S.dash = true;
+  app.append(h("div", { class: "tabs", role: "tablist" },
+    h("button", { class: "tab", role: "tab", "aria-selected": String(!!S.dash), onclick: () => { S.dash = true; S.view = "list"; S.sel = null; render(); } }, "Accueil"),
+    Object.entries(GROUPS).map(([k, G]) =>
+    h("button", { class: "tab", role: "tab", "aria-selected": String(!S.dash && S.tab === k), onclick: () => { S.dash = false; S.tab = k; S.view = "list"; S.sel = null; render(); } }, G.label))));
+  if (S.dash) { app.append(dashView()); return app; }
   if (S.view === "list" && S.sub === "joueurs") { /* liste */ }
 
   if (S.view === "fiche" && S.fiches[S.sel]) { app.append(ficheView(S.sel, S.fiches[S.sel], true)); return app; }
