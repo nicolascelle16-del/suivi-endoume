@@ -1054,7 +1054,22 @@ function accesView() {
   const pc = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, `Comptes en attente · ${pend.length}`),
     h("p", { class: "note", style: "margin:0" }, "Un joueur ou un parent qui crée son compte apparaît ici. Choisis sa fiche dans la liste et clique sur Relier : il verra uniquement sa fiche et son équipe (U19, U10 ou gardiens). L'accès coach est réservé à tes adjoints."));
   const free = Object.entries(S.fiches).filter(([fid]) => isTemp(fid)).sort((a, b) => (a[1].nom || "").localeCompare(b[1].nom || "", "fr"));
-  for (const [uid, x] of pend) {
+  for (const [uid, x] of pend.filter(([, x]) => x.role === "adjoint")) {
+    const m = h("span", { class: "note" });
+    let ok = false;
+    const val = h("button", { class: "btn small" }, "Valider comme adjoint U19");
+    val.onclick = async () => {
+      if (!ok) { ok = true; val.textContent = `Confirmer : ${x.email || "cette adresse"} devient adjoint U19`; return; }
+      val.disabled = true;
+      try { await S.db.doc("coachs/" + uid).set({ nom: x.nom || "", email: x.email || "", at: new Date().toISOString(), groupes: ["U19"] }); await S.db.doc("inscriptions/" + uid).delete(); S.flash = `${x.nom || "L'adjoint"} est adjoint U19. Il doit recharger la page pour arriver sur son espace.`; render(); }
+      catch (e) { val.disabled = false; m.className = "err"; m.textContent = "Échec : réessaie."; }
+    };
+    pc.append(h("div", { class: "hitem", style: "border-color:var(--or)" },
+      h("div", { class: "hhead" }, h("span", { class: "row", style: "gap:8px;align-items:center;flex-wrap:nowrap" }, avatarNode(uid, x.nom, "av-mini"), h("strong", {}, x.nom || "Sans nom")), h("span", { class: "pill" }, "Demande adjoint U19")),
+      h("p", { style: "margin:0" }, "Adresse : ", h("b", {}, x.email || "inconnue"), h("span", { class: "note" }, " · vérifie que c'est bien la sienne avant de valider.")),
+      h("div", { class: "row", style: "align-items:center;justify-content:space-between" }, val, h("button", { class: "linkbtn danger", onclick: async () => { try { await S.db.doc("inscriptions/" + uid).delete(); } catch (e) { m.textContent = "Échec : réessaie."; } } }, "Refuser")), m));
+  }
+  for (const [uid, x] of pend.filter(([, x]) => x.role !== "adjoint")) {
     const m = h("span", { class: "note" });
     const sel = h("select", { id: "acc-link-" + uid, "aria-label": "Fiche à relier" }, h("option", { value: "" }, free.length ? "Choisir sa fiche…" : "Aucune fiche libre"),
       ["U19", "U10", "GB"].map(g => { const l = free.filter(([, f]) => groupOf(f) === g); return l.length ? h("optgroup", { label: GROUPS[g].label }, l.map(([fid, f]) => h("option", { value: fid }, f.nom || "Sans nom"))) : null; }));
@@ -1189,9 +1204,10 @@ function loginView() {
       if (mode === "in") await signInWithEmailAndPassword(auth, email.value.trim(), pass.value);
       else {
         const n = nom.value.trim(); if (!n) { msg.className = "err"; msg.textContent = "Indique ton prénom et ton nom."; go.disabled = false; return; }
-        if (!S.signGroupe) { msg.className = "err"; msg.textContent = "Indique si tu es un joueur U19, un parent U10 ou un gardien."; go.disabled = false; return; }
+        if (!S.signGroupe) { msg.className = "err"; msg.textContent = "Indique si tu es un joueur U19, un parent U10, un gardien ou un coach adjoint."; go.disabled = false; return; }
         if (S.signGroupe === "U19" && !S.signPoste) { msg.className = "err"; msg.textContent = "Choisis ton poste sur le terrain."; go.disabled = false; return; }
-        S.pendingSignup = { nom: n.slice(0, 60), avatar: S.avDraft || AV_DEF, groupe: S.signGroupe, poste: S.signGroupe === "U19" ? S.signPoste : (S.signGroupe === "GB" ? "Gardien" : "") };
+        S.pendingSignup = S.signGroupe === "ADJ" ? { nom: n.slice(0, 60), avatar: S.avDraft || AV_DEF, groupe: "U19", role: "adjoint", poste: "" }
+          : { nom: n.slice(0, 60), avatar: S.avDraft || AV_DEF, groupe: S.signGroupe, poste: S.signGroupe === "U19" ? S.signPoste : (S.signGroupe === "GB" ? "Gardien" : "") };
         await createUserWithEmailAndPassword(auth, email.value.trim(), pass.value);
       }
     } catch (err) { S.pendingSignup = null; go.disabled = false; msg.className = "err"; msg.textContent = AUTH_ERR[err && err.code] || "Échec : vérifie ta connexion et réessaie."; }
@@ -1204,7 +1220,7 @@ function loginView() {
     mode === "up" ? h("label", { class: "field" }, "Prénom et nom", nom) : null,
     mode === "up" ? (() => {
       const posteBox = h("div", { class: "stack", style: "gap:6px", hidden: S.signGroupe !== "U19" }, h("h3", { style: "margin:0" }, "Ton poste"), h("p", { class: "note", style: "margin:0" }, "Touche ton poste sur le terrain (système en 4-3-3)."), postePicker(S.signPoste, v => { S.signPoste = v; }));
-      const gb = [["U19", "Joueur U19"], ["U10", "Parent d'un U10"], ["GB", "Gardien (pôle gardiens)"]].map(([v, l]) => h("button", { type: "button", class: "opt", "data-g": v, "aria-pressed": String(S.signGroupe === v), onclick: e => { S.signGroupe = v; e.currentTarget.parentNode.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.g === v))); posteBox.hidden = v !== "U19"; } }, l));
+      const gb = [["U19", "Joueur U19"], ["U10", "Parent d'un U10"], ["GB", "Gardien (pôle gardiens)"], ["ADJ", "Coach adjoint U19"]].map(([v, l]) => h("button", { type: "button", class: "opt", "data-g": v, "aria-pressed": String(S.signGroupe === v), onclick: e => { S.signGroupe = v; e.currentTarget.parentNode.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.g === v))); posteBox.hidden = v !== "U19"; } }, l));
       return h("div", { class: "stack", style: "gap:10px" }, h("div", { class: "field" }, "Je suis", h("div", { class: "row", style: "gap:6px" }, gb)), posteBox);
     })() : null,
     mode === "up" ? h("div", { class: "stack", style: "gap:8px" }, h("h3", { style: "margin:0" }, "Crée ton avatar"), avatarEditor(S.avDraft, a => { S.avDraft = a; }), h("p", { class: "note", style: "margin:0" }, "Il apparaîtra sur ta carte de joueur. Tu pourras le modifier plus tard.")) : null,
@@ -2067,6 +2083,7 @@ function printCarnet(list) {
 
 /* ---------- tableau de bord coach ---------- */
 const GCOL = { U19: "#e0182d", U10: "#cdbd8f", GB: "#9a8f78" };
+const visG = () => Object.keys(GROUPS).filter(g => !S.scope || S.scope.includes(g));
 const dFiches = g => Object.entries(S.fiches).filter(([, f]) => (!g || groupOf(f) === g) && (S.demo || !f.exemple));
 const moisDe = (k, delta) => { const [y, m] = k.split("-").map(Number); const d = new Date(y, m - 1 + delta, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
 const avgNotes = (list, g) => mean(list.map(n => noteAvg(n, g)).filter(v => v != null));
@@ -2101,7 +2118,7 @@ function dashAlertes() {
   if (manq.length) out.push({ g: "U19", t: `${manq.length} auto-évaluation${manq.length > 1 ? "s" : ""} du dernier match manquante${manq.length > 1 ? "s" : ""}`, d: manq.map(([fid]) => nom(fid)).join(", "), go: go("U19") });
   // comptes en attente
   const att = Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]);
-  if (att.length) out.push({ g: null, t: `${att.length} compte${att.length > 1 ? "s" : ""} en attente de liaison`, d: att.map(u => S.inscriptions[u].nom).filter(Boolean).join(", "), go: () => { S.dash = false; S.view = "list"; S.sub = "acces"; render(); }, lab: "Relier" });
+  if (att.length) out.push({ g: null, t: `${att.length} compte${att.length > 1 ? "s" : ""} en attente de liaison`, d: att.map(u => (S.inscriptions[u].nom || "") + (S.inscriptions[u].role === "adjoint" ? " (adjoint U19, à valider)" : "")).filter(Boolean).join(", "), go: () => { S.dash = false; S.view = "list"; S.sub = "acces"; render(); }, lab: "Relier" });
   // a dit oui mais pas venu (2 fois ou plus)
   for (const [fid, n] of Object.entries(ouiAbsents())) if (n >= 2) { const g = groupOf(S.fiches[fid]); out.push({ g, t: `${nom(fid)} a dit oui sans venir ${n} fois`, d: "D'après le sondage WhatsApp et ton appel.", go: go(g, fid) }); }
   for (const e of carnetList().filter(x => x.date && x.date <= today() && !reflexFaite(x)).sort((a, b) => a.date < b.date ? -1 : 1))
@@ -2115,7 +2132,7 @@ function dashAlertes() {
     const lastOk = pr.filter(p => p.p).pop(), depuis = pr.filter(p => !lastOk || p.date > lastOk.date);
     if (pr.length && depuis.length >= 2 && (!lastOk || lastOk.date < ilYa(14))) out.push({ g, t: `${nom(fid)} n'est pas venu depuis ${lastOk ? "le " + fmtLong(lastOk.date) : "le début"}`, d: `${depuis.length} absence${depuis.length > 1 ? "s" : ""} de suite.`, go: go(g, fid) });
   }
-  return out;
+  return out.filter(a => !S.scope || (a.g && S.scope.includes(a.g)));
 }
 function dashLineChart(series, keys) {
   const W = 560, H = 210, L = 28, R = 74, T = 14, B = 28;
@@ -2166,7 +2183,7 @@ function dashView() {
     al.length > 6 ? h("button", { class: "linkbtn", onclick: () => { S.dashAll = !S.dashAll; render(); } }, S.dashAll ? "Afficher moins" : `Voir les ${al.length - 6} autres`) : null));
 
   // 3. chiffres clés (3 groupes)
-  const moyM = mean(Object.keys(GROUPS).map(g => groupMonth(g, mk)).filter(v => v != null)), moyP = mean(Object.keys(GROUPS).map(g => groupMonth(g, prevMk)).filter(v => v != null));
+  const moyM = mean(visG().map(g => groupMonth(g, mk)).filter(v => v != null)), moyP = mean(visG().map(g => groupMonth(g, prevMk)).filter(v => v != null));
   const delta = moyM != null && moyP != null ? moyM - moyP : null;
   const pres = presRange(null, debMois), fi = fiabilite(null);
   const nbS = new Set(dFiches().flatMap(([, f]) => sortedNotes(f).filter(n => n.date >= debMois).map(n => groupOf(f) + n.date + n.type))).size;
@@ -2175,32 +2192,32 @@ function dashView() {
     tile("Moyenne", moyM == null ? "–" : n1(moyM), delta == null ? "sur 5" : `${delta >= 0 ? "↑ +" : "↓ −"}${n1(Math.abs(delta))} vs ${monthLab(prevMk)}`, delta == null ? "" : delta >= 0 ? "up" : "down"),
     tile("Présence", pres == null ? "–" : Math.round(pres * 100) + " %", "aux appels du mois"),
     tile("Sondage fiable", fi.rate == null ? "–" : Math.round(fi.rate * 100) + " %", fi.total ? `des « oui » sont venus (${fi.total})` : "pas encore de comparaison"),
-    tile("Séances notées", String(nbS), "tous groupes"))));
+    tile("Séances notées", String(nbS), S.scope ? S.scope.map(g => GROUPS[g].label).join(", ") : "tous groupes"))));
 
   // compteur BMF
-  const bc = bmfCompteur(), mini = (lab, n, max) => h("div", { class: "bmf-p" }, h("div", { class: "bmf-pl" }, h("span", {}, lab), h("b", {}, `${n}/${max}`)), h("div", { class: "track" }, h("div", { class: "fill" + (n >= max ? " done" : ""), style: `width:${Math.min(100, n / max * 100)}%` })));
+  if (!S.scope) { const bc = bmfCompteur(), mini = (lab, n, max) => h("div", { class: "bmf-p" }, h("div", { class: "bmf-pl" }, h("span", {}, lab), h("b", {}, `${n}/${max}`)), h("div", { class: "track" }, h("div", { class: "fill" + (n >= max ? " done" : ""), style: `width:${Math.min(100, n / max * 100)}%` })));
   box.append(sec("Carnet BMF", h("div", { class: "bmf-grid" }, mini("U10 · séances", bc.U10.s, 15), mini("U10 · matchs", bc.U10.m, 10), mini("U19 · séances + match", bc.U19.s + Math.min(1, bc.U19.m), 5), mini("Gardiens · séances + match", bc.GB.s + Math.min(1, bc.GB.m), 5)),
-    h("button", { class: "linkbtn", style: "align-self:flex-start", onclick: () => { S.dash = false; S.bmf = true; render(); } }, "Ouvrir le carnet")));
+    h("button", { class: "linkbtn", style: "align-self:flex-start", onclick: () => { S.dash = false; S.bmf = true; render(); } }, "Ouvrir le carnet"))); }
 
   // 4. les 3 groupes
-  const rowsG = Object.entries(GROUPS).map(([g, G]) => {
+  const rowsG = visG().map(g => [g, GROUPS[g]]).map(([g, G]) => {
     const n = dFiches(g).length, m = groupMonth(g, mk), p = presRange(g, debMois), a = al.filter(x => x.g === g).length;
     return h("button", { class: "d-grp", style: `--gc:${GCOL[g]}`, onclick: () => { S.dash = false; S.tab = g; S.view = "list"; S.sub = "joueurs"; render(); } },
       h("span", { class: "d-gn" }, G.label), h("span", { class: "d-gs" }, `${n} joueur${n > 1 ? "s" : ""}`),
       h("span", { class: "d-gk" }, h("b", {}, m == null ? "–" : n1(m)), "moyenne"), h("span", { class: "d-gk" }, h("b", {}, p == null ? "–" : Math.round(p * 100) + "%"), "présence"),
       h("span", { class: "d-gk" + (a ? " warn" : "") }, h("b", {}, String(a)), a > 1 ? "alertes" : "alerte"), h("span", { class: "d-go", "aria-hidden": "true" }, "›"));
   });
-  box.append(sec("Les groupes", h("div", { class: "d-grps" }, rowsG)));
+  box.append(sec(S.scope ? "Mon groupe" : "Les groupes", h("div", { class: "d-grps" }, rowsG)));
 
   // 5. évolution de la saison
   const allMk = [...new Set(dFiches().flatMap(([, f]) => sortedNotes(f).map(n => monthKey(n.date))))].sort();
-  const series = Object.entries(GROUPS).map(([g, G]) => ({ n: G.label, c: GCOL[g], v: allMk.map(k => groupMonth(g, k)) }));
-  box.append(sec("La saison des 3 groupes", allMk.length ? dashLineChart(series, allMk) : h("p", { class: "note", style: "margin:0" }, "La courbe apparaîtra avec les premières notes."),
+  const series = visG().map(g => ({ n: GROUPS[g].label, c: GCOL[g], v: allMk.map(k => groupMonth(g, k)) }));
+  box.append(sec(S.scope ? "La saison" : "La saison des 3 groupes", allMk.length ? dashLineChart(series, allMk) : h("p", { class: "note", style: "margin:0" }, "La courbe apparaîtra avec les premières notes."),
     allMk.length ? h("p", { class: "d-sub", style: "margin:4px 0 0" }, "Moyenne du mois, sur 5. Touche un point pour la valeur.") : null));
 
   // 6. zoom sur un groupe
-  const zg = GROUPS[S.dashG] ? S.dashG : "U19";
-  const chips = h("div", { class: "d-chips", role: "tablist" }, Object.entries(GROUPS).map(([g, G]) => h("button", { class: "opt", role: "tab", "aria-pressed": String(zg === g), onclick: () => { S.dashG = g; render(); } }, G.label)));
+  const zg = visG().includes(S.dashG) ? S.dashG : visG()[0];
+  const chips = visG().length < 2 ? null : h("div", { class: "d-chips", role: "tablist" }, visG().map(g => [g, GROUPS[g]]).map(([g, G]) => h("button", { class: "opt", role: "tab", "aria-pressed": String(zg === g), onclick: () => { S.dashG = g; render(); } }, G.label)));
   const z = h("div", { class: "d-zoom" });
   // point faible du moment
   const recent = dFiches(zg).flatMap(([, f]) => sortedNotes(f).filter(n => n.date >= ilYa(30)));
@@ -2238,16 +2255,16 @@ function dashView() {
     z.append(h("div", { class: "d-card" }, h("h4", {}, "Buteurs"), lst(bt, "b"), h("h4", { style: "margin-top:14px" }, "Passeurs"), lst(ps, "pd"),
       h("h4", { style: "margin-top:14px" }, "Dernier homme du match"), hom ? h("p", { style: "margin:0" }, h("b", {}, hom.nom), h("span", { class: "d-sub" }, ` · ${fmtLong(hom.date)}`)) : h("p", { class: "note", style: "margin:0" }, "Pas encore désigné.")));
   }
-  box.append(sec("Zoom sur un groupe", chips, z));
+  box.append(sec(visG().length < 2 ? `Zoom ${GROUPS[zg].label}` : "Zoom sur un groupe", chips, z));
   return box;
 }
 
 function coachView() {
   const app = h("div");
-  if (S.scope) { S.dash = false; S.bmf = false; if (!S.scope.includes(S.tab)) S.tab = S.scope[0]; }
+  if (S.scope) { S.bmf = false; if (!S.scope.includes(S.tab)) S.tab = S.scope[0]; }
   if (S.dash === undefined) S.dash = true;
   app.append(h("div", { class: "tabs", role: "tablist" },
-    S.scope ? null : h("button", { class: "tab", role: "tab", "aria-selected": String(!!S.dash && !S.bmf), onclick: () => { S.dash = true; S.bmf = false; S.view = "list"; S.sel = null; render(); } }, "Accueil"),
+    h("button", { class: "tab", role: "tab", "aria-selected": String(!!S.dash && !S.bmf), onclick: () => { S.dash = true; S.bmf = false; S.view = "list"; S.sel = null; render(); } }, "Accueil"),
     Object.entries(GROUPS).filter(([k]) => !S.scope || S.scope.includes(k)).map(([k, G]) =>
     h("button", { class: "tab", role: "tab", "aria-selected": String(!S.dash && !S.bmf && S.tab === k), onclick: () => { S.dash = false; S.bmf = false; S.tab = k; S.view = "list"; S.sel = null; render(); } }, G.label)),
     S.scope ? null : h("button", { class: "tab", role: "tab", "aria-selected": String(!!S.bmf), onclick: () => { S.dash = false; S.bmf = true; S.view = "list"; S.sel = null; render(); } }, "BMF")));
@@ -2451,7 +2468,7 @@ function joueurView() {
     const nomI = h("input", { id: "ins-nom", maxlength: "60", placeholder: "Prénom et nom" });
     const msg = h("span", { class: "note" });
     const card = h("div", { class: "card stack" }, h("h2", {}, "Ton compte est créé"),
-      h("p", { style: "margin:0" }, "Ton coach doit maintenant le relier à ta fiche. Dès que c'est fait, cette page affichera tes notes, tes badges et l'équipe. Tu ne verras que ta propre fiche."));
+      h("p", { style: "margin:0" }, S.myInscription && S.myInscription.role === "adjoint" ? "Ta demande d'accès coach adjoint U19 est envoyée. Dès que le coach l'a validée, recharge la page : tu arriveras sur l'espace coach U19." : "Ton coach doit maintenant le relier à ta fiche. Dès que c'est fait, cette page affichera tes notes, tes badges et l'équipe. Tu ne verras que ta propre fiche."));
     if (!S.myInscription) {
       card.append(h("label", { class: "field" }, "Indique ton prénom et ton nom pour que le coach te reconnaisse", nomI),
         h("div", { class: "row" }, h("button", { class: "btn", onclick: async () => {
@@ -2526,7 +2543,7 @@ onAuthStateChanged(auth, async u => {
   const db = DB; S.db = db; S.me = u.uid; S.email = u.email || "";
   if (S.pendingSignup) {
     const ps = S.pendingSignup; S.pendingSignup = null;
-    try { const ins = { nom: ps.nom, email: u.email || "", at: new Date().toISOString() }; if (ps.groupe) ins.groupe = ps.groupe; if (ps.poste) ins.poste = ps.poste; await setDoc(fsDoc(fs, "inscriptions/" + u.uid), ins); } catch (e) {}
+    try { const ins = { nom: ps.nom, email: u.email || "", at: new Date().toISOString() }; if (ps.groupe) ins.groupe = ps.groupe; if (ps.poste) ins.poste = ps.poste; if (ps.role) ins.role = ps.role; await setDoc(fsDoc(fs, "inscriptions/" + u.uid), ins); } catch (e) {}
     try { await saveAvatar(u.uid, ps.avatar); } catch (e) {}
   }
   let coachData = null;
@@ -2536,7 +2553,7 @@ onAuthStateChanged(auth, async u => {
   render();
   const watchVotes = () => db.collection("votes").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.votes = n; softRender(); }, () => {});
   if (S.admin && S.scope) {
-    S.coachs = { [S.me]: coachData }; S.dash = false; S.tab = S.scope[0];
+    S.coachs = { [S.me]: coachData }; S.dash = true; S.tab = S.scope[0];
     const parG = { fiches: {}, seances: {}, votes: {} };
     const merge = k => Object.assign({}, ...Object.values(parG[k]));
     for (const g of S.scope) {
