@@ -1846,7 +1846,7 @@ function ficheView(fid, f, asCoach) {
 }
 
 /* mails : script Google (Gmail du coach) — la base vérifie qui demande l'envoi */
-const MAIL_URL = "";
+const MAIL_URL = "https://script.google.com/macros/s/AKfycbzO4Vca4Ct1Kf0zxi1Qatc9O29sydcE-HNn6qQW5SlD-NjoDcJ1S5drjjEE_nPn1CbH/exec";
 async function envoyerMails(kind, fids) {
   if (!MAIL_URL || S.demo || !fids.length || !auth.currentUser) return null;
   try {
