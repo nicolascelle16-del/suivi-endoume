@@ -351,6 +351,16 @@ footer.foot { display: flex; gap: 14px; align-items: center; justify-content: sp
 .card.notif { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-color: var(--rouge); margin-bottom: 12px; }
 .notif-l { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
 .notif-l b { color: var(--rouge); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; }
+
+/* statuts de présence */
+.stbar { display: inline-flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.stb { font: 600 12px/1 var(--label); letter-spacing: .05em; text-transform: uppercase; padding: 8px 9px; border-radius: 6px; border: 1px solid var(--ligne); background: transparent; color: var(--muted); cursor: pointer; min-height: 34px; }
+.stb[aria-pressed="true"].st-p { background: var(--bon); border-color: var(--bon); color: #0b0a0a; }
+.stb[aria-pressed="true"].st-a { background: var(--rouge); border-color: var(--rouge); color: #fff; }
+.stb[aria-pressed="true"].st-e { background: var(--or); border-color: var(--or); color: #0b0a0a; }
+.stb[aria-pressed="true"].st-nc { background: var(--surface-2); border-color: var(--muted); color: var(--texte); }
+.saisie-p.nc { opacity: .6; padding-top: 10px; padding-bottom: 10px; }
+@media (max-width: 600px) { .saisie-head { flex-wrap: wrap; } .stbar { justify-content: flex-start; width: 100%; } .stb { flex: 1 1 auto; } }
 </style>
 </head>
 <body>
@@ -749,7 +759,7 @@ function fcard(f, parent, fid) {
 /* ---------- badges et records ---------- */
 function badges(fid, f, eq) {
   const g = groupOf(f), ns = sortedNotes(f), avgs = ns.map(n => noteAvg(n, g)).filter(x => x != null);
-  const pres = (Array.isArray(f.presences) ? f.presences : []).slice().sort((a, b) => a.date < b.date ? -1 : 1);
+  const pres = (Array.isArray(f.presences) ? f.presences : []).filter(compteAssid).sort((a, b) => a.date < b.date ? -1 : 1);
   const last10 = pres.slice(-10);
   const out = [];
   const add = (ico, nom, desc, got) => out.push({ ico, nom, desc, got: !!got });
@@ -1459,8 +1469,13 @@ const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août"
 const monthKey = d => d.slice(0, 7);
 const monthLab = k => { const [y, m] = k.split("-"); return MOIS[+m - 1] + " " + y.slice(2); };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+const compteAssid = x => x && typeof x.date === "string" && (x.type || "Entraînement") !== "Match" && !x.ex;
+function matchStats(f) {
+  const m = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && x.type === "Match");
+  return { conv: m.length, ok: m.filter(x => x.p).length, ex: m.filter(x => x.ex).length };
+}
 function presStats(f, from) {
-  const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && (!from || x.date >= from));
+  const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => compteAssid(x) && (!from || x.date >= from));
   const ok = p.filter(x => x.p).length;
   return { n: p.length, ok, rate: p.length ? ok / p.length : null };
 }
@@ -1489,7 +1504,8 @@ function saisonCard(fid, f, parent) {
     tile("Progression", prog == null ? "–" : (prog >= 0 ? "+" : "−") + n1(Math.abs(prog)), prog == null ? "dès 6 évaluations" : "5 dernières vs 5 premières"),
     tile("Meilleure note", best ? n1(best.v) : "–", best ? `${fmtDate(best.d)} · ${best.t}` : null),
     tile("Évaluations", String(notes.length), `${notes.length - nM} entraînement${notes.length - nM > 1 ? "s" : ""} · ${nM} match${nM > 1 ? "s" : ""}`),
-    tile("Présence", ps.rate == null ? "–" : Math.round(ps.rate * 100) + " %", ps.n ? `${ps.ok} séance${ps.ok > 1 ? "s" : ""} sur ${ps.n}` : "pas encore d'appel"),
+    tile("Présence", ps.rate == null ? "–" : Math.round(ps.rate * 100) + " %", ps.n ? `${ps.ok} entraînement${ps.ok > 1 ? "s" : ""} sur ${ps.n}` : "pas encore d'appel"),
+    ...(() => { const ms = matchStats(f); return ms.conv ? [tile("Matchs", `${ms.ok}`, `joué${ms.ok > 1 ? "s" : ""} sur ${ms.conv} convocation${ms.conv > 1 ? "s" : ""}${ms.ex ? ` · ${ms.ex} excusé${ms.ex > 1 ? "s" : ""}` : ""}`)] : []; })(),
     ...(g === "U19" ? (() => { const st = notes.filter(n => n.type === "Match" && n.stats); if (!st.length) return [];
       const sum = k => st.reduce((a, n) => a + (typeof n.stats[k] === "number" ? n.stats[k] : 0), 0), nmin = st.filter(n => typeof n.stats.min === "number").length;
       return [tile("Buts", String(sum("buts")), `${sum("pd")} passe${sum("pd") > 1 ? "s" : ""} décisive${sum("pd") > 1 ? "s" : ""}`), tile("Temps de jeu", nmin ? `${sum("min")} min` : "–", nmin ? `sur ${nmin} match${nmin > 1 ? "s" : ""} renseigné${nmin > 1 ? "s" : ""}` : null)]; })() : [])));
@@ -1508,7 +1524,7 @@ function saisonCard(fid, f, parent) {
   const rows = months.map(k => {
     const ns = notes.filter(n => kf(n.date) === k);
     const e = ns.filter(n => n.type !== "Match").map(val).filter(v => v != null), m = ns.filter(n => n.type === "Match").map(val).filter(v => v != null);
-    const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && kf(x.date) === k);
+    const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => compteAssid(x) && kf(x.date) === k);
     return { k, e: mean(e), ne: e.length, m: mean(m), nm: m.length, pres: p.length ? p.filter(x => x.p).length / p.length : null, np: p.length };
   });
   if (months.length < 2 || notes.length < 4) { card.append(h("p", { class: "note", style: "margin:0" }, `La courbe apparaît dès 4 évaluations (${notes.length} pour l'instant).`)); }
@@ -1626,19 +1642,20 @@ function presencesView(g) {
   const sessMap = new Map();
   for (const [, f] of list) for (const p of (Array.isArray(f.presences) ? f.presences : [])) {
     if (!p || typeof p.date !== "string" || (from && p.date < from)) continue;
-    const k = p.date + "|" + (p.type || "Entraînement"); const s = sessMap.get(k) || { date: p.date, type: p.type || "Entraînement", ok: 0, n: 0 };
-    s.n++; if (p.p) s.ok++; sessMap.set(k, s);
+    const k = p.date + "|" + (p.type || "Entraînement"); const s = sessMap.get(k) || { date: p.date, type: p.type || "Entraînement", ok: 0, n: 0, cnt: 0 };
+    if (compteAssid(p)) { s.cnt++; } s.n++; if (p.p) s.ok++; sessMap.set(k, s);
   }
   const sess = [...sessMap.values()].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
   box.append(h("div", { class: "bar", style: "margin:0" }, h("h2", {}, `Présences ${GROUPS[g].label}`),
     h("div", { class: "row", style: "gap:6px" }, [["4s", "4 dernières semaines"], ["mois", "Ce mois"], ["saison", "Saison"]].map(([k, l]) => h("button", { type: "button", class: "opt", "aria-pressed": String(per === k), onclick: () => { S.presPer = k; render(); } }, l)))));
   box.append(seancesCoachCard(g));
   if (!sess.length) { box.append(h("div", { class: "empty" }, "Aucun appel sur cette période. Les présences se remplissent avec « Noter une séance » (bouton Présent / Absent) : tu peux faire juste l'appel sans mettre de notes.")); return box; }
-  const tot = sess.reduce((a, s) => a + s.n, 0), okT = sess.reduce((a, s) => a + s.ok, 0);
+  const sessE = sess.filter(s => s.type !== "Match"), tot = sessE.reduce((a, s) => a + s.cnt, 0), okT = list.reduce((a, [, f]) => a + (Array.isArray(f.presences) ? f.presences : []).filter(x => compteAssid(x) && x.p && (!from || x.date >= from)).length, 0);
   const rowsP = list.map(([fid, f]) => {
-    const p = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && (!from || x.date >= from)).sort((a, b) => a.date < b.date ? -1 : 1);
+    const tous = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && (!from || x.date >= from)).sort((a, b) => a.date < b.date ? -1 : 1);
+    const p = tous.filter(compteAssid);
     let streak = 0; for (let i = p.length - 1; i >= 0 && !p[i].p; i--) streak++;
-    const map = new Map(p.map(x => [x.date + "|" + (x.type || "Entraînement"), x.p]));
+    const map = new Map(tous.map(x => [x.date + "|" + (x.type || "Entraînement"), x.ex ? "ex" : x.p]));
     return { fid, f, n: p.length, ok: p.filter(x => x.p).length, rate: p.length ? p.filter(x => x.p).length / p.length : null, streak, map };
   }).sort((a, b) => (a.rate == null ? 2 : a.rate) - (b.rate == null ? 2 : b.rate) || (a.f.nom || "").localeCompare(b.f.nom || "", "fr"));
   const low = rowsP.filter(r => r.rate != null && (r.rate < 0.7 || r.streak >= 3)).length;
@@ -1680,7 +1697,7 @@ function presencesView(g) {
         r.rate != null && r.rate < 0.7 ? h("span", { class: "pill match", style: "margin-left:6px" }, "< 70 %") : null),
       h("td", {}, r.n ? `${r.ok} / ${r.n}` : "–"),
       h("td", {}, r.streak ? h("span", { class: r.streak >= 3 ? "pill match" : "" }, String(r.streak)) : "0"),
-      ...lastS.map(se => { const v = r.map.get(se.date + "|" + se.type); return h("td", { class: "c " + (v === true ? "pr" : v === false ? "ab" : "nr"), title: v === true ? "Présent" : v === false ? "Absent" : "Pas noté" }, v === true ? "✓" : v === false ? "✗" : "·"); })))));
+      ...lastS.map(se => { const v = r.map.get(se.date + "|" + se.type), nc = v === undefined && se.type === "Match"; return h("td", { class: "c " + (v === true ? "pr" : v === false ? "ab" : "nr"), title: v === true ? "Présent" : v === false ? "Absent" : v === "ex" ? "Excusé ou blessé" : nc ? "Non convoqué" : "Pas noté" }, v === true ? "✓" : v === false ? "✗" : v === "ex" ? "E" : nc ? "–" : "·"); })))));
   box.append(h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Par joueur"), h("p", { class: "note", style: "margin:0" }, `✓ présent · ✗ absent · · pas noté. Les ${lastS.length} dernières séances de la période. Clique sur un joueur pour ouvrir sa fiche.`), h("div", { class: "tablebox" }, t)));
   return box;
 }
@@ -2135,7 +2152,7 @@ const dFiches = g => Object.entries(S.fiches).filter(([, f]) => (!g || groupOf(f
 const moisDe = (k, delta) => { const [y, m] = k.split("-").map(Number); const d = new Date(y, m - 1 + delta, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
 const avgNotes = (list, g) => mean(list.map(n => noteAvg(n, g)).filter(v => v != null));
 function groupMonth(g, mk) { const v = []; for (const [, f] of dFiches(g)) for (const n of sortedNotes(f)) if (monthKey(n.date) === mk) { const a = noteAvg(n, g); if (a != null) v.push(a); } return mean(v); }
-function presRange(g, from, to) { let ok = 0, n = 0; for (const [, f] of dFiches(g)) for (const p of (Array.isArray(f.presences) ? f.presences : [])) if (p && typeof p.date === "string" && p.date >= from && (!to || p.date <= to)) { n++; if (p.p) ok++; } return n ? ok / n : null; }
+function presRange(g, from, to) { let ok = 0, n = 0; for (const [, f] of dFiches(g)) for (const p of (Array.isArray(f.presences) ? f.presences : []).filter(compteAssid)) if (p && typeof p.date === "string" && p.date >= from && (!to || p.date <= to)) { n++; if (p.p) ok++; } return n ? ok / n : null; }
 function fiabilite(g) {
   let venu = 0, total = 0;
   for (const [, se] of Object.entries(S.seances)) {
@@ -2178,7 +2195,7 @@ function dashAlertes() {
     // en baisse
     if (ns.length >= 6) { const r = mean(ns.slice(-3)), a = mean(ns.slice(0, -3)); if (a - r >= 0.6) out.push({ g, t: `${nom(fid)} est en baisse`, d: `${n1(r)} sur ses 3 dernières notes, contre ${n1(a)} avant.`, go: go(g, fid) }); }
     // absent depuis 2 semaines
-    const pr = (Array.isArray(f.presences) ? f.presences : []).filter(p => p && typeof p.date === "string").sort((a, b) => a.date < b.date ? -1 : 1);
+    const pr = (Array.isArray(f.presences) ? f.presences : []).filter(compteAssid).sort((a, b) => a.date < b.date ? -1 : 1);
     const lastOk = pr.filter(p => p.p).pop(), depuis = pr.filter(p => !lastOk || p.date > lastOk.date);
     if (pr.length && depuis.length >= 2 && (!lastOk || lastOk.date < ilYa(14))) out.push({ g, t: `${nom(fid)} n'est pas venu depuis ${lastOk ? "le " + fmtLong(lastOk.date) : "le début"}`, d: `${depuis.length} absence${depuis.length > 1 ? "s" : ""} de suite.`, go: go(g, fid) });
   }
@@ -2370,7 +2387,7 @@ function coachView() {
 
 function startSaisie() {
   const rows = {};
-  for (const [fid, f] of Object.entries(S.fiches)) if (groupOf(f) === S.tab) rows[fid] = { present: true, crit: {}, com: "", stats: {} };
+  for (const [fid, f] of Object.entries(S.fiches)) if (groupOf(f) === S.tab) rows[fid] = { st: "p", crit: {}, com: "", stats: {} };
   S.saisie = { date: today(), type: "Entraînement", rows, msg: "" };
   S.view = "saisie"; render();
 }
@@ -2387,26 +2404,45 @@ function saisieView() {
   date.addEventListener("change", () => render()); type.addEventListener("change", () => render());
   const annS = seancesOf(S.tab).find(([, x]) => x.date === s.date && x.type === s.type), ann = annS ? Object.fromEntries(Object.entries(ditOf(annS[1])).map(([k, v]) => [k, { p: v }])) : null;
   box.append(h("div", { class: "card row" }, h("label", { class: "field" }, "Date", date), h("label", { class: "field" }, "Type", type),
-    h("p", { class: "note", style: "margin:0;flex:1;min-width:200px" }, "Touche une note de 1 à 5 par critère. Les joueurs marqués absents ne sont pas enregistrés.")));
-  const ids = Object.keys(s.rows).sort((a, b) => (S.fiches[a].nom || "").localeCompare(S.fiches[b].nom || "", "fr"));
+    h("p", { class: "note", style: "margin:0;flex:1;min-width:200px" }, "Touche une note de 1 à 5 par critère. Seuls les joueurs présents sont notés. « Excusé » (blessé, prévenu) ne compte pas comme une absence.")));
+  for (const r of Object.values(s.rows)) if (!r.st) r.st = r.present === false ? "a" : "p";
+  const isM = s.type === "Match";
+  if (!isM) for (const r of Object.values(s.rows)) if (r.st === "nc") r.st = "p";
+  let ids = Object.keys(s.rows).sort((a, b) => (S.fiches[a].nom || "").localeCompare(S.fiches[b].nom || "", "fr"));
   const exist = fid => (S.fiches[fid].presences || []).find(p => p && p.date === s.date && p.type === s.type);
   const deja = ids.filter(fid => exist(fid));
+  const compo = isM ? ((S.equipes[S.tab] || {}).compos || []).find(c => c.date === s.date) : null;
+  const convoq = compo ? new Set([...(compo.xi || []), ...(compo.rempl || [])].filter(Boolean)) : null;
+  const kk = s.date + "|" + s.type;
+  if (s.prefill !== kk) {
+    s.prefill = kk;
+    if (deja.length) ids.forEach(fid => { const e = exist(fid); s.rows[fid].st = e ? (e.p ? "p" : e.ex ? "e" : "a") : (isM ? "nc" : "p"); });
+    else if (convoq) ids.forEach(fid => { s.rows[fid].st = convoq.has(fid) ? "p" : "nc"; });
+  }
+  if (isM) {
+    const nNc = ids.filter(fid => s.rows[fid].st === "nc").length;
+    box.append(h("div", { class: "card", style: "border-color:var(--or)" }, h("p", { style: "margin:0" }, compo
+      ? `Convocation reprise de la compo « ${compo.titre || "match"} » : ${ids.length - nNc} convoqués. Les autres sont en « Non convoqué » : ils ne sont ni notés ni comptés absents.`
+      : "Pas de compo pour cette date. Mets « Non convoqué » aux joueurs que tu n'as pas pris : ils ne seront ni notés ni comptés absents. Astuce : publie la compo dans l'onglet Équipe, la convocation sera reprise toute seule.")));
+    ids = [...ids.filter(fid => s.rows[fid].st !== "nc"), ...ids.filter(fid => s.rows[fid].st === "nc")];
+  }
   if (deja.length) {
-    const kk = s.date + "|" + s.type;
-    if (s.prefill !== kk) { s.prefill = kk; deja.forEach(fid => { s.rows[fid].present = !!exist(fid).p; }); }
     const auteurs = [...new Set(deja.map(fid => exist(fid).parNom).filter(Boolean))];
     box.append(h("div", { class: "card", style: "border-color:var(--or)" }, h("p", { style: "margin:0" }, `L'appel de cette séance a déjà été fait${auteurs.length ? " par " + auteurs.join(" et ") : ""} : ${deja.filter(fid => exist(fid).p).length} présents sur ${deja.length}. Il est repris ci-dessous. En enregistrant, tu le mets à jour joueur par joueur, sans doublon.`)));
   }
   if (ann) {
     const nNo = ids.filter(fid => ann[fid] && ann[fid].p === false).length, nYes = ids.filter(fid => ann[fid] && ann[fid].p === true).length;
     box.append(h("div", { class: "card row", style: "align-items:center" }, h("span", { style: "flex:1;min-width:200px" }, `Sondage WhatsApp : ${nYes} oui, ${nNo} non, ${ids.length - nYes - nNo} sans réponse.`),
-      h("button", { class: "btn ghost small", onclick: () => { ids.forEach(fid => { if (ann[fid]) s.rows[fid].present = ann[fid].p !== false; }); render(); } }, "Pré-cocher selon le sondage")));
+      h("button", { class: "btn ghost small", onclick: () => { ids.forEach(fid => { if (ann[fid] && s.rows[fid].st !== "nc") s.rows[fid].st = ann[fid].p !== false ? "p" : "a"; }); render(); } }, "Pré-cocher selon le sondage")));
   }
   for (const fid of ids) {
     const r = s.rows[fid], f = S.fiches[fid];
-    const card = h("div", { class: "card saisie-p" + (r.present ? "" : " absent") });
-    const tog = h("button", { class: "toggle", "aria-pressed": String(r.present) }, r.present ? "Présent" : "Absent");
-    tog.onclick = () => { r.present = !r.present; tog.setAttribute("aria-pressed", String(r.present)); tog.textContent = r.present ? "Présent" : "Absent"; card.classList.toggle("absent", !r.present); };
+    const card = h("div", { class: "card saisie-p" + (r.st === "p" ? "" : " absent") + (r.st === "nc" ? " nc" : "") });
+    const opts = [["p", "Présent"], ["a", "Absent"], ["e", "Excusé"], ...(isM ? [["nc", "Non convoqué"]] : [])];
+    const tog = h("div", { class: "stbar", role: "group", "aria-label": "Statut" });
+    const majSt = () => { tog.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.st === r.st))); card.classList.toggle("absent", r.st !== "p"); card.classList.toggle("nc", r.st === "nc"); };
+    for (const [k, l] of opts) { const b = h("button", { type: "button", class: "stb st-" + k, "data-st": k, title: k === "e" ? "Excusé ou blessé : ne compte pas comme une absence" : null }, l); b.onclick = () => { r.st = k; majSt(); }; tog.append(b); }
+    majSt();
     const a = ann && ann[fid];
     card.append(h("div", { class: "saisie-head" }, h("span", { class: "row", style: "gap:8px;align-items:center" }, h("strong", {}, f.nom || "Sans nom"),
       ann ? (a ? h("span", { class: "pill " + (a.p ? "ok" : "no") }, a.p ? "A dit oui" : "A dit non") : h("span", { class: "pill" }, "Pas répondu")) : null), tog));
@@ -2444,10 +2480,11 @@ function saisieView() {
     for (const fid of ids) {
       const r = s.rows[fid], f = S.fiches[fid];
       const pres = (Array.isArray(f.presences) ? f.presences : []).filter(p => !(p.date === s.date && p.type === s.type));
-      const patch = { presences: [...pres, { date: s.date, type: s.type, p: r.present, par: S.me, parNom: ((S.coachs[S.me] || {}).nom || "Coach").split(" ")[0] }] };
+      const st = r.st || "p", qui = { par: S.me, parNom: ((S.coachs[S.me] || {}).nom || "Coach").split(" ")[0] };
+      const patch = { presences: st === "nc" ? pres : [...pres, { date: s.date, type: s.type, p: st === "p", ...(st === "e" ? { ex: true } : {}), ...qui }] };
       const keys = new Set(critsOf(S.tab, s.type).map(c => c[0])), crit = Object.fromEntries(Object.entries(r.crit).filter(([k]) => keys.has(k)));
       const stats = (S.tab === "U19" && s.type === "Match" && r.stats && Object.keys(r.stats).length) ? { ...r.stats } : null;
-      if (r.present && (Object.keys(crit).length || r.com.trim() || stats)) {
+      if (st === "p" && (Object.keys(crit).length || r.com.trim() || stats)) {
         const nn = { id: nid(), date: s.date, type: s.type, crit, com: r.com.trim().slice(0, 500), at: new Date().toISOString(), ...(stats ? { stats } : {}) };
         if (S.scope) patch.notesAdj = [...adjNotes(f).filter(x => !(x.par === S.me && x.date === s.date && x.type === s.type)), { ...nn, par: S.me, parNom: ((S.coachs[S.me] || {}).nom || "Adjoint").split(" ")[0] }];
         else patch.notes = [...rawNotes(f).filter(x => !(x.date === s.date && x.type === s.type)), nn];
