@@ -342,6 +342,15 @@ details.bmf-vol > summary { cursor: pointer; }
 .bmf-phc { background: var(--surface-2); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
 .bmf-phc ol { margin: 6px 0 0; padding-left: 20px; color: var(--muted); }
 @media (max-width: 600px) { .bmf-grid, .bmf-ph { grid-template-columns: 1fr; } .check { padding-top: 4px; } }
+
+/* confidentialité, notifications */
+footer.foot { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding-top: 28px; padding-bottom: 28px; margin-top: 30px; border-top: 1px solid var(--ligne); }
+.conf ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.check.accord { align-items: flex-start; padding-top: 0; font-size: 13.5px; line-height: 1.4; }
+.check.accord input { margin-top: 3px; flex: 0 0 auto; }
+.card.notif { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-color: var(--rouge); margin-bottom: 12px; }
+.notif-l { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.notif-l b { color: var(--rouge); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -350,6 +359,7 @@ details.bmf-vol > summary { cursor: pointer; }
   <div class="row" style="gap:8px"><span class="role" id="role">Chargement…</span><button class="role" id="logout" hidden style="background:none;cursor:pointer">Se déconnecter</button></div>
 </div></header>
 <main class="wrap" id="app"><p class="note" style="margin-top:24px">Chargement du suivi…</p></main>
+<footer class="wrap foot"><button type="button" class="linkbtn" id="lien-conf">Confidentialité</button><span class="note">US Endoume Marseille Catalans · suivi des joueurs</span></footer>
 
 <script type="module">
 "use strict";
@@ -1042,14 +1052,27 @@ async function linkAccount(fid, uid) {
   const ins = S.inscriptions[uid];
   if (ins && ins.poste && groupOf(data) === "U19") data.poste = String(ins.poste).slice(0, 40);
   if (ins && ins.email) data.email = String(ins.email).slice(0, 120);
+  if (ins && ins.accordAt) data.accordAt = String(ins.accordAt).slice(0, 40);
   const ref = S.db.doc("fiches/" + uid); if ((await ref.get()).exists) throw new Error("exists");
   await ref.set(data); await S.db.doc("fiches/" + fid).delete(); await S.db.doc("inscriptions/" + uid).delete();
   for (const [sid, se] of Object.entries(S.seances)) { const d = ditOf(se); if (fid in d) { const n = { ...d, [uid]: d[fid] }; delete n[fid]; try { await S.db.doc("seances/" + sid).update({ dit: n }); } catch (e) {} } }
   return data;
 }
+function exporterTout() {
+  const data = { exporte: new Date().toISOString(), fiches: S.fiches, seances: S.seances, carnet: S.carnet || {}, equipes: S.equipes, votes: S.votes, coachs: S.coachs, inscriptions: S.inscriptions, objectifs: S.objectifs, championnat: S.champ || null };
+  const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
+  const a = h("a", { href: URL.createObjectURL(blob), download: `suivi-endoume-sauvegarde-${today()}.json` });
+  document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  try { localStorage.setItem("derniereSauvegarde", today()); } catch (e) {}
+}
+function derniereSauvegarde() { try { return localStorage.getItem("derniereSauvegarde"); } catch (e) { return null; } }
 function accesView() {
   const box = h("div", { class: "stack" });
   if (S.flash) { box.append(h("p", { class: "ok", style: "margin:0" }, S.flash)); S.flash = ""; }
+  const ds = derniereSauvegarde();
+  box.append(h("div", { class: "card row", style: "align-items:center" }, h("div", { style: "flex:1;min-width:220px" }, h("h3", { style: "margin:0 0 4px" }, "Sauvegarde"),
+    h("p", { class: "note", style: "margin:0" }, `Télécharge toutes les données (fiches, notes, présences, séances, carnet BMF, équipes) dans un fichier. À faire une fois par mois et à garder en privé. ${ds ? "Dernière sauvegarde sur cet appareil : " + fmtLong(ds) + "." : "Pas encore de sauvegarde sur cet appareil."}`)),
+    h("button", { class: "btn small", onclick: () => { exporterTout(); render(); } }, "Exporter toutes les données")));
   const pend = Object.entries(S.inscriptions).filter(([uid]) => !S.fiches[uid] && !S.coachs[uid]);
   const pc = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, `Comptes en attente · ${pend.length}`),
     h("p", { class: "note", style: "margin:0" }, "Un joueur ou un parent qui crée son compte apparaît ici. Choisis sa fiche dans la liste et clique sur Relier : il verra uniquement sa fiche et son équipe (U19, U10 ou gardiens). L'accès coach est réservé à tes adjoints."));
@@ -1191,6 +1214,7 @@ function monCompteCard() {
 /* ---------- connexion ---------- */
 const AUTH_ERR = { "auth/invalid-credential": "Email ou mot de passe incorrect.", "auth/wrong-password": "Email ou mot de passe incorrect.", "auth/user-not-found": "Aucun compte avec cet email.", "auth/email-already-in-use": "Un compte existe déjà avec cet email : connecte-toi.", "auth/weak-password": "Le mot de passe doit faire au moins 6 caractères.", "auth/invalid-email": "Cet email n'est pas valide.", "auth/too-many-requests": "Trop d'essais : attends quelques minutes." };
 function loginView() {
+  if (S.conf) { showConf(); return; }
   const app = document.getElementById("app"); app.textContent = "";
   document.getElementById("role").textContent = "Connexion";
   let mode = S.loginMode || "in";
@@ -1206,6 +1230,8 @@ function loginView() {
         const n = nom.value.trim(); if (!n) { msg.className = "err"; msg.textContent = "Indique ton prénom et ton nom."; go.disabled = false; return; }
         if (!S.signGroupe) { msg.className = "err"; msg.textContent = "Indique si tu es un joueur U19, un parent U10, un gardien ou un coach adjoint."; go.disabled = false; return; }
         if (S.signGroupe === "U19" && !S.signPoste) { msg.className = "err"; msg.textContent = "Choisis ton poste sur le terrain."; go.disabled = false; return; }
+        if (!S.signAccord) { msg.className = "err"; msg.textContent = S.signGroupe === "U10" ? "Coche la case d'accord du parent." : "Coche la case d'accord pour continuer."; go.disabled = false; return; }
+        S.pendingAccord = true;
         S.pendingSignup = S.signGroupe === "ADJ" ? { nom: n.slice(0, 60), avatar: S.avDraft || AV_DEF, groupe: "U19", role: "adjoint", poste: "" }
           : { nom: n.slice(0, 60), avatar: S.avDraft || AV_DEF, groupe: S.signGroupe, poste: S.signGroupe === "U19" ? S.signPoste : (S.signGroupe === "GB" ? "Gardien" : "") };
         await createUserWithEmailAndPassword(auth, email.value.trim(), pass.value);
@@ -1220,11 +1246,22 @@ function loginView() {
     mode === "up" ? h("label", { class: "field" }, "Prénom et nom", nom) : null,
     mode === "up" ? (() => {
       const posteBox = h("div", { class: "stack", style: "gap:6px", hidden: S.signGroupe !== "U19" }, h("h3", { style: "margin:0" }, "Ton poste"), h("p", { class: "note", style: "margin:0" }, "Touche ton poste sur le terrain (système en 4-3-3)."), postePicker(S.signPoste, v => { S.signPoste = v; }));
-      const gb = [["U19", "Joueur U19"], ["U10", "Parent d'un U10"], ["GB", "Gardien (pôle gardiens)"], ["ADJ", "Coach adjoint U19"]].map(([v, l]) => h("button", { type: "button", class: "opt", "data-g": v, "aria-pressed": String(S.signGroupe === v), onclick: e => { S.signGroupe = v; e.currentTarget.parentNode.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.g === v))); posteBox.hidden = v !== "U19"; } }, l));
+      const gb = [["U19", "Joueur U19"], ["U10", "Parent d'un U10"], ["GB", "Gardien (pôle gardiens)"], ["ADJ", "Coach adjoint U19"]].map(([v, l]) => h("button", { type: "button", class: "opt", "data-g": v, "aria-pressed": String(S.signGroupe === v), onclick: e => { S.signGroupe = v; if (S.majAccord) S.majAccord(); e.currentTarget.parentNode.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.g === v))); posteBox.hidden = v !== "U19"; } }, l));
       return h("div", { class: "stack", style: "gap:10px" }, h("div", { class: "field" }, "Je suis", h("div", { class: "row", style: "gap:6px" }, gb)), posteBox);
     })() : null,
     mode === "up" ? h("div", { class: "stack", style: "gap:8px" }, h("h3", { style: "margin:0" }, "Crée ton avatar"), avatarEditor(S.avDraft, a => { S.avDraft = a; }), h("p", { class: "note", style: "margin:0" }, "Il apparaîtra sur ta carte de joueur. Tu pourras le modifier plus tard.")) : null,
-    h("label", { class: "field" }, "Email", email), h("label", { class: "field" }, "Mot de passe", pass), go, msg,
+    h("label", { class: "field" }, "Email", email), h("label", { class: "field" }, "Mot de passe", pass),
+    mode === "up" ? (() => {
+      const c = h("input", { type: "checkbox", id: "accord" }); c.checked = !!S.signAccord; c.onchange = () => { S.signAccord = c.checked; };
+      const txt = h("span", { id: "accord-txt" }), suf = h("span");
+      const maj = () => {
+        txt.textContent = S.signGroupe === "U10" ? "Je suis le parent ou le représentant légal de l'enfant, et j'accepte les règles de la page " : "J'accepte les règles de la page ";
+        suf.textContent = S.signGroupe === "U10" || S.signGroupe === "ADJ" ? "." : ". Si j'ai moins de 18 ans, mon parent ou représentant légal est d'accord.";
+      };
+      maj(); S.majAccord = maj;
+      return h("label", { class: "check accord" }, c, h("span", {}, txt, h("button", { type: "button", class: "linkbtn", style: "display:inline;padding:0", onclick: showConf }, "Confidentialité"), suf));
+    })() : null,
+    go, msg,
     mode === "in" ? h("button", { type: "button", class: "linkbtn", onclick: async () => { const e = email.value.trim(); if (!e) { msg.className = "err"; msg.textContent = "Écris ton email, puis clique à nouveau ici."; return; } try { await sendPasswordResetEmail(auth, e); msg.className = "ok"; msg.textContent = "Email de réinitialisation envoyé."; } catch (err) { msg.className = "err"; msg.textContent = AUTH_ERR[err && err.code] || "Échec : réessaie."; } } }, "Mot de passe oublié ?") : h("p", { class: "note", style: "margin:0" }, "Ton coach reliera ensuite ton compte à ta fiche. Tu ne verras que tes propres notes."));
   form.addEventListener("submit", submit);
   app.append(form);
@@ -2121,6 +2158,8 @@ function dashAlertes() {
   if (att.length) out.push({ g: null, t: `${att.length} compte${att.length > 1 ? "s" : ""} en attente de liaison`, d: att.map(u => (S.inscriptions[u].nom || "") + (S.inscriptions[u].role === "adjoint" ? " (adjoint U19, à valider)" : "")).filter(Boolean).join(", "), go: () => { S.dash = false; S.view = "list"; S.sub = "acces"; render(); }, lab: "Relier" });
   // a dit oui mais pas venu (2 fois ou plus)
   for (const [fid, n] of Object.entries(ouiAbsents())) if (n >= 2) { const g = groupOf(S.fiches[fid]); out.push({ g, t: `${nom(fid)} a dit oui sans venir ${n} fois`, d: "D'après le sondage WhatsApp et ton appel.", go: go(g, fid) }); }
+  const ds = derniereSauvegarde();
+  if (!S.scope && (!ds || ds < ilYa(30))) out.push({ g: null, t: "Sauvegarde du mois à faire", d: ds ? `Dernière sauvegarde le ${fmtLong(ds)}.` : "Aucune sauvegarde faite sur cet appareil.", go: () => { exporterTout(); render(); }, lab: "Exporter" });
   for (const e of carnetList().filter(x => x.date && x.date <= today() && !reflexFaite(x)).sort((a, b) => a.date < b.date ? -1 : 1))
     out.push({ g: e.groupe, t: `Analyse réflexive à faire : ${e.kind === "match" ? "match" : "séance"} du ${fmtLong(e.date)}`, d: "Carnet BMF", go: () => openCarnet(e.id, e), lab: "Ouvrir" });
   for (const [fid, f] of dFiches()) {
@@ -2339,6 +2378,14 @@ function saisieView() {
   box.append(h("div", { class: "card row" }, h("label", { class: "field" }, "Date", date), h("label", { class: "field" }, "Type", type),
     h("p", { class: "note", style: "margin:0;flex:1;min-width:200px" }, "Touche une note de 1 à 5 par critère. Les joueurs marqués absents ne sont pas enregistrés.")));
   const ids = Object.keys(s.rows).sort((a, b) => (S.fiches[a].nom || "").localeCompare(S.fiches[b].nom || "", "fr"));
+  const exist = fid => (S.fiches[fid].presences || []).find(p => p && p.date === s.date && p.type === s.type);
+  const deja = ids.filter(fid => exist(fid));
+  if (deja.length) {
+    const kk = s.date + "|" + s.type;
+    if (s.prefill !== kk) { s.prefill = kk; deja.forEach(fid => { s.rows[fid].present = !!exist(fid).p; }); }
+    const auteurs = [...new Set(deja.map(fid => exist(fid).parNom).filter(Boolean))];
+    box.append(h("div", { class: "card", style: "border-color:var(--or)" }, h("p", { style: "margin:0" }, `L'appel de cette séance a déjà été fait${auteurs.length ? " par " + auteurs.join(" et ") : ""} : ${deja.filter(fid => exist(fid).p).length} présents sur ${deja.length}. Il est repris ci-dessous. En enregistrant, tu le mets à jour joueur par joueur, sans doublon.`)));
+  }
   if (ann) {
     const nNo = ids.filter(fid => ann[fid] && ann[fid].p === false).length, nYes = ids.filter(fid => ann[fid] && ann[fid].p === true).length;
     box.append(h("div", { class: "card row", style: "align-items:center" }, h("span", { style: "flex:1;min-width:200px" }, `Sondage WhatsApp : ${nYes} oui, ${nNo} non, ${ids.length - nYes - nNo} sans réponse.`),
@@ -2386,13 +2433,13 @@ function saisieView() {
     for (const fid of ids) {
       const r = s.rows[fid], f = S.fiches[fid];
       const pres = (Array.isArray(f.presences) ? f.presences : []).filter(p => !(p.date === s.date && p.type === s.type));
-      const patch = { presences: [...pres, { date: s.date, type: s.type, p: r.present }] };
+      const patch = { presences: [...pres, { date: s.date, type: s.type, p: r.present, par: S.me, parNom: ((S.coachs[S.me] || {}).nom || "Coach").split(" ")[0] }] };
       const keys = new Set(critsOf(S.tab, s.type).map(c => c[0])), crit = Object.fromEntries(Object.entries(r.crit).filter(([k]) => keys.has(k)));
       const stats = (S.tab === "U19" && s.type === "Match" && r.stats && Object.keys(r.stats).length) ? { ...r.stats } : null;
       if (r.present && (Object.keys(crit).length || r.com.trim() || stats)) {
         const nn = { id: nid(), date: s.date, type: s.type, crit, com: r.com.trim().slice(0, 500), at: new Date().toISOString(), ...(stats ? { stats } : {}) };
         if (S.scope) patch.notesAdj = [...adjNotes(f).filter(x => !(x.par === S.me && x.date === s.date && x.type === s.type)), { ...nn, par: S.me, parNom: ((S.coachs[S.me] || {}).nom || "Adjoint").split(" ")[0] }];
-        else patch.notes = [...rawNotes(f), nn];
+        else patch.notes = [...rawNotes(f).filter(x => !(x.date === s.date && x.type === s.type)), nn];
         rated++;
       }
       try { await writeFicheQuiet(fid, patch); ok++; } catch (e) { ko++; }
@@ -2482,24 +2529,85 @@ function joueurView() {
       h("div", { class: "row" }, h("button", { class: "btn small", onclick: async () => { try { await saveAvatar(S.me, S.avDraft || S.avatars[S.me]); am.textContent = "Avatar enregistré : il sera sur ta carte."; } catch (e) { am.textContent = "Échec : réessaie."; } } }, "Enregistrer"), am)));
     return box;
   }
+  const nv = nouveautes();
+  if (nv.length) box.append(h("div", { class: "card notif" }, h("div", { class: "notif-l" }, h("b", {}, "Nouveau"), ...nv.map(n => h("button", { class: "linkbtn", onclick: () => { S.psub = n.sub; render(); } }, n.t))),
+    h("button", { class: "linkbtn", "aria-label": "J'ai vu", onclick: () => { marquerVu(); render(); } }, "OK, vu")));
+  if ("Notification" in window && Notification.permission === "default" && !S.notifAsk) box.append(h("div", { class: "card row", style: "align-items:center" }, h("span", { style: "flex:1;min-width:200px" }, "Être prévenu d'une nouvelle note ou d'un vote ouvert pendant que le site est ouvert ?"),
+    h("button", { class: "btn small ghost", onclick: async () => { S.notifAsk = true; try { await Notification.requestPermission(); } catch (e) {} render(); } }, "Activer"), h("button", { class: "linkbtn", onclick: () => { S.notifAsk = true; render(); } }, "Non merci")));
   box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, S.myFiche, false));
   if (S.psub !== "equipe" && !S.demo) box.append(h("div", { style: "margin-top:12px" }, monCompteCard()));
   return box;
 }
+function vuLe() { try { return localStorage.getItem("vu-" + S.me) || ""; } catch (e) { return ""; } }
+function marquerVu() { try { localStorage.setItem("vu-" + S.me, new Date().toISOString()); } catch (e) {} }
+function votesOuverts() {
+  const g = S.myFiche ? groupOf(S.myFiche) : null;
+  return Object.entries(S.votes || {}).filter(([vid, v]) => v && v.ouvert && v.groupe === g && (!Array.isArray(v.convoques) || v.convoques.includes(S.me)) && S.myBallots[vid] !== true);
+}
+function nouveautes() {
+  if (!S.myFiche) return [];
+  const vu = vuLe(), out = [];
+  if (vu) { const n = sortedNotes(S.myFiche).filter(x => (x.at || x.date) > vu).length; if (n) out.push({ t: `${n} nouvelle${n > 1 ? "s" : ""} note${n > 1 ? "s" : ""}`, sub: "fiche" }); }
+  else if (sortedNotes(S.myFiche).length) marquerVu();
+  for (const [vid, v] of votesOuverts()) { watchBulletins(vid); if (S.myBallots[vid] === true) continue; out.push({ t: `Vote ouvert : ${voteLabel(v.type, v.groupe).toLowerCase()}`, sub: "equipe" }); }
+  return out;
+}
+function notifier(titre, corps) { try { if ("Notification" in window && Notification.permission === "granted") new Notification(titre, { body: corps, icon: document.querySelector(".crest").src, tag: titre }); } catch (e) {} }
 function psubtabs() {
   return h("div", { class: "subtabs", role: "tablist" },
     h("button", { class: "subtab", role: "tab", "aria-selected": String(S.psub === "fiche"), onclick: () => { S.psub = "fiche"; render(); } }, "Ma fiche"),
     h("button", { class: "subtab", role: "tab", "aria-selected": String(S.psub === "equipe"), onclick: () => { S.psub = "equipe"; render(); } }, "L'équipe"));
 }
 
+
+/* ---------- confidentialité ---------- */
+const CONSERVATION = "jusqu'à la fin de la saison 2026-2027 : elles sont supprimées au plus tard le 31 juillet 2027";
+function confView() {
+  const box = h("div", { class: "stack conf", style: "margin-top:20px" });
+  const sec = (t, ...k) => h("section", { class: "card stack" }, h("h3", { style: "margin:0" }, t), ...k);
+  const ul = items => h("ul", {}, items.map(x => h("li", {}, x)));
+  box.append(h("div", { class: "bar" }, h("h2", {}, "Confidentialité"), h("button", { class: "btn ghost small", onclick: () => { S.conf = false; if (location.hash === "#confidentialite") history.replaceState(null, "", location.pathname + location.search); S.me ? render() : loginView(); } }, "Retour")));
+  box.append(h("p", { style: "margin:0" }, "Ce site sert à suivre la progression des joueurs de l'US Endoume Marseille Catalans (U19, U10 et pôle gardiens). Il est géré par le coach Nicolas Celle, éducateur au club. Voici, simplement, ce qu'il enregistre, qui le voit et combien de temps."));
+  box.append(sec("Ce qui est enregistré", ul([
+    "Le compte : l'adresse mail et le mot de passe (le mot de passe est chiffré par Google, personne ne peut le lire, pas même le coach).",
+    "Le prénom et le nom du joueur, sa catégorie, et son poste pour les U19.",
+    "L'avatar : un dessin choisi par le joueur, jamais une photo.",
+    "Les évaluations des entraînements et des matchs (notes et commentaires de l'encadrement), le temps de jeu, les buts et passes décisives pour les U19.",
+    "Les présences aux séances, et les réponses au sondage WhatsApp que le coach reporte lui-même.",
+    "Pour les U19 : les auto-évaluations, l'objectif personnel, et le fait d'avoir voté pour l'homme du match. Le vote est anonyme : personne ne peut savoir pour qui un joueur a voté.",
+    "Le carnet de formation du coach (diplôme BMF) peut reprendre les noms, temps de jeu et notes d'un match dans ses fiches de match."
+  ])));
+  box.append(sec("Qui le voit", ul([
+    "Le joueur (ou le parent pour les U10) voit uniquement sa propre fiche. Il ne voit jamais les notes des autres.",
+    "Les coéquipiers d'une même catégorie voient seulement l'avatar, le nom dans les compositions d'équipe et les résultats des votes.",
+    "L'encadrement : le coach Nicolas Celle pour toutes les catégories, et le coach adjoint U19 uniquement pour les U19.",
+    "Le carnet de formation du coach peut être remis aux formateurs du BMF (Ligue de Méditerranée de football).",
+    "Personne d'autre. Aucune publicité, aucune revente, aucun partage avec d'autres organismes."
+  ])));
+  box.append(sec("Où et combien de temps", ul([
+    "Les données sont stockées chez Google (Firebase), et le site est hébergé par GitHub.",
+    `Elles sont conservées ${CONSERVATION}. Si le joueur quitte le club en cours de saison, sa fiche est supprimée sur simple demande.`,
+    "Le coach fait des sauvegardes régulières, conservées de façon privée et supprimées en même temps."
+  ])));
+  box.append(sec("Les mineurs", h("p", { style: "margin:0" }, "Pour un joueur de moins de 18 ans, le compte est créé avec l'accord d'un parent ou du représentant légal. Pour les U10, c'est le parent qui crée et utilise le compte.")));
+  box.append(sec("Vos droits", h("p", { style: "margin:0" }, "Vous pouvez à tout moment demander à voir, corriger ou supprimer les données d'un joueur : il suffit d'en parler au coach ou au club. La suppression du compte efface la fiche.")));
+  box.append(sec("Cookies", h("p", { style: "margin:0" }, "Aucun cookie publicitaire ni de mesure d'audience. Le site garde seulement sur votre téléphone ce qui sert à rester connecté.")));
+  box.append(h("p", { class: "note", style: "margin:0" }, "Dernière mise à jour : 12 novembre 2026."));
+  return box;
+}
+function showConf() { S.conf = true; document.getElementById("role").textContent = "Confidentialité"; const app = document.getElementById("app"); app.textContent = ""; app.append(confView()); window.scrollTo(0, 0); }
+
 /* ---------- rendu ---------- */
 function render() {
+  if (S.conf) { showConf(); return; }
   const app = document.getElementById("app"); app.textContent = "";
   const role = document.getElementById("role");
   role.textContent = S.admin ? "Espace coach" : "Mon espace";
   app.append(S.admin ? coachView() : joueurView());
 }
 
+document.getElementById("lien-conf").onclick = showConf;
+if (location.hash === "#confidentialite") S.conf = true;
 /* ---------- exemples pour l'aperçu ---------- */
 function demoData() {
   let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
@@ -2543,7 +2651,7 @@ onAuthStateChanged(auth, async u => {
   const db = DB; S.db = db; S.me = u.uid; S.email = u.email || "";
   if (S.pendingSignup) {
     const ps = S.pendingSignup; S.pendingSignup = null;
-    try { const ins = { nom: ps.nom, email: u.email || "", at: new Date().toISOString() }; if (ps.groupe) ins.groupe = ps.groupe; if (ps.poste) ins.poste = ps.poste; if (ps.role) ins.role = ps.role; await setDoc(fsDoc(fs, "inscriptions/" + u.uid), ins); } catch (e) {}
+    try { const ins = { nom: ps.nom, email: u.email || "", at: new Date().toISOString() }; if (ps.groupe) ins.groupe = ps.groupe; if (ps.poste) ins.poste = ps.poste; if (ps.role) ins.role = ps.role; if (S.pendingAccord) { ins.accord = true; ins.accordAt = ins.at; } await setDoc(fsDoc(fs, "inscriptions/" + u.uid), ins); } catch (e) {}
     try { await saveAvatar(u.uid, ps.avatar); } catch (e) {}
   }
   let coachData = null;
@@ -2551,7 +2659,11 @@ onAuthStateChanged(auth, async u => {
   S.scope = coachData && Array.isArray(coachData.groupes) && coachData.groupes.length ? coachData.groupes.filter(g => GROUPS[g]) : null;
   const slowT = setTimeout(() => { S.slow = true; render(); }, 10000);
   render();
-  const watchVotes = g => (g ? DB.where("votes", "groupe", g) : db.collection("votes")).onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.votes = n; softRender(); }, () => {});
+  const watchVotes = g => (g ? DB.where("votes", "groupe", g) : db.collection("votes")).onSnapshot(q => {
+    const n = {}; q.docs.forEach(d => n[d.id] = d.data());
+    if (!S.admin && S.votesVus) for (const [vid, v] of Object.entries(n)) if (v.ouvert && !(S.votes[vid] && S.votes[vid].ouvert)) notifier("Vote ouvert", `${voteLabel(v.type, v.groupe)} : c'est le moment de voter.`);
+    S.votes = n; S.votesVus = true; softRender();
+  }, () => {});
   if (S.admin && S.scope) {
     S.coachs = { [S.me]: coachData }; S.dash = true; S.tab = S.scope[0];
     const parG = { fiches: {}, seances: {}, votes: {} };
@@ -2598,7 +2710,9 @@ onAuthStateChanged(auth, async u => {
     db.doc("avatars/" + S.me).onSnapshot(as => { if (as.exists) S.avatars = { ...S.avatars, [S.me]: as.data() }; softRender(); }, () => {});
     db.doc("fiches/" + S.me).onSnapshot(snap => {
       clearTimeout(slowT); S.slow = false;
+      const avant = S.myFiche ? sortedNotes(S.myFiche).length : null;
       S.myFiche = snap.exists ? snap.data() : null;
+      if (avant != null && S.myFiche && sortedNotes(S.myFiche).length > avant) notifier("Nouvelle note", "Ton coach vient de te noter. Ouvre ta fiche pour voir.");
       if (S.myFiche && !S.eqSub) {
         const g = groupOf(S.myFiche);
         S.eqSub = db.doc("equipe/" + g).onSnapshot(es => { if (es.exists) S.equipes[g] = es.data(); else delete S.equipes[g]; softRender(); }, () => {});
