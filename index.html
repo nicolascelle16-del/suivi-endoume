@@ -2551,7 +2551,7 @@ onAuthStateChanged(auth, async u => {
   S.scope = coachData && Array.isArray(coachData.groupes) && coachData.groupes.length ? coachData.groupes.filter(g => GROUPS[g]) : null;
   const slowT = setTimeout(() => { S.slow = true; render(); }, 10000);
   render();
-  const watchVotes = () => db.collection("votes").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.votes = n; softRender(); }, () => {});
+  const watchVotes = g => (g ? DB.where("votes", "groupe", g) : db.collection("votes")).onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.votes = n; softRender(); }, () => {});
   if (S.admin && S.scope) {
     S.coachs = { [S.me]: coachData }; S.dash = true; S.tab = S.scope[0];
     const parG = { fiches: {}, seances: {}, votes: {} };
@@ -2595,7 +2595,7 @@ onAuthStateChanged(auth, async u => {
     if (S.blocked) { clearTimeout(slowT); render(); return; }
     try { const ins = await getDoc(fsDoc(fs, "inscriptions/" + u.uid)); S.myInscription = ins.exists() ? ins.data() : null; } catch (e) {}
     db.doc("objectifs/" + S.me).onSnapshot(os => { if (os.exists) S.objectifs[S.me] = os.data(); softRender(); }, () => {});
-    db.collection("avatars").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.avatars = n; softRender(); }, () => {});
+    db.doc("avatars/" + S.me).onSnapshot(as => { if (as.exists) S.avatars = { ...S.avatars, [S.me]: as.data() }; softRender(); }, () => {});
     db.doc("fiches/" + S.me).onSnapshot(snap => {
       clearTimeout(slowT); S.slow = false;
       S.myFiche = snap.exists ? snap.data() : null;
@@ -2603,7 +2603,8 @@ onAuthStateChanged(auth, async u => {
         const g = groupOf(S.myFiche);
         S.eqSub = db.doc("equipe/" + g).onSnapshot(es => { if (es.exists) S.equipes[g] = es.data(); else delete S.equipes[g]; softRender(); }, () => {});
         if (g === "U19") db.doc("championnat/u19").onSnapshot(cs => { S.champ = cs.exists ? cs.data() : null; softRender(); }, () => {});
-        watchVotes();
+        watchVotes(g);
+        db.collection("avatars").onSnapshot(q => { const n = {}; q.docs.forEach(d => n[d.id] = d.data()); S.avatars = n; softRender(); }, () => {});
       }
       softRender();
     }, err => { clearTimeout(slowT); S.myFiche = null; render(); });
