@@ -1110,6 +1110,7 @@ function watchAutos(fid) {
   S.subs["a-" + fid] = S.db.collection("fiches/" + fid + "/auto").onSnapshot(q => { S.autos[fid] = q.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.date < b.date ? 1 : -1); softRender(); }, () => {});
 }
 function autoMissing(fid, f) {
+  if (groupOf(f) === "U10") return false;
   const lastMatch = sortedNotes(f).filter(n => n.type === "Match").pop();
   if (!lastMatch) return false;
   const autos = S.autos[fid] || [];
@@ -1131,6 +1132,23 @@ function autoAFaire(f, autos) {
   }
   return { todo: [...matchs, ...semaines.slice(0, 2)], bientot };
 }
+/* U19 : les notes du coach restent cachées au joueur tant qu'il ne s'est pas auto-évalué (semaine et match) */
+const MASQUE_DEBUT = "2026-11-09";
+function masquerNotes(fid, f) {
+  if (!f || groupOf(f) !== "U19") return f;
+  watchAutos(fid);
+  const { todo } = autoAFaire(f, S.autos[fid] || []), cles = new Set(todo.map(t => t.key)), now = new Date();
+  const cache = n => {
+    if (!n || typeof n.date !== "string" || n.date < MASQUE_DEBUT) return false;
+    if (n.type === "Match") return cles.has("M" + n.date);
+    const ven = plusJours(lundiDe(n.date), 4);
+    return now < new Date(ven + "T22:00:00") || cles.has("S" + ven);
+  };
+  const notes = Array.isArray(f.notes) ? f.notes : [], adj = Array.isArray(f.notesAdj) ? f.notesAdj : [];
+  const nb = notes.filter(cache).length;
+  if (!nb) return f;
+  return { ...f, notes: notes.filter(n => !cache(n)), notesAdj: adj.filter(n => !cache(n)), _plein: f, _masque: nb };
+}
 function coachRef(notes, a) {
   if (a.type === "Match") return notes.find(n => n.type === "Match" && n.date === a.date) || notes.filter(n => n.type === "Match" && n.date <= a.date).pop();
   const l = lundiDe(a.date), fin = plusJours(l, 6), ns = notes.filter(n => n.type !== "Match" && n.date >= l && n.date <= fin);
@@ -1142,7 +1160,7 @@ function autoCard(fid, f, asCoach) {
   const g = groupOf(f), G = GROUPS[g], autos = S.autos[fid] || [], notes = sortedNotes(f);
   const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, asCoach ? "Auto-évaluations du joueur" : "Mon auto-évaluation"));
   if (!asCoach) {
-    const { todo, bientot } = autoAFaire(f, autos);
+    const { todo, bientot } = autoAFaire(f._plein || f, autos);
     if (!todo.length) {
       card.append(h("p", { style: "margin:0" }, "Rien à évaluer pour l'instant."),
         h("p", { class: "note", style: "margin:0" }, bientot ? `Ta semaine s'ouvre ${bientot}.` : "Tu pourras t'auto-évaluer sur ta semaine le vendredi à partir de 22h, quand le coach aura noté tes entraînements, et sur chaque match une fois qu'il l'aura noté."));
@@ -1915,7 +1933,8 @@ function ficheView(fid, f, asCoach) {
   // objectif individuel : U19 uniquement, choisi par le joueur
   if (g === "U19") wrap.append(objectifCard(fid, f, asCoach));
 
-  if (!notes.length) { watchAutos(fid); wrap.append(h("div", { class: "empty" }, "Aucune évaluation du coach pour l'instant."), autoCard(fid, f, asCoach)); return wrap; }
+  if (f._masque && !asCoach) wrap.append(h("div", { class: "record", style: "border-color:var(--rouge)" }, `${f._masque} note${f._masque > 1 ? "s" : ""} du coach en attente : fais ton auto-évaluation (la semaine s'ouvre le vendredi à 22h, le match dès qu'il est noté) pour ${f._masque > 1 ? "les" : "la"} découvrir.`));
+  if (!notes.length) { watchAutos(fid); wrap.append(h("div", { class: "empty" }, f._masque ? "Tes notes apparaîtront ici après ton auto-évaluation." : "Aucune évaluation du coach pour l'instant."), (g === "U10" && !asCoach) ? null : autoCard(fid, f, asCoach)); return wrap; }
 
   // moyennes par critère
   const hasMatch = notes.some(n => n.type === "Match");
@@ -1959,7 +1978,7 @@ function ficheView(fid, f, asCoach) {
   wrap.append(h("div", { class: "two" }, moy, evo));
   wrap.append(saisonCard(fid, f, parent));
 
-  wrap.append(autoCard(fid, f, asCoach));
+  if (!(g === "U10" && !asCoach)) wrap.append(autoCard(fid, f, asCoach)); // U10 : auto-évaluation faite en fin de mois avec le coach
   // historique
   const hist = h("div", { class: "hist" });
   for (const n of [...notes].reverse()) {
@@ -2786,7 +2805,7 @@ function joueurView() {
     h("button", { class: "linkbtn", "aria-label": "J'ai vu", onclick: () => { marquerVu(); render(); } }, "OK, vu")));
   if ("Notification" in window && Notification.permission === "default" && !S.notifAsk) box.append(h("div", { class: "card row", style: "align-items:center" }, h("span", { style: "flex:1;min-width:200px" }, "Être prévenu d'une nouvelle note ou d'un vote ouvert pendant que le site est ouvert ?"),
     h("button", { class: "btn small ghost", onclick: async () => { S.notifAsk = true; try { await Notification.requestPermission(); } catch (e) {} render(); } }, "Activer"), h("button", { class: "linkbtn", onclick: () => { S.notifAsk = true; render(); } }, "Non merci")));
-  box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, S.myFiche, false));
+  box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, masquerNotes(S.me, S.myFiche), false));
   if (S.psub !== "equipe" && !S.demo) box.append(h("div", { style: "margin-top:12px" }, monCompteCard()));
   return box;
 }
@@ -2799,7 +2818,7 @@ function votesOuverts() {
 function nouveautes() {
   if (!S.myFiche) return [];
   const vu = vuLe(), out = [];
-  if (vu) { const n = sortedNotes(S.myFiche).filter(x => (x.at || x.date) > vu).length; if (n) out.push({ t: `${n} nouvelle${n > 1 ? "s" : ""} note${n > 1 ? "s" : ""}`, sub: "fiche" }); }
+  if (vu) { const n = sortedNotes(masquerNotes(S.me, S.myFiche)).filter(x => (x.at || x.date) > vu).length; if (n) out.push({ t: `${n} nouvelle${n > 1 ? "s" : ""} note${n > 1 ? "s" : ""}`, sub: "fiche" }); }
   else if (sortedNotes(S.myFiche).length) marquerVu();
   for (const [vid, v] of votesOuverts()) { watchBulletins(vid); if (S.myBallots[vid] === true) continue; out.push({ t: `Vote ouvert : ${voteLabel(v.type, v.groupe).toLowerCase()}`, sub: "equipe" }); }
   return out;
