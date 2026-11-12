@@ -367,6 +367,53 @@ footer.foot { display: flex; gap: 14px; align-items: center; justify-content: sp
 .radar-box { min-width: 0; }
 .radar svg { width: 100%; height: auto; display: block; max-width: 380px; margin: 0 auto; }
 @media (max-width: 700px) { .radars { grid-template-columns: 1fr; } }
+
+/* tableau de bord visuel */
+.dz { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.dk { background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; text-align: left; color: inherit; font: inherit; }
+button.dk { cursor: pointer; transition: border-color .15s, transform .15s; }
+button.dk:hover { border-color: var(--or); }
+.dk.span2 { grid-column: span 2; } .dk.span4 { grid-column: 1 / -1; }
+.dk-l { font-family: var(--label); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--or); font-weight: 600; }
+.dk-row { display: flex; align-items: center; gap: 14px; }
+.dk-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.dk-big { font-family: var(--display); font-size: 34px; line-height: 1; text-transform: capitalize; }
+.dk-kpi { font-family: var(--display); font-size: 46px; line-height: 1; font-variant-numeric: tabular-nums; }
+.dk-kpi.sm { font-size: 34px; }
+.dk-kpi small { font-size: 16px; color: var(--muted); margin-left: 3px; }
+.dk-c { align-items: center; text-align: center; } .dk-c .dk-l { align-self: flex-start; }
+.ring svg { width: 84px; height: 84px; display: block; } .ring.sm svg { width: 76px; height: 76px; }
+.spark svg { width: 100%; height: 34px; display: block; }
+.chip-evo { align-self: flex-start; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 20px; }
+.chip-evo.up { background: rgba(63,174,106,.18); color: #6fd497; } .chip-evo.down { background: rgba(224,24,45,.18); color: #ff8a97; }
+.dk-leg { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+.dk-leg i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-left: 4px; }
+.dk-next { border-left: 4px solid var(--gc); }
+.dk-vs { display: flex; align-items: center; justify-content: space-around; gap: 10px; padding: 4px 0; }
+.vs-t { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; text-align: center; }
+.vs-t b { font-family: var(--display); font-size: 22px; font-weight: 400; line-height: 1.1; }
+.vs-r { font-size: 12px; color: var(--or); border: 1px solid var(--or); border-radius: 20px; padding: 0 8px; }
+.vs-x { font-family: var(--display); font-size: 20px; color: var(--rouge); }
+.dk-cats { display: flex; flex-wrap: wrap; gap: 8px; }
+.dk-cat { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 30px; padding: 6px 14px 6px 6px; cursor: pointer; color: inherit; font: inherit; }
+.dk-cat b { display: inline-grid; place-items: center; min-width: 28px; height: 28px; border-radius: 50%; background: var(--rouge); color: #fff; font-size: 14px; }
+.dk-cat span { font-size: 13.5px; }
+.dk-cat.on { border-color: var(--or); background: rgba(205,189,143,.12); }
+.dk-ok { font-size: 15px; color: #6fd497; }
+.dk-list .d-row:first-of-type { border-top: 0; }
+.dk-grp { border-top: 4px solid var(--gc); }
+.dk-gh { display: flex; align-items: center; justify-content: space-between; }
+.dk-gn { font-family: var(--display); font-size: 24px; }
+.dk-badge { background: var(--rouge); color: #fff; border-radius: 20px; font-size: 12px; font-weight: 600; padding: 2px 9px; }
+.bmf-mini { gap: 6px; } .bm { display: grid; grid-template-columns: 86px minmax(0, 1fr) 40px; gap: 8px; align-items: center; font-size: 12.5px; }
+.bm .track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; } .bm .fill { height: 100%; background: var(--or); } .bm .fill.done { background: var(--bon); } .bm b { text-align: right; font-variant-numeric: tabular-nums; }
+.dash2 > .dk { margin-top: 0; }
+@media (max-width: 900px) { .dz { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dk.span2 { grid-column: 1 / -1; } }
+@media (max-width: 520px) { .dk-kpi { font-size: 38px; } .ring svg { width: 72px; height: 72px; } .dk { padding: 12px; } }
+.dz-g { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+.dash2 { gap: 12px; }
+.dash2 .chart svg { max-width: 820px; margin: 0 auto; display: block; }
+@media (max-width: 700px) { .dz-g { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -2248,71 +2295,130 @@ function dashLineChart(series, keys) {
   for (const e of ends) s += `<text x="${e.x + 9}" y="${e.y}" fill="${e.c}" font-size="12" font-weight="600">${esc(e.n)}</text>`;
   const el = h("div", { class: "chart" }); el.innerHTML = s + "</svg>"; return el;
 }
+/* ---------- tableau de bord visuel ---------- */
+function ringSVG(pct, color, big, small) {
+  const r = 34, C = 2 * Math.PI * r, p = pct == null ? 0 : Math.max(0, Math.min(1, pct));
+  const el = h("div", { class: "ring" });
+  el.innerHTML = `<svg viewBox="0 0 84 84" role="img" aria-label="${esc(big)}"><circle cx="42" cy="42" r="${r}" fill="none" stroke="#2c2728" stroke-width="8"/>` +
+    (pct == null ? "" : `<circle cx="42" cy="42" r="${r}" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C * p} ${C}" transform="rotate(-90 42 42)"/>`) +
+    `<text x="42" y="${small ? 44 : 48}" text-anchor="middle" fill="#f5f2ec" font-size="${String(big).length > 4 ? 15 : 19}" font-family="Oranienbaum, Georgia, serif">${esc(big)}</text>` +
+    (small ? `<text x="42" y="58" text-anchor="middle" fill="#aaa294" font-size="9">${esc(small)}</text>` : "") + `</svg>`;
+  return el;
+}
+function sparkSVG(vals, color) {
+  const v = vals.map(x => x == null ? null : x), pts = v.map((x, i) => x == null ? null : [i, x]).filter(Boolean);
+  const el = h("div", { class: "spark" });
+  if (pts.length < 2) return el;
+  const W = 120, H = 34, mn = Math.min(...pts.map(p => p[1])) - .2, mx = Math.max(...pts.map(p => p[1])) + .2, X = i => 3 + i * (W - 6) / (v.length - 1), Y = y => H - 3 - (y - mn) / ((mx - mn) || 1) * (H - 6);
+  const d = pts.map(p => `${X(p[0])},${Y(p[1])}`).join(" "), l = pts[pts.length - 1];
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(l[0])}" cy="${Y(l[1])}" r="3" fill="${color}"/></svg>`;
+  return el;
+}
+function donutSondage(oui, non, sr) {
+  const tot = oui + non + sr || 1, r = 30, C = 2 * Math.PI * r; let off = 0;
+  const seg = (n, col) => { const len = C * n / tot, s = `<circle cx="38" cy="38" r="${r}" fill="none" stroke="${col}" stroke-width="10" stroke-dasharray="${len} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 38 38)"/>`; off += len; return n ? s : ""; };
+  const el = h("div", { class: "ring sm" });
+  el.innerHTML = `<svg viewBox="0 0 76 76"><circle cx="38" cy="38" r="${r}" fill="none" stroke="#2c2728" stroke-width="10"/>${seg(oui, "#3fae6a")}${seg(non, "#e0182d")}${seg(sr, "#5a5455")}<text x="38" y="43" text-anchor="middle" fill="#f5f2ec" font-size="17" font-family="Oranienbaum, Georgia, serif">${oui}</text></svg>`;
+  return el;
+}
+const CAT_AL = [["auto", "Auto-évals", /auto-évaluation/i], ["comptes", "Comptes", /compte/i], ["oui", "Oui sans venir", /a dit oui/i], ["baisse", "En baisse", /en baisse/i], ["absent", "Absents", /pas venu/i], ["bmf", "Analyses BMF", /analyse réflexive/i], ["save", "Sauvegarde", /sauvegarde/i]];
+const catOf = a => (CAT_AL.find(c => c[2].test(a.t)) || ["autre"])[0];
+
 function dashView() {
-  const box = h("div", { class: "dash" });
+  const box = h("div", { class: "dash dash2" });
   const mk = today().slice(0, 7), prevMk = moisDe(mk, -1), debMois = mk + "-01";
-  const sec = (titre, ...kids) => h("section", { class: "d-sec" }, h("h3", { class: "d-t" }, titre), ...kids);
-  const gpill = g => g ? h("span", { class: "d-g", style: `--gc:${GCOL[g]}` }, GROUPS[g].label) : h("span", { class: "d-g" }, "Club");
+  const goG = (g, sub) => () => { S.dash = false; S.tab = g; S.view = "list"; S.sub = sub || "joueurs"; render(); };
   box.append(h("div", { class: "d-head" }, h("h2", {}, "Tableau de bord"), h("span", { class: "note" }, jourLong(today()))));
   if (S.flash) { box.append(h("p", { class: "ok" }, S.flash)); S.flash = ""; }
+  const grid = h("div", { class: "dz" }), kpis = h("div", { class: "dz" }), grps = h("div", { class: "dz dz-g", style: `--n:${visG().length}` }), bas = h("div", { class: "dz" });
 
-  // 1. prochainement
-  const prochaines = Object.entries(S.seances).filter(([, x]) => x && GROUPS[x.groupe] && x.date >= today()).sort((a, b) => (a[1].date + (a[1].heure || "")) < (b[1].date + (b[1].heure || "")) ? -1 : 1).slice(0, 4);
-  const lignes = prochaines.map(([sid, se]) => {
-    const d = ditOf(se), eff = dFiches(se.groupe).length, oui = Object.values(d).filter(v => v === true).length, non = Object.values(d).filter(v => v === false).length;
-    return h("div", { class: "d-row" }, gpill(se.groupe),
-      h("div", { class: "d-main" }, h("b", {}, seanceTitre(se)), h("span", { class: "d-sub" }, `Sondage : ${oui} oui · ${non} non · ${Math.max(0, eff - oui - non)} sans réponse`)),
-      h("button", { class: "btn small ghost", onclick: () => { S.dash = false; S.tab = se.groupe; startSaisie(); S.saisie.date = se.date; S.saisie.type = se.type; render(); } }, "Faire l'appel"));
-  });
+  // prochaine séance (sondage) et prochain match
+  const prochaines = Object.entries(S.seances).filter(([, x]) => x && GROUPS[x.groupe] && visG().includes(x.groupe) && x.date >= today()).sort((a, b) => (a[1].date + (a[1].heure || "")) < (b[1].date + (b[1].heure || "")) ? -1 : 1);
+  const ps = prochaines[0];
+  if (ps) {
+    const [, se] = ps, d = ditOf(se), eff = dFiches(se.groupe).length, oui = Object.values(d).filter(v => v === true).length, non = Object.values(d).filter(v => v === false).length, sr = Math.max(0, eff - oui - non);
+    grid.append(h("div", { class: "dk span2 dk-next", style: `--gc:${GCOL[se.groupe]}` },
+      h("div", { class: "dk-l" }, "Prochaine séance"),
+      h("div", { class: "dk-row" }, donutSondage(oui, non, sr), h("div", { class: "dk-main" },
+        h("div", { class: "dk-big" }, jourLong(se.date).split(" ")[0]), h("div", {}, h("span", { class: "d-g", style: `--gc:${GCOL[se.groupe]}` }, GROUPS[se.groupe].label), " ", seanceTitre(se).replace(/^[^·]*·\s*/, "")),
+        h("div", { class: "dk-leg" }, h("i", { style: "background:#3fae6a" }), `${oui} oui`, h("i", { style: "background:#e0182d" }), `${non} non`, h("i", { style: "background:#5a5455" }), `${sr} ?`))),
+      h("div", { class: "row", style: "gap:8px" }, h("button", { class: "btn small", onclick: () => { S.dash = false; S.tab = se.groupe; startSaisie(); S.saisie.date = se.date; S.saisie.type = se.type; render(); } }, "Faire l'appel"),
+        prochaines.length > 1 ? h("button", { class: "linkbtn", onclick: goG(se.groupe, "presences") }, `+${prochaines.length - 1} autre${prochaines.length > 2 ? "s" : ""}`) : null)));
+  } else grid.append(h("div", { class: "dk span2" }, h("div", { class: "dk-l" }, "Prochaine séance"), h("p", { class: "note", style: "margin:6px 0 0" }, "Aucune séance créée. Ajoute-la dans Présences avec le sondage.")));
   const c = S.champ, ME = c && (c.equipe || "USM ENDOUME CATALANS");
-  const nextM = c && Array.isArray(c.matchs) ? c.matchs.slice().sort((a, b) => a.date < b.date ? -1 : 1).find(m => !m.score) : null;
+  const nextM = visG().includes("U19") && c && Array.isArray(c.matchs) ? c.matchs.slice().sort((a, b) => a.date < b.date ? -1 : 1).find(m => !m.score) : null;
   if (nextM) {
     const dom = nextM.h === ME, opp = dom ? nextM.a : nextM.h, sh = t => (c.noms && c.noms[t]) || t, r = (c.classement || []).find(x => x.t === opp), moi = (c.classement || []).find(x => x.t === ME);
-    lignes.push(h("div", { class: "d-row" }, gpill("U19"), h("div", { class: "d-main" }, h("b", {}, `J${nextM.j} · ${dom ? "contre" : "à"} ${sh(opp)}`), h("span", { class: "d-sub" }, `${fmtLong(nextM.date)}${nextM.heure ? " à " + nextM.heure : ""} · ${dom ? "domicile" : "extérieur"}${r ? ` · ${r.rang}e, ${r.pts} pts` : ""}${moi ? ` · nous : ${moi.rang}e` : ""}`))));
+    grid.append(h("button", { class: "dk span2 dk-match", onclick: goG("U19", "equipe") },
+      h("div", { class: "dk-l" }, `Prochain match U19 · J${nextM.j}`),
+      h("div", { class: "dk-vs" }, h("div", { class: "vs-t" }, h("span", { class: "vs-r" }, moi ? `${moi.rang}e` : "–"), h("b", {}, "Endoume")), h("span", { class: "vs-x" }, dom ? "vs" : "@"), h("div", { class: "vs-t" }, h("span", { class: "vs-r" }, r ? `${r.rang}e` : "–"), h("b", {}, sh(opp)))),
+      h("div", { class: "d-sub" }, `${fmtLong(nextM.date)}${nextM.heure ? " · " + nextM.heure : ""} · ${dom ? "domicile" : "extérieur"}`)));
   }
-  box.append(sec("Prochainement", lignes.length ? lignes : h("p", { class: "note", style: "margin:0" }, "Aucune séance à venir. Crée-la dans Présences, avec les réponses au sondage.")));
 
-  // 2. à traiter
-  const al = dashAlertes();
-  box.append(sec(`À traiter${al.length ? " · " + al.length : ""}`, al.length ? al.slice(0, S.dashAll ? 99 : 6).map(a => h("div", { class: "d-row" }, gpill(a.g), h("div", { class: "d-main" }, h("b", {}, a.t), a.d ? h("span", { class: "d-sub" }, a.d) : null), h("button", { class: "btn small ghost", onclick: a.go }, a.lab || "Voir")))
-    : h("p", { class: "note", style: "margin:0" }, "Rien à signaler. Tout est à jour."),
-    al.length > 6 ? h("button", { class: "linkbtn", onclick: () => { S.dashAll = !S.dashAll; render(); } }, S.dashAll ? "Afficher moins" : `Voir les ${al.length - 6} autres`) : null));
-
-  // 3. chiffres clés (3 groupes)
+  // chiffres du mois
   const moyM = mean(visG().map(g => groupMonth(g, mk)).filter(v => v != null)), moyP = mean(visG().map(g => groupMonth(g, prevMk)).filter(v => v != null));
   const delta = moyM != null && moyP != null ? moyM - moyP : null;
+  const six = [-5, -4, -3, -2, -1, 0].map(dm => moisDe(mk, dm)), moySix = six.map(m => mean(visG().map(g => groupMonth(g, m)).filter(v => v != null)));
   const pres = presRange(null, debMois), fi = fiabilite(null);
   const nbS = new Set(dFiches().flatMap(([, f]) => sortedNotes(f).filter(n => n.date >= debMois).map(n => groupOf(f) + n.date + n.type))).size;
-  const tile = (lab, v, sub, tone) => h("div", { class: "d-tile" }, h("span", { class: "d-l" }, lab), h("span", { class: "d-v" + (tone ? " " + tone : "") }, v), h("span", { class: "d-sub" }, sub));
-  box.append(sec(`Ce mois-ci · ${monthLab(mk)}`, h("div", { class: "d-tiles" },
-    tile("Moyenne", moyM == null ? "–" : n1(moyM), delta == null ? "sur 5" : `${delta >= 0 ? "↑ +" : "↓ −"}${n1(Math.abs(delta))} vs ${monthLab(prevMk)}`, delta == null ? "" : delta >= 0 ? "up" : "down"),
-    tile("Présence", pres == null ? "–" : Math.round(pres * 100) + " %", "aux appels du mois"),
-    tile("Sondage fiable", fi.rate == null ? "–" : Math.round(fi.rate * 100) + " %", fi.total ? `des « oui » sont venus (${fi.total})` : "pas encore de comparaison"),
-    tile("Séances notées", String(nbS), S.scope ? S.scope.map(g => GROUPS[g].label).join(", ") : "tous groupes"))));
+  kpis.append(
+    h("div", { class: "dk" }, h("div", { class: "dk-l" }, `Moyenne · ${monthLab(mk)}`), h("div", { class: "dk-kpi" }, moyM == null ? "–" : n1(moyM), h("small", {}, "/5")),
+      delta == null ? h("div", { class: "d-sub" }, "pas de mois précédent") : h("span", { class: "chip-evo " + (delta >= 0 ? "up" : "down") }, `${delta >= 0 ? "▲ +" : "▼ −"}${n1(Math.abs(delta))}`), sparkSVG(moySix, "#e0182d")),
+    h("div", { class: "dk dk-c" }, h("div", { class: "dk-l" }, "Présence"), ringSVG(pres, "#3fae6a", pres == null ? "–" : Math.round(pres * 100) + "%"), h("div", { class: "d-sub" }, "entraînements du mois")),
+    h("div", { class: "dk dk-c" }, h("div", { class: "dk-l" }, "Sondage fiable"), ringSVG(fi.rate, "#cdbd8f", fi.rate == null ? "–" : Math.round(fi.rate * 100) + "%"), h("div", { class: "d-sub" }, fi.total ? "des « oui » venus" : "pas encore de données")),
+    h("div", { class: "dk" }, h("div", { class: "dk-l" }, "Séances notées"), h("div", { class: "dk-kpi" }, String(nbS)), h("div", { class: "d-sub" }, `en ${monthLab(mk)}`)));
 
-  // compteur BMF
-  if (!S.scope) { const bc = bmfCompteur(), mini = (lab, n, max) => h("div", { class: "bmf-p" }, h("div", { class: "bmf-pl" }, h("span", {}, lab), h("b", {}, `${n}/${max}`)), h("div", { class: "track" }, h("div", { class: "fill" + (n >= max ? " done" : ""), style: `width:${Math.min(100, n / max * 100)}%` })));
-  box.append(sec("Carnet BMF", h("div", { class: "bmf-grid" }, mini("U10 · séances", bc.U10.s, 15), mini("U10 · matchs", bc.U10.m, 10), mini("U19 · séances + match", bc.U19.s + Math.min(1, bc.U19.m), 5), mini("Gardiens · séances + match", bc.GB.s + Math.min(1, bc.GB.m), 5)),
-    h("button", { class: "linkbtn", style: "align-self:flex-start", onclick: () => { S.dash = false; S.bmf = true; render(); } }, "Ouvrir le carnet"))); }
+  // à traiter : pastilles par catégorie
+  const al = dashAlertes(), parCat = {};
+  for (const a of al) (parCat[catOf(a)] = parCat[catOf(a)] || []).push(a);
+  const cats = CAT_AL.map(c => [c[0], c[1]]).concat([["autre", "Autres"]]).filter(([k]) => parCat[k]);
+  const at = h("div", { class: "dk span4" }, h("div", { class: "dk-l" }, al.length ? `À traiter · ${al.length}` : "À traiter"));
+  if (!al.length) at.append(h("div", { class: "dk-ok" }, "✓ Tout est à jour"));
+  else {
+    const sel = parCat[S.dashCat] ? S.dashCat : null;
+    at.append(h("div", { class: "dk-cats" }, cats.map(([k, l]) => h("button", { class: "dk-cat" + (k === sel ? " on" : ""), "aria-pressed": String(k === sel), onclick: () => { S.dashCat = k === sel ? null : k; render(); } }, h("b", {}, String(parCat[k].length)), h("span", {}, l)))));
+    if (sel) at.append(h("div", { class: "dk-list" }, parCat[sel].map(a => h("div", { class: "d-row" }, a.g ? h("span", { class: "d-g", style: `--gc:${GCOL[a.g]}` }, GROUPS[a.g].label) : h("span", { class: "d-g" }, "Club"),
+      h("div", { class: "d-main" }, h("b", {}, a.t), a.d ? h("span", { class: "d-sub" }, a.d) : null), h("button", { class: "btn small ghost", onclick: a.go }, a.lab || "Voir")))));
+    else at.append(h("p", { class: "d-sub", style: "margin:8px 0 0" }, "Touche une pastille pour voir le détail."));
+  }
+  grid.append(at);
 
-  box.append(sec("Récap du mois par mail", recapCard()));
-
-  // 4. les 3 groupes
-  const rowsG = visG().map(g => [g, GROUPS[g]]).map(([g, G]) => {
+  // les groupes
+  for (const g of visG()) {
     const n = dFiches(g).length, m = groupMonth(g, mk), p = presRange(g, debMois), a = al.filter(x => x.g === g).length;
-    return h("button", { class: "d-grp", style: `--gc:${GCOL[g]}`, onclick: () => { S.dash = false; S.tab = g; S.view = "list"; S.sub = "joueurs"; render(); } },
-      h("span", { class: "d-gn" }, G.label), h("span", { class: "d-gs" }, `${n} joueur${n > 1 ? "s" : ""}`),
-      h("span", { class: "d-gk" }, h("b", {}, m == null ? "–" : n1(m)), "moyenne"), h("span", { class: "d-gk" }, h("b", {}, p == null ? "–" : Math.round(p * 100) + "%"), "présence"),
-      h("span", { class: "d-gk" + (a ? " warn" : "") }, h("b", {}, String(a)), a > 1 ? "alertes" : "alerte"), h("span", { class: "d-go", "aria-hidden": "true" }, "›"));
-  });
-  box.append(sec(S.scope ? "Mon groupe" : "Les groupes", h("div", { class: "d-grps" }, rowsG)));
+    grps.append(h("button", { class: "dk dk-grp", style: `--gc:${GCOL[g]}`, onclick: goG(g) },
+      h("div", { class: "dk-gh" }, h("span", { class: "dk-gn" }, GROUPS[g].label), a ? h("span", { class: "dk-badge" }, String(a)) : null),
+      h("div", { class: "dk-row" }, ringSVG(p, GCOL[g], p == null ? "–" : Math.round(p * 100) + "%", "présence"),
+        h("div", { class: "dk-main" }, h("div", { class: "dk-kpi sm" }, m == null ? "–" : n1(m), h("small", {}, "/5")), h("div", { class: "d-sub" }, `moyenne · ${n} joueur${n > 1 ? "s" : ""}`), sparkSVG(six.map(x => groupMonth(g, x)), GCOL[g])))));
+  }
 
-  // 5. évolution de la saison
+  // carnet BMF et récap
+  if (!S.scope) {
+    const bc = bmfCompteur(), tot = bc.U10.s + bc.U10.m + bc.U19.s + Math.min(1, bc.U19.m) + bc.GB.s + Math.min(1, bc.GB.m) + bc.np, max = 15 + 10 + 5 + 5 + 5;
+    bas.append(h("button", { class: "dk span2", onclick: () => { S.dash = false; S.bmf = true; render(); } }, h("div", { class: "dk-l" }, "Carnet BMF"),
+      h("div", { class: "dk-row" }, ringSVG(tot / max, "#cdbd8f", `${Math.round(tot / max * 100)}%`, `${tot}/${max}`),
+        h("div", { class: "dk-main bmf-mini" }, [["U10 séances", bc.U10.s, 15], ["U10 matchs", bc.U10.m, 10], ["U19", bc.U19.s + Math.min(1, bc.U19.m), 5], ["Gardiens", bc.GB.s + Math.min(1, bc.GB.m), 5]].map(([l, v, mx]) =>
+          h("div", { class: "bm" }, h("span", {}, l), h("div", { class: "track" }, h("div", { class: "fill" + (v >= mx ? " done" : ""), style: `width:${Math.min(100, v / mx * 100)}%` })), h("b", {}, `${v}/${mx}`)))))));
+  }
+  const rc = h("div", { class: "dk " + (S.scope ? "span4" : "span2") }, h("div", { class: "dk-l" }, "Récap du mois par mail"));
+  if (S.dashRecap) rc.append(recapCard(), h("button", { class: "linkbtn", onclick: () => { S.dashRecap = false; render(); } }, "Fermer"));
+  else rc.append(h("div", { class: "dk-row" }, h("div", { class: "dk-big", style: "font-size:30px" }, "✉"), h("div", { class: "dk-main" }, h("div", {}, "Envoie à chaque joueur son récap aux couleurs du club."), h("button", { class: "btn small", style: "margin-top:8px;align-self:flex-start", onclick: () => { S.dashRecap = true; render(); } }, "Préparer le récap"))));
+  bas.append(rc);
+  if (!nextM && grid.firstChild) grid.firstChild.classList.replace("span2", "span4");
+  box.append(kpis, grid, grps, bas);
+
+  // saison
   const allMk = [...new Set(dFiches().flatMap(([, f]) => sortedNotes(f).map(n => monthKey(n.date))))].sort();
-  const series = visG().map(g => ({ n: GROUPS[g].label, c: GCOL[g], v: allMk.map(k => groupMonth(g, k)) }));
-  box.append(sec(S.scope ? "La saison" : "La saison des 3 groupes", allMk.length ? dashLineChart(series, allMk) : h("p", { class: "note", style: "margin:0" }, "La courbe apparaîtra avec les premières notes."),
-    allMk.length ? h("p", { class: "d-sub", style: "margin:4px 0 0" }, "Moyenne du mois, sur 5. Touche un point pour la valeur.") : null));
+  if (allMk.length) box.append(h("div", { class: "dk" }, h("div", { class: "dk-l" }, S.scope ? "La saison" : "La saison des groupes"), dashLineChart(visG().map(g => ({ n: GROUPS[g].label, c: GCOL[g], v: allMk.map(k => groupMonth(g, k)) })), allMk)));
 
+  // zoom
+  box.append(dashZoom(mk, prevMk));
+  return box;
+}
+
+function dashZoom(mk, prevMk) {
+  const box = h("div", { class: "dash" });
+  const sec = (titre, ...kids) => h("section", { class: "d-sec" }, h("h3", { class: "d-t" }, titre), ...kids);
   // 6. zoom sur un groupe
   const zg = visG().includes(S.dashG) ? S.dashG : visG()[0];
   const chips = visG().length < 2 ? null : h("div", { class: "d-chips", role: "tablist" }, visG().map(g => [g, GROUPS[g]]).map(([g, G]) => h("button", { class: "opt", role: "tab", "aria-pressed": String(zg === g), onclick: () => { S.dashG = g; render(); } }, G.label)));
