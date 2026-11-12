@@ -1845,6 +1845,16 @@ function ficheView(fid, f, asCoach) {
   return wrap;
 }
 
+/* mails : script Google (Gmail du coach) — la base vérifie qui demande l'envoi */
+const MAIL_URL = "";
+async function envoyerMails(kind, fids) {
+  if (!MAIL_URL || S.demo || !fids.length || !auth.currentUser) return null;
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const r = await fetch(MAIL_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ token, kind, fids: fids.slice(0, 40) }) });
+    return await r.json();
+  } catch (e) { return null; }
+}
 async function writeFiche(fid, patch) {
   if (S.demo) { S.fiches[fid] = { ...S.fiches[fid], ...patch }; render(); return; }
   await S.db.doc("fiches/" + fid).update(patch);
@@ -2152,7 +2162,8 @@ function dashAlertes() {
   const go = (g, fid) => () => { S.dash = false; S.tab = g; if (fid) { S.view = "fiche"; S.sel = fid; } else { S.view = "list"; S.sub = "joueurs"; } render(); };
   // auto-évaluations du dernier match (U19, comptes reliés)
   const manq = dFiches("U19").filter(([fid, f]) => !isTemp(fid) && !f.exemple && (watchAutos(fid), autoMissing(fid, f)));
-  if (manq.length) out.push({ g: "U19", t: `${manq.length} auto-évaluation${manq.length > 1 ? "s" : ""} du dernier match manquante${manq.length > 1 ? "s" : ""}`, d: manq.map(([fid]) => nom(fid)).join(", "), go: go("U19") });
+  if (manq.length) out.push({ g: "U19", t: `${manq.length} auto-évaluation${manq.length > 1 ? "s" : ""} du dernier match manquante${manq.length > 1 ? "s" : ""}`, d: manq.map(([fid]) => nom(fid)).join(", "),
+    go: MAIL_URL ? async () => { const r = await envoyerMails("auto", manq.map(([fid]) => fid)); S.flash = r && r.ok ? `Rappel envoyé par mail à ${r.sent} joueur${r.sent > 1 ? "s" : ""}.` : "L'envoi du rappel a échoué. Réessaie plus tard."; render(); } : go("U19"), lab: MAIL_URL ? "Relancer par mail" : "Voir" });
   // comptes en attente
   const att = Object.keys(S.inscriptions).filter(u => !S.fiches[u] && !S.coachs[u]);
   if (att.length) out.push({ g: null, t: `${att.length} compte${att.length > 1 ? "s" : ""} en attente de liaison`, d: att.map(u => (S.inscriptions[u].nom || "") + (S.inscriptions[u].role === "adjoint" ? " (adjoint U19, à valider)" : "")).filter(Boolean).join(", "), go: () => { S.dash = false; S.view = "list"; S.sub = "acces"; render(); }, lab: "Relier" });
@@ -2429,7 +2440,7 @@ function saisieView() {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(s.date)) { msg.className = "err"; msg.textContent = "Choisis une date."; return; }
     save.disabled = true; msg.className = "note"; msg.textContent = "Enregistrement…";
     let ok = 0, ko = 0;
-    let rated = 0;
+    let rated = 0; const notifies = [];
     for (const fid of ids) {
       const r = s.rows[fid], f = S.fiches[fid];
       const pres = (Array.isArray(f.presences) ? f.presences : []).filter(p => !(p.date === s.date && p.type === s.type));
@@ -2442,13 +2453,15 @@ function saisieView() {
         else patch.notes = [...rawNotes(f).filter(x => !(x.date === s.date && x.type === s.type)), nn];
         rated++;
       }
-      try { await writeFicheQuiet(fid, patch); ok++; } catch (e) { ko++; }
+      try { await writeFicheQuiet(fid, patch); ok++; if (patch.notes || patch.notesAdj) notifies.push(fid); } catch (e) { ko++; }
     }
     if (!rated && !ko) { /* présences seules */ }
     if (!ok && !ko) { save.disabled = false; msg.className = "err"; msg.textContent = "Aucun joueur dans ce groupe."; return; }
     if (ko) { save.disabled = false; msg.className = "err"; msg.textContent = `${ok} fiche${ok > 1 ? "s" : ""} enregistrée${ok > 1 ? "s" : ""}, ${ko} en échec. Réessaie pour celles-là.`; return; }
     S.postSaisie = { g: S.tab, date: s.date, type: s.type };
-    S.flash = `Séance du ${fmtDate(s.date)} enregistrée : ${rated} joueur${rated > 1 ? "s" : ""} noté${rated > 1 ? "s" : ""}, présences à jour.`;
+    const aMail = notifies.filter(fid => !isTemp(fid) && !(S.fiches[fid] || {}).exemple);
+    if (aMail.length) envoyerMails(s.type === "Match" && S.tab !== "U10" ? "match" : "note", aMail);
+    S.flash = `Séance du ${fmtDate(s.date)} enregistrée : ${rated} joueur${rated > 1 ? "s" : ""} noté${rated > 1 ? "s" : ""}, présences à jour.${aMail.length && MAIL_URL ? " Les joueurs concernés sont prévenus par mail." : ""}`;
     S.view = "list"; S.saisie = null; render();
   };
   box.append(h("div", { class: "row save-bar" }, save, msg));
@@ -2561,7 +2574,7 @@ function psubtabs() {
 
 
 /* ---------- confidentialité ---------- */
-const CONSERVATION = "jusqu'à la fin de la saison 2026-2027 : elles sont supprimées au plus tard le 31 juillet 2027";
+const CONSERVATION = "pour suivre la progression du joueur d'une saison à l'autre. Il n'y a pas de suppression automatique";
 function confView() {
   const box = h("div", { class: "stack conf", style: "margin-top:20px" });
   const sec = (t, ...k) => h("section", { class: "card stack" }, h("h3", { style: "margin:0" }, t), ...k);
@@ -2586,8 +2599,9 @@ function confView() {
   ])));
   box.append(sec("Où et combien de temps", ul([
     "Les données sont stockées chez Google (Firebase), et le site est hébergé par GitHub.",
-    `Elles sont conservées ${CONSERVATION}. Si le joueur quitte le club en cours de saison, sa fiche est supprimée sur simple demande.`,
-    "Le coach fait des sauvegardes régulières, conservées de façon privée et supprimées en même temps."
+    `Elles sont conservées ${CONSERVATION} : elles sont supprimées sur simple demande, par exemple quand le joueur quitte le club.`,
+    "Le coach fait des sauvegardes régulières, conservées de façon privée.",
+    "Les mails d'avis (nouvelle évaluation, rappel d'auto-évaluation) partent de la boîte Gmail du coach, vers l'adresse du compte. Ils ne contiennent pas les notes."
   ])));
   box.append(sec("Les mineurs", h("p", { style: "margin:0" }, "Pour un joueur de moins de 18 ans, le compte est créé avec l'accord d'un parent ou du représentant légal. Pour les U10, c'est le parent qui crée et utilise le compte.")));
   box.append(sec("Vos droits", h("p", { style: "margin:0" }, "Vous pouvez à tout moment demander à voir, corriger ou supprimer les données d'un joueur : il suffit d'en parler au coach ou au club. La suppression du compte efface la fiche.")));
