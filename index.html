@@ -2712,7 +2712,16 @@ function recapJoueur(fid, f, mk) {
   const autosM = (S.autos[fid] || []).filter(a => monthKey(a.date) === mk).length;
   if (!parent) lignes.push(["Auto-évaluations faites", String(autosM)]);
   const fort = vals[0], axe = vals.length > 1 ? vals[vals.length - 1] : null;
-  return { mois: new Date(mk + "-15T12:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }), lignes, fort: fort ? `${fort[0]} (${fmt(fort[1])})` : "", axe: axe && axe[1] < fort[1] ? `${axe[0]} (${fmt(axe[1])})` : "" };
+  const tiles = [];
+  if (pres.length) tiles.push(["Présence", `${presOk}/${pres.length}`, "entraînements"]);
+  if (mt.length) tiles.push(["Matchs", `${mt.filter(x => x.p).length}/${mt.length}`, "joués sur convocations"]);
+  if (st.length && g === "U19") { const sum = k => st.reduce((a, n) => a + (n.stats[k] || 0), 0); tiles.push(["Temps de jeu", `${sum("min")}'`, `${sum("buts")} but${sum("buts") > 1 ? "s" : ""} · ${sum("pd")} passe${sum("pd") > 1 ? "s" : ""} déc.`]); }
+  if (!parent) tiles.push(["Auto-évaluations", String(autosM), "faites ce mois-ci"]);
+  else tiles.push(["Évaluations", String(ns.length), `${ne.length} entraînement${ne.length > 1 ? "s" : ""}${nm.length ? ` · ${nm.length} match${nm.length > 1 ? "s" : ""}` : ""}`]);
+  const extra = { moy: moy == null ? "" : parent ? LEVELS[Math.round(moy)] : n1(moy), moyUnite: moy == null || parent ? "" : "sur 5",
+    evo: moy != null && moyP != null && !parent ? `${moy - moyP >= 0 ? "+" : "−"}${n1(Math.abs(moy - moyP))}` : "",
+    tiles, crits: vals.map(([lab, v]) => [lab, Math.round(v * 10) / 10, fmt(v)]) };
+  return { ...extra, mois: new Date(mk + "-15T12:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }), lignes, fort: fort ? `${fort[0]} (${fmt(fort[1])})` : "", axe: axe && axe[1] < fort[1] ? `${axe[0]} (${fmt(axe[1])})` : "" };
 }
 function recapCard() {
   const gs = visG(), g = gs.includes(S.recapG) ? S.recapG : gs[0];
