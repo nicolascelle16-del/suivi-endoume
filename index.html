@@ -361,6 +361,12 @@ footer.foot { display: flex; gap: 14px; align-items: center; justify-content: sp
 .stb[aria-pressed="true"].st-nc { background: var(--surface-2); border-color: var(--muted); color: var(--texte); }
 .saisie-p.nc { opacity: .6; padding-top: 10px; padding-bottom: 10px; }
 @media (max-width: 600px) { .saisie-head { flex-wrap: wrap; } .stbar { justify-content: flex-start; width: 100%; } .stb { flex: 1 1 auto; } }
+
+/* radar */
+.radars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.radar-box { min-width: 0; }
+.radar svg { width: 100%; height: auto; display: block; max-width: 380px; margin: 0 auto; }
+@media (max-width: 700px) { .radars { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -1836,10 +1842,11 @@ function ficheView(fid, f, asCoach) {
   moy.append(bars);
 
   const evo = h("div", { class: "card" }, h("h3", {}, "Évolution"), parent ? null : h("div", { class: "legend" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Entraînement"), h("span", {}, h("span", { class: "dot", style: "background:#b08c40" }), "Match")), chart(f));
+  watchAutos(fid);
+  wrap.append(profilCard(fid, f, parent, asCoach));
   wrap.append(h("div", { class: "two" }, moy, evo));
   wrap.append(saisonCard(fid, f, parent));
 
-  watchAutos(fid);
   wrap.append(autoCard(fid, f, asCoach));
   // historique
   const hist = h("div", { class: "hist" });
@@ -1886,11 +1893,11 @@ function ficheView(fid, f, asCoach) {
 
 /* mails : script Google (Gmail du coach) — la base vérifie qui demande l'envoi */
 const MAIL_URL = "https://script.google.com/macros/s/AKfycbzO4Vca4Ct1Kf0zxi1Qatc9O29sydcE-HNn6qQW5SlD-NjoDcJ1S5drjjEE_nPn1CbH/exec";
-async function envoyerMails(kind, fids) {
+async function envoyerMails(kind, fids, extra) {
   if (!MAIL_URL || S.demo || !fids.length || !auth.currentUser) return null;
   try {
     const token = await auth.currentUser.getIdToken();
-    const r = await fetch(MAIL_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ token, kind, fids: fids.slice(0, 40) }) });
+    const r = await fetch(MAIL_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ token, kind, fids: fids.slice(0, 40), ...(extra || {}) }) });
     return await r.json();
   } catch (e) { return null; }
 }
@@ -2288,6 +2295,8 @@ function dashView() {
   box.append(sec("Carnet BMF", h("div", { class: "bmf-grid" }, mini("U10 · séances", bc.U10.s, 15), mini("U10 · matchs", bc.U10.m, 10), mini("U19 · séances + match", bc.U19.s + Math.min(1, bc.U19.m), 5), mini("Gardiens · séances + match", bc.GB.s + Math.min(1, bc.GB.m), 5)),
     h("button", { class: "linkbtn", style: "align-self:flex-start", onclick: () => { S.dash = false; S.bmf = true; render(); } }, "Ouvrir le carnet"))); }
 
+  box.append(sec("Récap du mois par mail", recapCard()));
+
   // 4. les 3 groupes
   const rowsG = visG().map(g => [g, GROUPS[g]]).map(([g, G]) => {
     const n = dFiches(g).length, m = groupMonth(g, mk), p = presRange(g, debMois), a = al.filter(x => x.g === g).length;
@@ -2632,6 +2641,113 @@ function psubtabs() {
 }
 
 
+
+/* ---------- profil en araignée : coach et auto-évaluation ---------- */
+const RLAB = { app: "Consignes", qtec: "Technique", info: "Prise d'info", role: "Rôle au poste", tac: "Tactique", vol: "Volume", ment: "Mental", imp: "Impact", int: "Intensité", att: "Attitude", ballon: "Ballon", partage: "Jouer ensemble", collectif: "Collectif", attdef: "Attaque-défense", fair: "Fair-play" };
+function radarSVG(axes, series) {
+  const W = 380, H = 300, cx = W / 2, cy = 148, R = 92, n = axes.length;
+  const pt = (i, v) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + Math.cos(a) * R * v / 5, cy + Math.sin(a) * R * v / 5]; };
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Profil par critère">`;
+  for (const v of [1, 2, 3, 4, 5]) s += `<polygon points="${axes.map((_, i) => pt(i, v).join(",")).join(" ")}" fill="none" stroke="#3b3536" stroke-width="${v === 5 ? 1.5 : 1}"/>`;
+  axes.forEach(([k, labL], i) => {
+    const lab = RLAB[k] || labL;
+    const [x, y] = pt(i, 5); s += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#3b3536"/>`;
+    const [lx, ly] = pt(i, 6.3), anc = Math.abs(lx - cx) < 8 ? "middle" : lx > cx ? "start" : "end";
+    const mots = lab.split(" "), l1 = [], l2 = []; for (const m of mots) ((l1.join(" ").length + m.length) <= 13 && !l2.length ? l1 : l2).push(m);
+    const dy = ly < cy - 10 ? -6 : ly > cy + 10 ? 6 : 0;
+    s += `<text x="${lx}" y="${ly + dy - (l2.length ? 6 : 0)}" text-anchor="${anc}" fill="#cfc8bb" font-size="11.5">${esc(l1.join(" "))}${l2.length ? `<tspan x="${lx}" dy="13">${esc(l2.join(" "))}</tspan>` : ""}</text>`;
+  });
+  s += `<text x="${cx + 3}" y="${cy - R - 3}" fill="#7d766b" font-size="9">5</text>`;
+  for (const se of series) {
+    const ok = axes.filter(([k]) => typeof se.vals[k] === "number");
+    if (ok.length < 3) continue;
+    const pts = axes.map(([k], i) => pt(i, typeof se.vals[k] === "number" ? se.vals[k] : 0));
+    s += `<polygon points="${pts.map(p => p.join(",")).join(" ")}" fill="${se.c}" fill-opacity="${se.fill ? .22 : 0}" stroke="${se.c}" stroke-width="2" ${se.dash ? 'stroke-dasharray="5 4"' : ""} stroke-linejoin="round"/>`;
+    axes.forEach(([k, lab], i) => { if (typeof se.vals[k] !== "number") return; const [x, y] = pts[i]; s += `<circle cx="${x}" cy="${y}" r="3.5" fill="${se.c}"><title>${esc(se.n)} · ${esc(lab)} : ${n1(se.vals[k])} sur 5</title></circle>`; });
+  }
+  const el = h("div", { class: "radar" }); el.innerHTML = s + "</svg>"; return el;
+}
+function moyCrit(list, crits) { const o = {}; for (const [k] of crits) { const v = list.map(x => x.crit && x.crit[k]).filter(x => typeof x === "number"); if (v.length) o[k] = mean(v); } return o; }
+function profilCard(fid, f, parent, asCoach) {
+  const g = groupOf(f), notes = sortedNotes(f), autos = (S.autos[fid] || []).slice().sort((a, b) => a.date < b.date ? -1 : 1);
+  const per = S.radarPer || "5";
+  const prendre = list => per === "1" ? list.slice(-1) : per === "5" ? list.slice(-5) : list;
+  const grilles = GRILLES[g] ? [["Entraînement", GRILLES[g].E, n => n.type !== "Match" && !isOldNote(n, g), a => a.type !== "Match"], ["Match", GRILLES[g].M, n => n.type === "Match" && !isOldNote(n, g), a => a.type === "Match"]]
+    : [["Toutes séances", GROUPS[g].crit, () => true, () => true]];
+  const card = h("div", { class: "card stack" }, h("div", { class: "bar", style: "margin:0;gap:8px" }, h("h3", { style: "margin:0" }, parent ? "Son profil" : "Profil par critère"),
+    h("div", { class: "row", style: "gap:6px" }, [["1", "Dernière"], ["5", "5 dernières"], ["s", "Saison"]].map(([k, l]) => h("button", { type: "button", class: "opt", "aria-pressed": String(per === k), onclick: () => { S.radarPer = k; render(); } }, l)))));
+  const zone = h("div", { class: "radars" });
+  let rien = true;
+  for (const [titre, crits, fn, fa] of grilles) {
+    const ns = prendre(notes.filter(fn)); if (!ns.length) continue; rien = false;
+    const as = parent ? [] : prendre(autos.filter(a => fa(a) && Object.keys(a.crit || {}).some(k => crits.some(c => c[0] === k))));
+    const series = [{ n: "Coach", c: "#e0182d", fill: true, vals: moyCrit(ns, crits) }];
+    if (as.length) series.push({ n: "Auto-évaluation", c: "#cdbd8f", dash: true, vals: moyCrit(as, crits) });
+    zone.append(h("div", { class: "radar-box" }, h("div", { class: "bars-t", style: "text-align:center" }, `${titre} · ${ns.length} note${ns.length > 1 ? "s" : ""}`), radarSVG(crits, series)));
+  }
+  if (rien) return null;
+  card.append(zone, h("div", { class: "legend", style: "justify-content:center" }, h("span", {}, h("span", { class: "dot", style: "background:var(--rouge)" }), "Note du coach"),
+    parent ? null : h("span", {}, h("span", { class: "dot", style: "background:var(--or)" }), "Auto-évaluation")),
+    h("p", { class: "note", style: "margin:0;text-align:center" }, parent ? "Plus la forme est grande, plus il est à l'aise sur le critère. Elle se met à jour à chaque nouvelle note." : asCoach ? "Plus la forme est grande, meilleur c'est. Elle se met à jour à chaque nouvelle note : l'écart entre les deux formes montre où le joueur se sur-note ou se sous-note." : "Plus la forme est grande, meilleur c'est. Elle se met à jour à chaque nouvelle note : compare ta forme à celle du coach pour voir où tu te sur-notes ou te sous-notes."));
+  return card;
+}
+
+/* ---------- récap mensuel par mail ---------- */
+function recapJoueur(fid, f, mk) {
+  const g = groupOf(f), parent = !!GROUPS[g].parent, ns = sortedNotes(f).filter(n => monthKey(n.date) === mk);
+  if (!ns.length) return null;
+  const prev = sortedNotes(f).filter(n => monthKey(n.date) === moisDe(mk, -1));
+  const moy = avgNotes(ns, g), moyP = avgNotes(prev, g);
+  const ne = ns.filter(n => n.type !== "Match"), nm = ns.filter(n => n.type === "Match");
+  const crits = GRILLES[g] ? [...GRILLES[g].E.map(c => [c, ne]), ...GRILLES[g].M.map(c => [c, nm])] : GROUPS[g].crit.map(c => [c, ns]);
+  const vals = crits.map(([[k, lab], list]) => [lab, critAvg(list.filter(n => !isOldNote(n, g)), k)]).filter(x => x[1] != null).sort((a, b) => b[1] - a[1]);
+  const fmt = v => parent ? LEVELS[Math.round(v)] : `${n1(v)}/5`;
+  const pres = (f.presences || []).filter(x => compteAssid(x) && monthKey(x.date) === mk), presOk = pres.filter(x => x.p).length;
+  const mt = (f.presences || []).filter(x => x && x.type === "Match" && monthKey(x.date) === mk);
+  const lignes = [["Évaluations", `${ne.length} entraînement${ne.length > 1 ? "s" : ""}${nm.length ? `, ${nm.length} match${nm.length > 1 ? "s" : ""}` : ""}`]];
+  if (moy != null) lignes.push(["Moyenne du mois", fmt(moy) + (moyP != null && !parent ? ` (${moy - moyP >= 0 ? "+" : "−"}${n1(Math.abs(moy - moyP))} par rapport au mois d'avant)` : "")]);
+  if (pres.length) lignes.push(["Présence aux entraînements", `${presOk} sur ${pres.length}`]);
+  if (mt.length) lignes.push(["Matchs", `${mt.filter(x => x.p).length} joué${mt.filter(x => x.p).length > 1 ? "s" : ""} sur ${mt.length} convocation${mt.length > 1 ? "s" : ""}`]);
+  const st = nm.filter(n => n.stats); if (st.length && g === "U19") { const sum = k => st.reduce((a, n) => a + (n.stats[k] || 0), 0); lignes.push(["Temps de jeu, buts, passes déc.", `${sum("min")} min · ${sum("buts")} but${sum("buts") > 1 ? "s" : ""} · ${sum("pd")} passe${sum("pd") > 1 ? "s" : ""} déc.`]); }
+  const autosM = (S.autos[fid] || []).filter(a => monthKey(a.date) === mk).length;
+  if (!parent) lignes.push(["Auto-évaluations faites", String(autosM)]);
+  const fort = vals[0], axe = vals.length > 1 ? vals[vals.length - 1] : null;
+  return { mois: new Date(mk + "-15T12:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }), lignes, fort: fort ? `${fort[0]} (${fmt(fort[1])})` : "", axe: axe && axe[1] < fort[1] ? `${axe[0]} (${fmt(axe[1])})` : "" };
+}
+function recapCard() {
+  const gs = visG(), g = gs.includes(S.recapG) ? S.recapG : gs[0];
+  const auj = today(), mkDef = +auj.slice(8, 10) >= 20 ? auj.slice(0, 7) : moisDe(auj.slice(0, 7), -1), mk = S.recapM || mkDef;
+  const box = h("div", { class: "d-card stack" });
+  box.append(h("div", { class: "row", style: "gap:6px;align-items:center" }, gs.length > 1 ? gs.map(x => h("button", { class: "opt", "aria-pressed": String(x === g), onclick: () => { S.recapG = x; render(); } }, GROUPS[x].label)) : null,
+    h("select", { "aria-label": "Mois", onchange: e => { S.recapM = e.target.value; render(); } }, [0, -1, -2].map(d => { const m = moisDe(auj.slice(0, 7), d); return h("option", { value: m, selected: m === mk }, monthLab(m)); }))));
+  const liste = dFiches(g).filter(([fid, f]) => !isTemp(fid) && !f.exemple).map(([fid, f]) => { watchAutos(fid); return [fid, f, recapJoueur(fid, f, mk)]; }).filter(x => x[2]);
+  const avecMail = liste.filter(([, f]) => f.email), sansMail = liste.length - avecMail.length;
+  box.append(h("p", { style: "margin:0" }, liste.length ? `${avecMail.length} ${GROUPS[g].parent ? "parent" : "joueur"}${avecMail.length > 1 ? "s" : ""} recevront le récap de ${monthLab(mk)}${sansMail ? ` (${sansMail} sans adresse mail sur la fiche)` : ""}.` : `Personne n'a été noté en ${monthLab(mk)} dans ce groupe.`));
+  if (liste.length) {
+    const [, f0, r0] = liste[0];
+    const det = h("details", { class: "recap-ex" }, h("summary", {}, `Voir l'exemple de ${f0.nom || "joueur"}`),
+      h("table", { class: "stats" }, h("tbody", {}, r0.lignes.map(([a, b]) => h("tr", {}, h("td", {}, a), h("td", {}, b))),
+        r0.fort ? h("tr", {}, h("td", {}, "Point fort"), h("td", {}, r0.fort)) : null, r0.axe ? h("tr", {}, h("td", {}, "À travailler"), h("td", {}, r0.axe)) : null)));
+    box.append(det);
+  }
+  const msg = h("span", { class: "note" }); let arme = false;
+  const go = h("button", { class: "btn small", disabled: !avecMail.length || !MAIL_URL }, `Envoyer le récap de ${monthLab(mk)}`);
+  go.onclick = async () => {
+    if (!arme) { arme = true; go.textContent = `Confirmer l'envoi à ${avecMail.length} adresse${avecMail.length > 1 ? "s" : ""}`; return; }
+    go.disabled = true; msg.className = "note"; msg.textContent = "Envoi en cours…";
+    let sent = 0, ko = 0;
+    for (let i = 0; i < avecMail.length; i += 15) {
+      const lot = avecMail.slice(i, i + 15), recaps = Object.fromEntries(lot.map(([fid, , r]) => [fid, r]));
+      const r = await envoyerMails("recap", lot.map(([fid]) => fid), { recaps });
+      if (r && r.ok) sent += r.sent; else ko += lot.length;
+    }
+    msg.className = ko ? "err" : "ok"; msg.textContent = ko ? `${sent} envoyé${sent > 1 ? "s" : ""}, ${ko} en échec.` : `Récap envoyé à ${sent} adresse${sent > 1 ? "s" : ""}.`;
+    try { localStorage.setItem(`recap-${g}-${mk}`, today()); } catch (e) {}
+  };
+  let deja = null; try { deja = localStorage.getItem(`recap-${g}-${mk}`); } catch (e) {}
+  box.append(h("div", { class: "row", style: "align-items:center" }, go, msg), deja ? h("p", { class: "note", style: "margin:0" }, `Déjà envoyé le ${fmtLong(deja)} depuis cet appareil.`) : null);
+  return box;
+}
 /* ---------- confidentialité ---------- */
 const CONSERVATION = "pour suivre la progression du joueur d'une saison à l'autre. Il n'y a pas de suppression automatique";
 function confView() {
