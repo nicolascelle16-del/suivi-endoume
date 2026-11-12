@@ -997,48 +997,70 @@ function autoMissing(fid, f) {
   const autos = S.autos[fid] || [];
   return !autos.some(a => a.type === "Match" && a.date >= lastMatch.date);
 }
+/* auto-évaluation : seulement sur ce que le coach a noté ; semaine ouverte le vendredi à 22h */
+const lundiDe = d => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.toISOString().slice(0, 10); };
+const plusJours = (d, n) => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+function autoAFaire(f, autos) {
+  const notes = sortedNotes(f), fait = (type, date) => autos.some(a => a.type === type && a.date === date), limite = ilYa(21), now = new Date();
+  const matchs = notes.filter(n => n.type === "Match" && n.date >= limite && !fait("Match", n.date)).slice(-2).reverse()
+    .map(n => ({ key: "M" + n.date, type: "Match", date: n.date, lab: `Ton match du ${fmtLong(n.date)}`, court: `Match du ${fmtDate(n.date)}` }));
+  const sem = {}; for (const n of notes.filter(n => n.type !== "Match" && n.date >= limite)) { const l = lundiDe(n.date); sem[l] = (sem[l] || 0) + 1; }
+  let bientot = null; const semaines = [];
+  for (const l of Object.keys(sem).sort().reverse()) {
+    const ven = plusJours(l, 4);
+    if (now < new Date(ven + "T22:00:00")) { bientot = `vendredi ${fmtDate(ven)} à 22h`; continue; }
+    if (!fait("Semaine", ven)) semaines.push({ key: "S" + ven, type: "Semaine", date: ven, lab: `Ta semaine du ${fmtDate(l)} au ${fmtDate(ven)} (${sem[l]} entraînement${sem[l] > 1 ? "s" : ""} noté${sem[l] > 1 ? "s" : ""})`, court: `Semaine du ${fmtDate(l)}` });
+  }
+  return { todo: [...matchs, ...semaines.slice(0, 2)], bientot };
+}
+function coachRef(notes, a) {
+  if (a.type === "Match") return notes.find(n => n.type === "Match" && n.date === a.date) || notes.filter(n => n.type === "Match" && n.date <= a.date).pop();
+  const l = lundiDe(a.date), fin = plusJours(l, 6), ns = notes.filter(n => n.type !== "Match" && n.date >= l && n.date <= fin);
+  if (!ns.length) return notes.filter(n => n.date <= a.date && n.type !== "Match").pop();
+  const crit = {}; for (const k of new Set(ns.flatMap(n => Object.keys(n.crit || {})))) { const v = ns.map(n => n.crit && n.crit[k]).filter(x => typeof x === "number"); if (v.length) crit[k] = Math.round(mean(v) * 10) / 10; }
+  return { date: a.date, crit, semaine: true, n: ns.length };
+}
 function autoCard(fid, f, asCoach) {
   const g = groupOf(f), G = GROUPS[g], autos = S.autos[fid] || [], notes = sortedNotes(f);
   const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, asCoach ? "Auto-évaluations du joueur" : "Mon auto-évaluation"));
   if (!asCoach) {
-    const st = { crit: {} };
-    const type = h("select", { id: "au-type" }, h("option", { value: "Semaine" }, "Ma semaine"), h("option", { value: "Match" }, "Mon match"));
-    const date = h("input", { type: "date", id: "au-date", value: today() });
-    const crits = h("div", {});
-    let grille = critsOf(g, type.value);
-    const drawCrits = () => {
-      grille = critsOf(g, type.value); st.crit = {}; crits.replaceChildren();
+    const { todo, bientot } = autoAFaire(f, autos);
+    if (!todo.length) {
+      card.append(h("p", { style: "margin:0" }, "Rien à évaluer pour l'instant."),
+        h("p", { class: "note", style: "margin:0" }, bientot ? `Ta semaine s'ouvre ${bientot}.` : "Tu pourras t'auto-évaluer sur ta semaine le vendredi à partir de 22h, quand le coach aura noté tes entraînements, et sur chaque match une fois qu'il l'aura noté."));
+    } else {
+      const choixId = todo.some(t => t.key === S.autoSel) ? S.autoSel : todo[0].key, cur = todo.find(t => t.key === choixId);
+      if (todo.length > 1) card.append(h("div", { class: "row", style: "gap:6px" }, todo.map(t => h("button", { type: "button", class: "opt", "aria-pressed": String(t.key === choixId), onclick: () => { S.autoSel = t.key; render(); } }, t.court))));
+      card.append(h("div", { class: "record", style: cur.type === "Match" ? "border-color:var(--rouge)" : "" }, cur.type === "Match" ? `${cur.lab} : auto-évaluation obligatoire.` : `${cur.lab} : comment tu as ressenti tes entraînements ?`));
+      const st = { crit: {} }, grille = critsOf(g, cur.type), crits = h("div", {});
       for (const [k, lab] of grille) {
         const sc = h("div", { class: "scale", role: "group", "aria-label": lab });
         for (let v = 1; v <= 5; v++) { const b = h("button", { class: "sc", "aria-pressed": "false", title: LEVELS[v] }, v); b.onclick = () => { st.crit[k] = st.crit[k] === v ? undefined : v; if (st.crit[k] === undefined) delete st.crit[k]; sc.querySelectorAll(".sc").forEach((x, i) => x.setAttribute("aria-pressed", String(st.crit[k] === i + 1))); }; sc.append(b); }
         crits.append(h("div", { class: "crit-row" }, critLabel(k, lab), sc));
       }
-    };
-    drawCrits(); type.addEventListener("change", drawCrits);
-    const com = h("textarea", { id: "au-com", rows: "3", maxlength: "1000", placeholder: "Ce que tu as bien fait, ce que tu dois travailler" });
-    const msg = h("span", { class: "note" });
-    const go = h("button", { class: "btn small" }, "Envoyer mon auto-évaluation");
-    go.onclick = async () => {
-      if (Object.keys(st.crit).length < grille.length) { msg.className = "err"; msg.textContent = "Note-toi sur tous les critères."; return; }
-      go.disabled = true;
-      try { await S.db.doc("fiches/" + S.me + "/auto/" + nid()).set({ date: date.value || today(), type: type.value, crit: { ...st.crit }, com: com.value.trim().slice(0, 1000), at: new Date().toISOString() }); msg.className = "ok"; msg.textContent = "Envoyé au coach."; }
-      catch (e) { go.disabled = false; msg.className = "err"; msg.textContent = "Échec : réessaie."; }
-    };
-    const lastMatch = notes.filter(n => n.type === "Match").pop();
-    if (lastMatch && autoMissing(fid, f)) card.append(h("div", { class: "record", style: "border-color:var(--rouge)" }, `Auto-évaluation obligatoire : tu n'as pas encore fait celle du match du ${fmtLong(lastMatch.date)}.`));
-    card.append(h("div", { class: "row" }, h("label", { class: "field" }, "Sur quoi", type), h("label", { class: "field" }, "Date", date)), crits, h("label", { class: "field" }, "Commentaire", com), h("div", { class: "row" }, go, msg),
-      h("p", { class: "note", style: "margin:0" }, "Une fois par semaine, et obligatoirement après chaque match. Le coach compare avec ses notes."));
+      const com = h("textarea", { id: "au-com", rows: "3", maxlength: "1000", placeholder: cur.type === "Match" ? "Ton match : ce que tu as bien fait, ce que tu dois travailler" : "Ta semaine : ton ressenti sur les deux entraînements" });
+      const msg = h("span", { class: "note" });
+      const go = h("button", { class: "btn small" }, "Envoyer mon auto-évaluation");
+      go.onclick = async () => {
+        if (Object.keys(st.crit).length < grille.length) { msg.className = "err"; msg.textContent = "Note-toi sur tous les critères."; return; }
+        go.disabled = true;
+        try { await S.db.doc("fiches/" + S.me + "/auto/" + nid()).set({ date: cur.date, type: cur.type, crit: { ...st.crit }, com: com.value.trim().slice(0, 1000), at: new Date().toISOString() }); S.autoSel = null; msg.className = "ok"; msg.textContent = "Envoyé au coach."; }
+        catch (e) { go.disabled = false; msg.className = "err"; msg.textContent = "Échec : réessaie."; }
+      };
+      card.append(crits, h("label", { class: "field" }, "Commentaire", com), h("div", { class: "row" }, go, msg),
+        h("p", { class: "note", style: "margin:0" }, `Tu t'évalues seulement sur ce que le coach a déjà noté : chaque match, et ta semaine d'entraînement à partir du vendredi 22h.${bientot ? " Ta semaine en cours s'ouvre " + bientot + "." : ""} Le coach compare avec ses notes.`));
+    }
   } else if (autoMissing(fid, f)) card.append(h("span", { class: "pill match" }, "Auto-évaluation du dernier match manquante"));
   if (!autos.length) card.append(h("p", { class: "note", style: "margin:0" }, "Aucune auto-évaluation pour l'instant."));
   for (const a of autos.slice(0, 12)) {
-    const coach = notes.filter(n => n.date <= a.date && (a.type === "Match" ? n.type === "Match" : n.type !== "Match")).pop();
+    const coach = coachRef(notes, a);
     const rows = h("div", { class: "chips" });
     for (const k of Object.keys(a.crit || {})) {
       const lab = LABEL[k] || k, mine = a.crit[k], co = coach && coach.crit && coach.crit[k];
       if (typeof mine !== "number") continue;
       rows.append(h("span", { class: "chip" }, `${lab} `, h("b", {}, `${mine}`), co ? h("span", { class: "note" }, ` · coach ${co}`) : null));
     }
-    const item = h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, `${a.type === "Match" ? "Match" : "Semaine"} · ${fmtLong(a.date)}`), coach ? h("span", { class: "pill" }, `comparé au ${fmtDate(coach.date)}`) : null), rows, a.com ? h("div", { class: "com-text" }, a.com) : null);
+    const item = h("div", { class: "hitem" }, h("div", { class: "hhead" }, h("strong", {}, a.type === "Match" ? `Match · ${fmtLong(a.date)}` : `Semaine du ${fmtDate(plusJours(lundiDe(a.date), 0))} au ${fmtDate(plusJours(lundiDe(a.date), 4))}`), coach ? h("span", { class: "pill" }, coach.semaine ? `comparé à ${coach.n} entraînement${coach.n > 1 ? "s" : ""}` : `comparé au ${fmtDate(coach.date)}`) : null), rows, a.com ? h("div", { class: "com-text" }, a.com) : null);
     if (asCoach) { const del = h("button", { class: "linkbtn danger" }, "Supprimer"); del.onclick = async () => { if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer"; return; } try { await S.db.doc("fiches/" + fid + "/auto/" + a.id).delete(); } catch (e) { del.textContent = "Échec"; } }; item.append(del); }
     card.append(item);
   }
