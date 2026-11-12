@@ -6,7 +6,7 @@
 <title>Suivi joueurs US Endoume</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oranienbaum&family=Barlow+Condensed:ital,wght@0,500;0,600;1,500;1,600&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oranienbaum&family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Barlow:wght@400;500;600&display=swap">
 <style>
 /* DA du club (Instagram @us_endoume) : noir et rouge du blason en diagonale, sable kaki pour les annonces, titres en serif condensé façon affiche, petites lignes en italique espacé. */
 :root {
@@ -127,20 +127,37 @@ details.crit-d p { margin: 6px 0 2px; padding: 6px 9px; font-size: 13.5px; line-
 .subtab[aria-selected="true"] { color: var(--texte); border-bottom-color: var(--rouge); }
 .top-fiche { display: grid; grid-template-columns: 240px 1fr; gap: 12px; align-items: start; }
 @media (max-width: 620px) { .top-fiche { grid-template-columns: 1fr; } .fcard { margin: 0 auto; } }
-.fcard { width: 240px; aspect-ratio: 5 / 7; border-radius: 14px; position: relative; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 8px;
-  background: linear-gradient(128deg, var(--rouge) 0 27%, #0b0a0a 27% 55%, var(--rouge) 55% 69%, #0b0a0a 69%); border: 2px solid var(--sable); border-radius: 8px 8px 46% 46% / 8px 8px 16% 16%; box-shadow: 0 8px 24px rgba(0,0,0,.45); padding-bottom: 26px; }
-.fcard .fc-top { display: flex; justify-content: space-between; align-items: flex-start; }
-.fcard .fc-note { font-family: var(--display); font-size: 52px; line-height: .85; color: #fff; font-variant-numeric: tabular-nums; }
-.fcard .fc-note small { display: block; font-family: var(--label); font-style: italic; font-size: 12px; letter-spacing: .18em; color: var(--texte); }
-.fcard .fc-ini { width: 92px; height: 92px; border-radius: 50%; background: #0b0a0a; border: 2px solid var(--sable); display: grid; place-items: center; font-family: var(--display); font-size: 30px; overflow: hidden; }
+.fcard { width: 240px; height: 336px; position: relative; flex: none; filter: drop-shadow(0 10px 22px rgba(0,0,0,.5)); }
+.fcard .fc-in { position: absolute; left: 0; top: 0; width: 300px; height: 420px; transform: scale(.8); transform-origin: 0 0; background: var(--fc-bg) no-repeat 0 0 / 300px 420px; color: #fff; }
+.fcard .fc-gauche { position: absolute; left: 22px; top: 24px; width: 86px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.fcard .fc-note { font-family: var(--display); font-size: 58px; line-height: .95; color: #fff; font-variant-numeric: tabular-nums; text-shadow: 0 2px 8px rgba(0,0,0,.45); text-align: center; }
+.fcard .fc-note.fc-mot { font-size: 27px; line-height: 1; padding-top: 4px; }
+.fcard .fc-lab { font-family: var(--label); font-style: italic; font-weight: 600; font-size: 12px; letter-spacing: .18em; color: var(--or); padding-left: .18em; }
+.fcard .fc-filet { width: 30px; height: 1.5px; background: rgba(205,189,143,.7); margin: 2px 0; }
+.fcard .fc-pos { font-family: var(--label); font-weight: 700; font-size: 20px; letter-spacing: .06em; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.fcard .fc-grp { font-family: var(--label); font-weight: 600; font-size: 12px; letter-spacing: .14em; color: var(--or); }
+.fcard .fc-ini { position: absolute; right: 28px; top: 30px; width: 140px; height: 140px; border-radius: 50%; background: #0b0a0a; border: 3px solid var(--or); display: grid; place-items: center; font-family: var(--display); font-size: 44px; color: var(--or); overflow: hidden; box-sizing: border-box; box-shadow: 0 4px 14px rgba(0,0,0,.45); }
 .fcard .fc-ini svg, .av-mini svg, .av-prev svg { width: 100%; height: 100%; display: block; }
-.fcard .fc-nom { font-family: var(--display); font-size: 27px; text-transform: uppercase; letter-spacing: .01em; text-align: center; margin-top: auto; text-wrap: balance; line-height: 1.1; }
-.fcard .fc-poste { text-align: center; font-family: var(--label); font-style: italic; font-size: 13px; color: var(--or); letter-spacing: .16em; text-transform: uppercase; }
-.fcard .fc-crit { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 13px; background: rgba(0,0,0,.55); border-radius: 8px; padding: 8px 10px; }
-.fcard .fc-crit span b { color: var(--or); font-variant-numeric: tabular-nums; margin-right: 4px; }
-.fcard .fc-crit.par > span { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 11.5px; white-space: nowrap; }
-.fcard .fc-crit.par .stars { font-size: 10px; letter-spacing: -.5px; }
-.fcard .fc-club { position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%); font-family: var(--label); font-size: 10px; letter-spacing: .3em; color: var(--or); white-space: nowrap; }
+.fcard .fc-id { position: absolute; left: 20px; right: 20px; bottom: 176px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.fcard .fc-nom { font-family: var(--display); font-size: 30px; line-height: 1.05; text-transform: uppercase; letter-spacing: .01em; text-align: center; text-wrap: balance; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+.fcard .fc-poste { display: flex; align-items: center; gap: 8px; font-family: var(--label); font-style: italic; font-weight: 600; font-size: 13px; letter-spacing: .16em; color: var(--or); text-transform: uppercase; white-space: nowrap; }
+.fcard .fc-poste::before, .fcard .fc-poste::after { content: ""; width: 22px; height: 1px; background: rgba(205,189,143,.8); }
+.fcard .fc-crit { position: absolute; left: 32px; top: 252px; width: 236px; display: grid; grid-template-columns: 1fr 1px 1fr; }
+.fcard .fc-crit .fc-col { display: flex; flex-direction: column; gap: 6px; padding: 0 10px; }
+.fcard .fc-crit .fc-sep { background: rgba(205,189,143,.35); }
+.fcard .fc-st, .fcard .fc-st b, .fcard .fc-st span { line-height: 1; }
+.fcard .fc-st b { font-family: var(--label); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; margin-right: 8px; }
+.fcard .fc-st span { font-family: var(--label); font-weight: 500; font-size: 14px; letter-spacing: .08em; color: #a8a29a; }
+.fcard .fc-st.hi b { color: var(--or); }
+.fcard .fc-jauge { height: 2px; border-radius: 1px; background: rgba(255,255,255,.12); margin-top: 3px; overflow: hidden; }
+.fcard .fc-jauge i { display: block; height: 100%; background: #f2361c; }
+.fcard .fc-st.hi .fc-jauge i { background: var(--or); }
+.fcard .fc-crit.par { left: 22px; width: 256px; top: 256px; }
+.fcard .fc-crit.par .fc-col { gap: 9px; padding: 0 8px; }
+.fcard .fc-crit.par .fc-st { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-family: var(--label); font-weight: 500; font-size: 12px; letter-spacing: .04em; white-space: nowrap; }
+.fcard .fc-crit.par .stars { font-size: 10px; letter-spacing: 0; flex: none; }
+.fcard .fc-crit.par .fc-st > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.fcard .fc-club { position: absolute; left: 0; right: 0; top: 372px; text-align: center; font-family: var(--label); font-weight: 600; font-size: 10px; letter-spacing: .3em; color: var(--or); white-space: nowrap; }
 .stars { color: var(--or); letter-spacing: 1px; }
 .stars .off { color: #4a4650; }
 .record { background: linear-gradient(90deg, rgba(124,111,79,.45), transparent); border: 1px solid var(--sable); border-radius: 6px; padding: 10px 12px; font-weight: 600; }
@@ -786,26 +803,74 @@ async function saveAvatar(uid, a) {
 }
 
 /* ---------- carte joueur ---------- */
+/* fond de carte : motif du maillot 2026-27 (bandes verticales, médaillons) */
+const FC_BG = (() => {
+  const R = "#f2361c", N = "#262030", RD = "#c8220e", f = v => v.toFixed(1);
+  const shield = "M14 0 H286 Q300 0 300 14 V346 Q300 368 279 378 L150 420 L21 378 Q0 368 0 346 V14 Q0 0 14 0 Z";
+  const inner = "M18 8 H282 Q292 8 292 18 V343 Q292 360 275 368 L150 410 L25 368 Q8 360 8 343 V18 Q8 8 18 8 Z";
+  const ring = (cx, cy, r) => `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}" fill="none" stroke="${RD}" stroke-width="1.6"/>`;
+  const rosette = (cx, cy, r) => { let s = ring(cx, cy, r) + `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r * .28)}" fill="${RD}"/>`;
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, x = cx + Math.cos(a) * r * .62, y = cy + Math.sin(a) * r * .62; s += `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(r * .28)}" ry="${f(r * .12)}" transform="rotate(${k * 45} ${f(x)} ${f(y)})" fill="${RD}"/>`; } return s; };
+  const vagues = (cx, cy, r) => { let s = ring(cx, cy, r); const w = r * .8;
+    for (const k of [-1, 0, 1]) { const y = cy + k * r * .38; s += `<path d="M${f(cx - w)} ${f(y)} q${f(w / 4)} -${f(r * .18)} ${f(w / 2)} 0 t${f(w / 2)} 0 t${f(w / 2)} 0 t${f(w / 2)} 0" fill="none" stroke="${RD}" stroke-width="1.8"/>`; } return s; };
+  const croix = (cx, cy, r) => ring(cx, cy, r) + `<path d="M${f(cx)} ${f(cy - r * .65)} V${f(cy + r * .4)} M${f(cx - r * .38)} ${f(cy - r * .3)} H${f(cx + r * .38)}" stroke="${RD}" stroke-width="2.4" fill="none"/><path d="M${f(cx - r * .42)} ${f(cy + r * .25)} Q${f(cx)} ${f(cy + r * .75)} ${f(cx + r * .42)} ${f(cy + r * .25)}" stroke="${RD}" stroke-width="2" fill="none"/>`;
+  const motifs = [rosette, vagues, croix, rosette, croix, vagues], P = 110, red = 52, parts = [];
+  for (let x = -96, col = 0; x < 300; x += P, col++) {
+    parts.push(`<rect x="${x}" y="0" width="${red}" height="420" fill="${R}"/>`);
+    for (let j = 0; j < 9; j++) { const y = j * red;
+      if ((j + col) % 2) parts.push(`<rect x="${x}" y="${y}" width="${red}" height="${red}" fill="${RD}" opacity="0.28"/>`);
+      parts.push(`<g opacity="0.55">${motifs[(j + col * 2) % 6](x + red / 2, y + red / 2, red * .42)}</g>`); }
+    let xx = x + red; for (const [w, c] of [[3, N], [4, R], [44, N], [4, R], [3, N]]) { parts.push(`<rect x="${xx}" y="0" width="${w}" height="420" fill="${c}"/>`); xx += w; }
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="420" viewBox="0 0 300 420"><defs><clipPath id="c"><path d="${shield}"/></clipPath><linearGradient id="v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d0b10" stop-opacity="0.1"/><stop offset="0.45" stop-color="#0d0b10" stop-opacity="0.25"/><stop offset="0.62" stop-color="#0d0b10" stop-opacity="0.78"/><stop offset="1" stop-color="#0d0b10" stop-opacity="0.92"/></linearGradient></defs><path d="${shield}" fill="${N}"/><g clip-path="url(#c)">${parts.join("")}<rect width="300" height="420" fill="url(#v)"/></g><path d="${shield}" fill="none" stroke="#cdbd8f" stroke-width="3"/><path d="${inner}" fill="none" stroke="#cdbd8f" stroke-opacity="0.5" stroke-width="1"/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+})();
+document.documentElement.style.setProperty("--fc-bg", FC_BG);
+function posteAbr(p) {
+  if (!p) return "";
+  if (ABR_P[p]) return ABR_P[p];
+  const t = p.toLowerCase();
+  const R = [["gardien", "GB"], ["central", "DC"], ["axial", "DC"], ["latéral droit", "DD"], ["latéral gauche", "DG"], ["arrière droit", "DD"], ["arrière gauche", "DG"], ["latéral", "LAT"], ["défensif", "MDC"], ["relayeur", "MC"], ["offensif", "MOC"], ["ailier droit", "AD"], ["ailier gauche", "AG"], ["ailier", "AIL"], ["attaquant", "BU"], ["avant-centre", "BU"], ["pointe", "BU"], ["milieu", "MC"], ["défenseur", "DEF"]];
+  if (t.includes("milieu") && t.includes("axial")) return "MC";
+  for (const [k, v] of R) if (t.includes(k)) return v;
+  return p.slice(0, 3).toUpperCase();
+}
 function fcard(f, parent, fid) {
   const g = groupOf(f), G = GROUPS[g], ns = sortedNotes(f).slice(-5);
   const o = overall(f, 5);
   const card = h("div", { class: "fcard", role: "img", "aria-label": `Carte de ${f.nom || "joueur"}` });
-  card.append(h("div", { class: "fc-club" }, "ENDOUME · 1925"));
-  card.append(h("div", { class: "fc-top" },
-    parent ? h("div", { class: "fc-note", style: "font-size:20px;line-height:1.1" }, o == null ? "–" : LEVELS[Math.round(o)], h("small", {}, "niveau"))
-           : h("div", { class: "fc-note" }, o == null ? "–" : Math.round(o * 20), h("small", {}, "NOTE")),
-    avatarNode(fid, f.nom, "fc-ini")));
-  card.append(h("div", { class: "fc-nom" }, f.nom || "Joueur"));
-  card.append(h("div", { class: "fc-poste" }, [f.poste, f.sousCat || G.label].filter(Boolean).join(" · ")));
-  const crit = h("div", { class: "fc-crit" + (parent ? " par" : "") });
-  const cell = (lab, a) => parent ? h("span", {}, lab, " ", stars(a)) : h("span", {}, h("b", {}, a == null ? "–" : Math.round(a * 20)), lab);
+  const inn = h("div", { class: "fc-in" });
+  card.append(inn);
+  const noteTxt = o == null ? "–" : parent ? LEVELS[Math.round(o)] : String(Math.round(o * 20));
+  inn.append(h("div", { class: "fc-gauche" },
+    h("div", { class: "fc-note" + (parent && o != null ? " fc-mot" : "") }, noteTxt),
+    h("div", { class: "fc-lab" }, parent ? "NIVEAU" : "NOTE"),
+    h("div", { class: "fc-filet" }),
+    posteAbr(f.poste) ? h("div", { class: "fc-pos" }, posteAbr(f.poste)) : null,
+    h("div", { class: "fc-grp" }, (f.sousCat || G.label || "").toUpperCase())));
+  inn.append(avatarNode(fid, f.nom, "fc-ini"));
+  const nom = f.nom || "Joueur", taille = nom.length > 22 ? 18 : nom.length > 16 ? 21 : nom.length > 12 ? 24 : 30;
+  inn.append(h("div", { class: "fc-id" },
+    h("div", { class: "fc-nom", style: `font-size:${taille}px` }, nom),
+    f.poste ? h("div", { class: "fc-poste" }, f.poste) : null));
+  const items = [];
   const all = sortedNotes(f), nouv = GRILLES[g] ? all.filter(n => !isOldNote(n, g) && n.crit && Object.keys(n.crit).length) : [];
-  if (nouv.length) {
+  if (GRILLES[g]) {
     const ent = nouv.filter(n => n.type !== "Match").slice(-5), mat = nouv.filter(n => n.type === "Match").slice(-5);
-    for (const [k] of GRILLES[g].E) crit.append(cell(ABBR[k] || k, critAvg(ent, k)));
-    crit.append(cell("MATCH", mean(mat.map(n => noteAvg(n, g)).filter(v => v != null))));
-  } else for (const [k] of G.crit) crit.append(cell(ABBR[k] || k, critAvg(ns, k)));
-  card.append(crit);
+    for (const [k, lab] of GRILLES[g].E) items.push({ lab: parent ? lab.split(" ")[0] : (ABBR[k] || k), v: critAvg(ent, k) });
+    items.push({ lab: "MATCH", v: mean(mat.map(n => noteAvg(n, g)).filter(v => v != null)), hi: true });
+  } else for (const [k, lab] of G.crit) items.push({ lab: parent ? lab.split(" ")[0] : (ABBR[k] || k), v: critAvg(ns, k) });
+  const cell = it => parent
+    ? h("div", { class: "fc-st" }, h("span", {}, it.lab.toUpperCase()), stars(it.v))
+    : h("div", { class: "fc-st" + (it.hi ? " hi" : "") },
+        h("div", {}, h("b", {}, it.v == null ? "–" : Math.round(it.v * 20)), h("span", {}, it.lab)),
+        h("div", { class: "fc-jauge" }, h("i", { style: `width:${it.v == null ? 0 : Math.round(it.v * 20)}%` })));
+  const half = Math.ceil(items.length / 2);
+  inn.append(h("div", { class: "fc-crit" + (parent ? " par" : "") },
+    h("div", { class: "fc-col" }, ...items.slice(0, half).map(cell)),
+    h("div", { class: "fc-sep" }),
+    h("div", { class: "fc-col" }, ...items.slice(half).map(cell))));
+  inn.append(h("div", { class: "fc-club" }, "ENDOUME · 1925"));
   return card;
 }
 
