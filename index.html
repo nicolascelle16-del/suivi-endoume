@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Suivi joueurs US Endoume</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#100e0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Endoume">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="assets/icone-192.png">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oranienbaum&family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Barlow:wght@400;500;600&display=swap">
@@ -111,6 +119,21 @@ details.crit-d p { margin: 6px 0 2px; padding: 6px 9px; font-size: 13.5px; line-
 .chip { font-size: 13px; background: var(--surface); border: 1px solid var(--ligne); border-radius: 6px; padding: 2px 8px; }
 .chip b { color: var(--or); font-variant-numeric: tabular-nums; }
 .com-text { font-size: 15px; }
+.pill.obs { border-color: var(--or); color: var(--or); }
+.semaine h3 { margin: 0 0 6px; }
+.sem-it { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--ligne); }
+.sem-it:first-of-type { border-top: 0; }
+.sem-ico { font-size: 20px; width: 28px; text-align: center; flex: none; }
+.sem-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sem-tx small { color: var(--muted); font-size: 12.5px; }
+.sem-it.chaud .sem-tx b { color: #fff; }
+.sem-it.chaud { box-shadow: inset 3px 0 0 var(--rouge); padding-left: 8px; }
+.com-coach { border-color: var(--or); background: linear-gradient(160deg, rgba(205,189,143,.12), var(--surface) 65%); }
+.com-coach blockquote { margin: 6px 0 4px; font-size: 17px; line-height: 1.4; font-style: italic; border-left: 3px solid var(--or); padding-left: 10px; }
+.com-coach small { color: var(--muted); }
+.theme-c { border-color: var(--or); }
+.rapide-c { border-style: dashed; }
+.chip.theme { border-color: rgba(205,189,143,.5); }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .two > *, .stack > *, .card { min-width: 0; }
 @media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
@@ -507,7 +530,7 @@ import { getFirestore, doc as fsDoc, collection as fsCol, onSnapshot as fsSnap, 
 const FIREBASE_CONFIG = {"apiKey": "AIzaSyA06TpNjasBn1vQLlp36_ImHEQ-JW3LBPE", "authDomain": "suivi-endoume.firebaseapp.com", "projectId": "suivi-endoume", "storageBucket": "suivi-endoume.firebasestorage.app", "messagingSenderId": "117976790225", "appId": "1:117976790225:web:e74232bf5749edcdff81f0"};
 const fbApp = initializeApp(FIREBASE_CONFIG), auth = getAuth(fbApp), fs = getFirestore(fbApp);
 const wrapDoc = x => ({ id: x.id, exists: x.exists(), data: () => x.data() });
-function docRef(path) { const r = fsDoc(fs, path); return { id: r.id, path, get: async () => wrapDoc(await getDoc(r)), set: d => setDoc(r, d), update: d => updateDoc(r, d), delete: () => deleteDoc(r), onSnapshot: (n, e) => fsSnap(r, x => n(wrapDoc(x)), e) }; }
+function docRef(path) { const r = fsDoc(fs, path); return { id: r.id, path, get: async () => wrapDoc(await getDoc(r)), set: (d, o) => o ? setDoc(r, d, o) : setDoc(r, d), update: d => updateDoc(r, d), delete: () => deleteDoc(r), onSnapshot: (n, e) => fsSnap(r, x => n(wrapDoc(x)), e) }; }
 function colRef(path) { const r = fsCol(fs, path); return { path, get: async () => { const q = await getDocs(r); return { docs: q.docs.map(wrapDoc) }; }, onSnapshot: (n, e) => fsSnap(r, q => n({ docs: q.docs.map(wrapDoc), size: q.size, empty: q.empty }), e), doc: id => docRef(path + "/" + id) }; }
 function whereRef(path, field, val) { const q = fsQuery(fsCol(fs, path), fsWhere(field, "==", val)); return { onSnapshot: (n, e) => fsSnap(q, x => n({ docs: x.docs.map(wrapDoc), size: x.size, empty: x.empty }), e) }; }
 const DB = { doc: docRef, collection: colRef, where: whereRef };
@@ -576,7 +599,7 @@ const isTemp = fid => typeof fid === "string" && fid.startsWith("j-");
 
 const S = { db: null, user: null, me: null, admin: false, demo: false, demoAs: "coach",
   fiches: {}, loaded: false, slow: false, tab: "U19", view: "list", sel: null, saisie: null,
-  myFiche: undefined, flash: "", avatars: {}, objectifs: {}, avDraft: null, avEdit: false, inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, votants: {}, seances: {}, reponses: {}, convoc: {}, compoDraft: {}, compoSel: {}, voteDraft: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
+  myFiche: undefined, prive: {}, fichesRaw: {}, myRaw: null, flash: "", avatars: {}, objectifs: {}, avDraft: null, avEdit: false, inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, votants: {}, seances: {}, reponses: {}, convoc: {}, compoDraft: {}, compoSel: {}, voteDraft: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
 
 /* ---------- petits outils ---------- */
 { const _ap = Element.prototype.append; Element.prototype.append = function (...k) { return _ap.apply(this, k.filter(x => x != null && x !== false)); }; }
@@ -615,7 +638,12 @@ function combineNotes(m, adjs) {
   if (stats) out.stats = stats; else delete out.stats;
   return out;
 }
-const sortedNotes = f => {
+/* saison : du 1er août au 31 juillet. Les saisons passées restent dans la base et dans l'archive. */
+const debutSaison = (d = today()) => { const y = +d.slice(0, 4), m = +d.slice(5, 7); return (m >= 8 ? y : y - 1) + "-08-01"; };
+const libSaison = (d = today()) => { const y = +debutSaison(d).slice(0, 4); return `${y}-${y + 1}`; };
+const dansSaison = n => S.toutesSaisons || !n || typeof n.date !== "string" || n.date >= debutSaison();
+const sortedNotes = f => sortedNotesTout(f).filter(dansSaison);
+const sortedNotesTout = f => {
   const main = rawNotes(f), adj = adjNotes(f);
   if (!adj.length) return main;
   const key = n => n.date + "|" + n.type, A = {};
@@ -1289,7 +1317,17 @@ function votesCard(g, asCoach) {
 /* ---------- auto-évaluations ---------- */
 function watchAutos(fid) {
   if (S.subs["a-" + fid]) return;
-  S.subs["a-" + fid] = S.db.collection("fiches/" + fid + "/auto").onSnapshot(q => { S.autos[fid] = q.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.date < b.date ? 1 : -1); softRender(); }, () => {});
+  S.subs["a-" + fid] = S.db.collection("fiches/" + fid + "/auto").onSnapshot(q => {
+    const tous = q.docs.map(d => ({ id: d.id, ...d.data() })), vu = new Map();
+    for (const a of tous) { const k = (a.type === "Match" ? "M" : "S") + a.date; if (!vu.has(k) || a.id === k) vu.set(k, a); }
+    S.autos[fid] = [...vu.values()].sort((a, b) => a.date < b.date ? 1 : -1);
+    if (fid === S.me && !S.admin) {
+      // anciennes auto-évaluations (identifiant aléatoire) : copie sous la clé de période pour débloquer les notes
+      for (const a of tous) { const k = (a.type === "Match" ? "M" : "S") + a.date; if (a.id !== k && a.date >= MASQUE_DEBUT && !tous.some(x => x.id === k)) S.db.doc("fiches/" + fid + "/auto/" + k).set({ date: a.date, type: a.type, crit: a.crit || {}, com: a.com || "", at: a.at || new Date().toISOString() }).catch(() => {}); }
+      S.priveEssai = {}; chargerPrive();
+    }
+    softRender();
+  }, () => {});
 }
 function autoMissing(fid, f) {
   if (groupOf(f) === "U10") return false;
@@ -1313,6 +1351,78 @@ function autoAFaire(f, autos) {
     if (!fait("Semaine", ven)) semaines.push({ key: "S" + ven, type: "Semaine", date: ven, lab: `Ta semaine du ${fmtDate(l)} au ${fmtDate(ven)} (${sem[l]} entraînement${sem[l] > 1 ? "s" : ""} noté${sem[l] > 1 ? "s" : ""})`, court: `Semaine du ${fmtDate(l)}` });
   }
   return { todo: [...matchs, ...semaines.slice(0, 2)], bientot };
+}
+/* notes U19 protégées dans la base : fiches/{fid}/prive/{clé de période}, lisibles par le joueur
+   seulement quand son auto-évaluation de la période existe (auto/{clé}) ou après 22 jours */
+const clePeriode = n => n.type === "Match" ? "M" + n.date : "S" + plusJours(lundiDe(n.date), 4);
+const estPrive = (fid, raw, n) => !isTemp(fid) && !!raw && groupOf(raw) === "U19" && !!n && typeof n.date === "string" && n.date >= MASQUE_DEBUT;
+function avecPrive(fid, raw) {
+  const p = S.prive && S.prive[fid]; if (!raw || !p || !Object.keys(p).length) return raw;
+  const fus = (a, b) => { const m = new Map(); for (const n of [...(a || []), ...(b || [])]) if (n) m.set(n.id || (n.date + n.type + (n.par || "")), n); return [...m.values()]; };
+  const ex = Object.values(p);
+  return { ...raw, notes: fus(raw.notes, ex.flatMap(d => d.notes || [])), notesAdj: fus(raw.notesAdj, ex.flatMap(d => d.notesAdj || [])) };
+}
+function watchPrive(fid) {
+  if (S.demo || !S.db || isTemp(fid) || S.subs["pr-" + fid]) return;
+  S.subs["pr-" + fid] = S.db.collection("fiches/" + fid + "/prive").onSnapshot(q => {
+    S.prive[fid] = Object.fromEntries(q.docs.map(d => [d.id, d.data()]));
+    if (S.fichesRaw[fid]) S.fiches[fid] = avecPrive(fid, S.fichesRaw[fid]);
+    migrerPrive();
+    softRender();
+  }, () => {});
+}
+function poserFiches(raw) {
+  S.fichesRaw = raw; const out = {};
+  for (const [fid, f] of Object.entries(raw)) { if (groupOf(f) === "U19") watchPrive(fid); out[fid] = avecPrive(fid, f); }
+  S.fiches = out;
+  migrerPrive();
+}
+/* déplace une seule fois les notes U19 récentes encore stockées dans la fiche */
+function migrerPrive() {
+  if (S.demo || !S.admin || S.scope) return;
+  S.migre = S.migre || new Set();
+  for (const [fid, raw] of Object.entries(S.fichesRaw)) {
+    if (S.migre.has(fid) || groupOf(raw) !== "U19" || isTemp(fid) || !S.prive[fid]) continue;
+    const aDeplacer = [...(raw.notes || []), ...(raw.notesAdj || [])].some(n => estPrive(fid, raw, n));
+    if (!aDeplacer) continue;
+    S.migre.add(fid);
+    const f = S.fiches[fid];
+    ecrireFiche(fid, { notes: rawNotes(f), notesAdj: adjNotes(f) }).catch(() => S.migre.delete(fid));
+  }
+}
+/* joueur : récupère les périodes auxquelles il a droit */
+async function chargerPrive() {
+  if (S.demo || !S.db || !S.myRaw || groupOf(S.myRaw) !== "U19") return;
+  const mine = S.prive[S.me] = S.prive[S.me] || {};
+  let neuf = false;
+  for (const k of (Array.isArray(S.myRaw.prives) ? S.myRaw.prives : [])) {
+    if (mine[k] || (S.priveEssai && S.priveEssai[k] && Date.now() - S.priveEssai[k] < 20000)) continue;
+    (S.priveEssai = S.priveEssai || {})[k] = Date.now();
+    try { const d = await S.db.doc(`fiches/${S.me}/prive/${k}`).get(); if (d.exists) { mine[k] = d.data(); neuf = true; } } catch (e) { /* pas encore autorisé */ }
+  }
+  if (neuf) { S.myFiche = avecPrive(S.me, S.myRaw); softRender(); }
+}
+async function ecrireFiche(fid, patch) {
+  const raw = S.fichesRaw[fid] || S.fiches[fid];
+  if (!(patch.notes || patch.notesAdj) || isTemp(fid) || !raw || groupOf(raw) !== "U19") return S.db.doc("fiches/" + fid).update(patch);
+  watchPrive(fid);
+  for (let i = 0; i < 30 && !S.prive[fid]; i++) await new Promise(r => setTimeout(r, 100));
+  const out = { ...patch }, parCle = {}, cur = S.prive[fid] || {};
+  for (const champ of ["notes", "notesAdj"]) {
+    if (!patch[champ]) continue;
+    const pub = [], priv = [];
+    for (const n of patch[champ]) (estPrive(fid, raw, n) ? priv : pub).push(n);
+    out[champ] = pub;
+    for (const k of Object.keys(cur)) (parCle[k] = parCle[k] || {})[champ] = [];
+    for (const n of priv) { const k = clePeriode(n); parCle[k] = parCle[k] || {}; (parCle[k][champ] = parCle[k][champ] || []).push(n); }
+  }
+  for (const [k, d] of Object.entries(parCle)) {
+    const libre = new Date(plusJours(k.slice(1), 22) + "T00:00:00");
+    await S.db.doc(`fiches/${fid}/prive/${k}`).set({ ...d, libre }, { merge: true });
+  }
+  out.prives = [...new Set([...(Array.isArray(raw.prives) ? raw.prives : []), ...Object.keys(parCle)])].filter(k => {
+    const d = { ...(cur[k] || {}), ...(parCle[k] || {}) }; return (d.notes || []).length || (d.notesAdj || []).length; }).sort();
+  await S.db.doc("fiches/" + fid).update(out);
 }
 /* U19 : les notes du coach restent cachées au joueur tant qu'il ne s'est pas auto-évalué (semaine et match) */
 const MASQUE_DEBUT = "2026-11-09";
@@ -1340,7 +1450,7 @@ function coachRef(notes, a) {
 }
 function autoCard(fid, f, asCoach) {
   const g = groupOf(f), G = GROUPS[g], autos = S.autos[fid] || [], notes = sortedNotes(f);
-  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, asCoach ? "Auto-évaluations du joueur" : "Mon auto-évaluation"));
+  const card = h("div", { class: "card stack", id: "auto-card" }, h("h3", { style: "margin:0" }, asCoach ? "Auto-évaluations du joueur" : "Mon auto-évaluation"));
   if (!asCoach) {
     const { todo, bientot } = autoAFaire(f._plein || f, autos);
     if (!todo.length) {
@@ -1362,7 +1472,7 @@ function autoCard(fid, f, asCoach) {
       go.onclick = async () => {
         if (Object.keys(st.crit).length < grille.length) { msg.className = "err"; msg.textContent = "Note-toi sur tous les critères."; return; }
         go.disabled = true;
-        try { await S.db.doc("fiches/" + S.me + "/auto/" + nid()).set({ date: cur.date, type: cur.type, crit: { ...st.crit }, com: com.value.trim().slice(0, 1000), at: new Date().toISOString() }); S.autoSel = null; msg.className = "ok"; msg.textContent = "Envoyé au coach."; }
+        try { await S.db.doc("fiches/" + S.me + "/auto/" + (cur.key || nid())).set({ date: cur.date, type: cur.type, crit: { ...st.crit }, com: com.value.trim().slice(0, 1000), at: new Date().toISOString() }); S.autoSel = null; msg.className = "ok"; msg.textContent = "Envoyé au coach."; }
         catch (e) { go.disabled = false; msg.className = "err"; msg.textContent = "Échec : réessaie."; }
       };
       card.append(crits, h("label", { class: "field" }, "Commentaire", com), h("div", { class: "row" }, go, msg),
@@ -1408,10 +1518,10 @@ async function linkAccount(fid, uid) {
   for (const [sid, se] of Object.entries(S.seances)) { const d = ditOf(se); if (fid in d) { const n = { ...d, [uid]: d[fid] }; delete n[fid]; try { await S.db.doc("seances/" + sid).update({ dit: n }); } catch (e) {} } }
   return data;
 }
-function exporterTout() {
+function exporterTout(archive) {
   const data = { exporte: new Date().toISOString(), fiches: S.fiches, seances: S.seances, carnet: S.carnet || {}, equipes: S.equipes, votes: S.votes, coachs: S.coachs, inscriptions: S.inscriptions, objectifs: S.objectifs, championnat: S.champ || null };
   const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
-  const a = h("a", { href: URL.createObjectURL(blob), download: `suivi-endoume-sauvegarde-${today()}.json` });
+  const a = h("a", { href: URL.createObjectURL(blob), download: archive ? `suivi-endoume-archive-saison-${libSaison()}.json` : `suivi-endoume-sauvegarde-${today()}.json` });
   document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   try { localStorage.setItem("derniereSauvegarde", today()); } catch (e) {}
 }
@@ -1423,6 +1533,11 @@ function accesView() {
   box.append(h("div", { class: "card row", style: "align-items:center" }, h("div", { style: "flex:1;min-width:220px" }, h("h3", { style: "margin:0 0 4px" }, "Sauvegarde"),
     h("p", { class: "note", style: "margin:0" }, `Télécharge toutes les données (fiches, notes, présences, séances, carnet BMF, équipes) dans un fichier. À faire une fois par mois et à garder en privé. ${ds ? "Dernière sauvegarde sur cet appareil : " + fmtLong(ds) + "." : "Pas encore de sauvegarde sur cet appareil."}`)),
     h("button", { class: "btn small", onclick: () => { exporterTout(); render(); } }, "Exporter toutes les données")));
+  box.append(h("div", { class: "card row", style: "align-items:center" }, h("div", { style: "flex:1;min-width:220px" }, h("h3", { style: "margin:0 0 4px" }, `Saison ${libSaison()}`),
+    h("p", { class: "note", style: "margin:0" }, `Le site affiche la saison en cours (depuis le ${fmtLong(debutSaison())}). Le 1er août, notes, présences et badges repartent à zéro tout seuls : rien n'est effacé, l'ancienne saison reste dans la base. Pense à télécharger l'archive avant.`)),
+    h("div", { class: "row", style: "gap:6px" },
+      h("button", { class: "btn small ghost", onclick: () => { exporterTout(true); render(); } }, "Télécharger l'archive de la saison"),
+      h("button", { class: "btn small ghost", onclick: () => { S.toutesSaisons = !S.toutesSaisons; render(); } }, S.toutesSaisons ? "Revenir à la saison en cours" : "Voir toutes les saisons"))));
   const pend = Object.entries(S.inscriptions).filter(([uid]) => !S.fiches[uid] && !S.coachs[uid]);
   const pc = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, `Comptes en attente · ${pend.length}`),
     h("p", { class: "note", style: "margin:0" }, "Un joueur ou un parent qui crée son compte apparaît ici. Choisis sa fiche dans la liste et clique sur Relier : il verra uniquement sa fiche et son équipe (U19, U10 ou gardiens). L'accès coach est réservé à tes adjoints."));
@@ -1873,7 +1988,7 @@ const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août"
 const monthKey = d => d.slice(0, 7);
 const monthLab = k => { const [y, m] = k.split("-"); return MOIS[+m - 1] + " " + y.slice(2); };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
-const compteAssid = x => x && typeof x.date === "string" && (x.type || "Entraînement") !== "Match" && !x.ex;
+const compteAssid = x => x && typeof x.date === "string" && (x.type || "Entraînement") !== "Match" && !x.ex && dansSaison(x);
 function matchStats(f) {
   const m = (Array.isArray(f.presences) ? f.presences : []).filter(x => x && typeof x.date === "string" && x.type === "Match");
   return { conv: m.length, ok: m.filter(x => x.p).length, ex: m.filter(x => x.ex).length };
@@ -2152,6 +2267,9 @@ function ficheView(fid, f, asCoach) {
     side.append(h("div", { class: "card" }, h("h3", {}, "Mot du coach"), h("label", { class: "field" }, mt), h("div", { class: "row", style: "margin-top:8px" },
       h("button", { class: "btn small", onclick: async () => { const v = mt.value.trim().slice(0, 160); try { await writeFiche(fid, { mot: v }); mm.textContent = "Mot enregistré."; } catch (e) { mm.textContent = "Échec : réessaie."; } } }, "Épingler"), mm)));
   } else if (f.mot) side.append(h("div", { class: "card" }, h("h3", {}, "Le mot du coach"), h("div", { class: "mot" }, f.mot)));
+  if (!asCoach) { const dc = [...notes].reverse().find(n => n.com && n.com.trim());
+    if (dc) side.prepend(h("div", { class: "card com-coach" }, h("div", { class: "eq-tl" }, parent ? "Le mot du coach sur la dernière séance" : "Ce que le coach a écrit"),
+      h("blockquote", {}, dc.com), h("small", {}, `${dc.type === "Match" ? "Match" : "Entraînement"} du ${fmtLong(dc.date)}`))); }
   side.append(h("div", { class: "card" }, h("h3", {}, "Badges"), badgesBox(fid, f, asCoach)));
   wrap.append(h("div", { class: "top-fiche" }, h("div", { class: "stack", style: "align-items:center" }, fcard(f, parent, fid),
     !asCoach && fid === S.me && !S.demo ? h("button", { class: "btn ghost small", onclick: () => { S.avEdit = !S.avEdit; S.avDraft = null; render(); } }, S.avEdit ? "Fermer" : (S.avatars[fid] ? "Modifier mon avatar" : "Créer mon avatar")) : null), side));
@@ -2246,6 +2364,7 @@ function ficheView(fid, f, asCoach) {
     if (typeof stt.buts === "number" && stt.buts) chips.append(h("span", { class: "chip" }, "Buts ", h("b", {}, String(stt.buts))));
     if (typeof stt.pd === "number" && stt.pd) chips.append(h("span", { class: "chip" }, "Passes déc. ", h("b", {}, String(stt.pd))));
     if (typeof stt.be === "number") chips.append(h("span", { class: "chip" + (stt.be === 0 ? " ok" : "") }, stt.be === 0 ? "Clean sheet" : "Buts encaissés ", stt.be === 0 ? null : h("b", {}, String(stt.be))));
+    if (n.theme && (n.theme.phase || n.theme.principe)) chips.append(h("span", { class: "chip theme" }, "Thème ", h("b", {}, [n.theme.phase, n.theme.principe].filter(Boolean).join(" · "))));
     const item = h("div", { class: "hitem" },
       h("div", { class: "hhead" }, h("strong", {}, fmtLong(n.date)), h("span", { class: "pill" + (n.type === "Match" ? " match" : "") }, n.type === "Match" ? "Match" : "Entraînement"), isOldNote(n, g) ? h("span", { class: "pill" }, "Ancienne grille") : null),
       chips, n.com ? h("div", { class: "com-text" }, n.com) : null);
@@ -2284,7 +2403,7 @@ async function envoyerMails(kind, fids, extra) {
 }
 async function writeFiche(fid, patch) {
   if (S.demo) { S.fiches[fid] = { ...S.fiches[fid], ...patch }; render(); return; }
-  await S.db.doc("fiches/" + fid).update(patch);
+  await ecrireFiche(fid, patch);
 }
 
 /* ---------- vue coach ---------- */
@@ -2600,8 +2719,27 @@ function dashAlertes() {
   if (!S.scope && (!ds || ds < ilYa(30))) out.push({ g: null, t: "Sauvegarde du mois à faire", d: ds ? `Dernière sauvegarde le ${fmtLong(ds)}.` : "Aucune sauvegarde faite sur cet appareil.", go: () => { exporterTout(); render(); }, lab: "Exporter" });
   for (const e of carnetList().filter(x => x.date && x.date <= today() && !reflexFaite(x)).sort((a, b) => a.date < b.date ? -1 : 1))
     out.push({ g: e.groupe, t: `Analyse réflexive à faire : ${e.kind === "match" ? "match" : "séance"} du ${fmtLong(e.date)}`, d: "Carnet BMF", go: () => openCarnet(e.id, e), lab: "Ouvrir" });
+  // comptes non reliés : message d'invitation à copier
+  for (const g of Object.keys(GROUPS)) {
+    const nl = dFiches(g).filter(([fid, f]) => isTemp(fid) && !f.exemple);
+    if (nl.length) out.push({ g, t: `${nl.length} joueur${nl.length > 1 ? "s" : ""} ${GROUPS[g].label} sans compte relié`, d: nl.map(([, f]) => f.nom).join(", "),
+      go: async () => { const txt = invitationTexte(g, nl.map(([, f]) => f.nom)); try { await navigator.clipboard.writeText(txt); S.flash = "Message d'invitation copié : colle-le dans le groupe WhatsApp."; } catch (e) { S.flash = txt; } render(); }, lab: "Copier l'invitation" });
+  }
+  // pas notés depuis 2 semaines (rotation)
+  for (const g of Object.keys(GROUPS)) {
+    const pn = dFiches(g).filter(([fid, f]) => !f.exemple && sortedNotes(f).length && (joursDepuisNote(f) || 0) >= 14);
+    if (pn.length >= 2) out.push({ g, t: `${pn.length} joueurs ${GROUPS[g].label} pas notés depuis 2 semaines`, d: pn.map(([, f]) => f.nom.split(" ")[0]).join(", ") + ". À observer en priorité à la prochaine séance.", go: go(g) });
+  }
+  // fiches en double possibles (même nom ou même mail)
+  const cle = f => (f.nom || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+  const vus = {};
+  for (const [fid, f] of dFiches()) { if (f.exemple) continue; for (const k of [cle(f) && "n:" + cle(f), f.email && "m:" + String(f.email).toLowerCase()]) if (k) (vus[k] = vus[k] || new Set()).add(fid); }
+  const dbl = new Set(); for (const set of Object.values(vus)) if (set.size > 1) dbl.add([...set].sort().join("|"));
+  for (const k of dbl) { const fids = k.split("|"); out.push({ g: null, t: `Fiche en double : ${nom(fids[0])}`, d: fids.map(fid => `${GROUPS[groupOf(S.fiches[fid])].label}${isTemp(fid) ? " (sans compte)" : ""}`).join(" et ") + ". Vérifie avant de supprimer celle en trop.", go: go(groupOf(S.fiches[fids[0]]), fids[0]) }); }
   for (const [fid, f] of dFiches()) {
     const g = groupOf(f), ns = sortedNotes(f).map(n => noteAvg(n, g)).filter(v => v != null);
+    // 3 baisses de suite
+    if (ns.length >= 4 && ns.length < 6) { const l = ns.slice(-4); if (l[0] > l[1] && l[1] > l[2] && l[2] > l[3]) out.push({ g, t: `${nom(fid)} baisse 3 fois de suite`, d: `De ${n1(l[0])} à ${n1(l[3])} sur ses dernières notes.`, go: go(g, fid) }); }
     // en baisse
     if (ns.length >= 6) { const r = mean(ns.slice(-3)), a = mean(ns.slice(0, -3)); if (a - r >= 0.6) out.push({ g, t: `${nom(fid)} est en baisse`, d: `${n1(r)} sur ses 3 dernières notes, contre ${n1(a)} avant.`, go: go(g, fid) }); }
     // absent depuis 2 semaines
@@ -2655,7 +2793,7 @@ function donutSondage(oui, non, sr) {
   el.innerHTML = `<svg viewBox="0 0 76 76"><circle cx="38" cy="38" r="${r}" fill="none" stroke="#2c2728" stroke-width="10"/>${seg(oui, "#3fae6a")}${seg(non, "#e0182d")}${seg(sr, "#5a5455")}<text x="38" y="43" text-anchor="middle" fill="#f5f2ec" font-size="17" font-family="Oranienbaum, Georgia, serif">${oui}</text></svg>`;
   return el;
 }
-const CAT_AL = [["auto", "Auto-évals", /auto-évaluation/i], ["comptes", "Comptes", /compte/i], ["oui", "Oui sans venir", /a dit oui/i], ["baisse", "En baisse", /en baisse/i], ["absent", "Absents", /pas venu/i], ["bmf", "Analyses BMF", /analyse réflexive/i], ["save", "Sauvegarde", /sauvegarde/i]];
+const CAT_AL = [["auto", "Auto-évals", /auto-évaluation/i], ["comptes", "Comptes", /compte/i], ["oui", "Oui sans venir", /a dit oui/i], ["baisse", "En baisse", /en baisse|baisse 3 fois/i], ["rotation", "À observer", /pas notés depuis/i], ["double", "Doublons", /en double/i], ["absent", "Absents", /pas venu/i], ["bmf", "Analyses BMF", /analyse réflexive/i], ["save", "Sauvegarde", /sauvegarde/i]];
 const catOf = a => (CAT_AL.find(c => c[2].test(a.t)) || ["autre"])[0];
 
 function dashView() {
@@ -2856,6 +2994,18 @@ function coachView() {
   return app;
 }
 
+/* séance du carnet BMF liée à une date */
+function carnetDu(g, date, type) {
+  const e = carnetList().find(x => x.groupe === g && x.date === date && x.kind === (type === "Match" ? "match" : "seance"));
+  if (!e) return null;
+  const ph = PHASES.find(p => p.k === e.phase), pr = ph && ph.p.find(x => String(x[0]) === String(e.principe));
+  return { id: e.id, num: e.num || null, phase: ph ? ph.l : "", principe: pr ? `${pr[0]}. ${pr[1]}` : "", objectif: e.objectif || e.objOffDef || "", adversaire: e.adversaire || "" };
+}
+const joursDepuisNote = f => { const ns = sortedNotes(f); if (!ns.length) return null; return Math.floor((new Date(today()) - new Date(ns[ns.length - 1].date)) / 864e5); };
+function invitationTexte(g, noms) {
+  const url = location.origin + location.pathname;
+  return `Salut à tous ! Il manque encore ${noms.length > 1 ? "quelques comptes" : "un compte"} sur le suivi joueurs US Endoume (${noms.join(", ")}).\n\n1. Ouvre ${url}\n2. Crée ton compte${g === "U10" ? " (parents : avec votre adresse mail)" : ""} et choisis ${GROUPS[g].label}\n3. Je relie ton compte à ta fiche et tu vois tes notes, tes badges et ta carte.\n\nSportivement, Nico`;
+}
 function startSaisie() {
   const rows = {};
   for (const [fid, f] of Object.entries(S.fiches)) if (groupOf(f) === S.tab) rows[fid] = { st: "p", crit: {}, com: "", stats: {} };
@@ -2897,6 +3047,24 @@ function saisieView() {
       : "Pas de compo pour cette date. Mets « Non convoqué » aux joueurs que tu n'as pas pris : ils ne seront ni notés ni comptés absents. Astuce : publie la compo dans l'onglet Équipe, la convocation sera reprise toute seule.")));
     ids = [...ids.filter(fid => s.rows[fid].st !== "nc"), ...ids.filter(fid => s.rows[fid].st === "nc")];
   }
+  // lien avec le carnet BMF
+  const th = carnetDu(S.tab, s.date, s.type);
+  if (th) box.append(h("div", { class: "card theme-c" }, h("div", { class: "eq-tl" }, s.type === "Match" ? "Match du carnet BMF" : `Séance du carnet BMF${th.num ? " n°" + th.num : ""}`),
+    h("p", { style: "margin:4px 0 0" }, [th.phase, th.principe].filter(Boolean).join(" · ") || (th.adversaire ? "contre " + th.adversaire : "")),
+    th.objectif ? h("p", { class: "note", style: "margin:4px 0 0" }, "Objectif : " + th.objectif) : null,
+    h("p", { class: "note", style: "margin:4px 0 0" }, "Le thème est enregistré avec les notes de cette séance.")));
+  // rotation : joueurs à observer en priorité
+  const aObs = ids.filter(fid => s.rows[fid].st === "p" && (() => { const j = joursDepuisNote(S.fiches[fid]); return j == null || j >= 14; })());
+  // mode rapide
+  const critsDe = fid => critsJ(S.tab, s.type, S.fiches[fid]);
+  const rapide = h("div", { class: "card rapide-c" },
+    h("div", { class: "row", style: "justify-content:space-between;align-items:center;gap:8px" },
+      h("div", { style: "flex:1;min-width:200px" }, h("strong", {}, "Mode rapide"), h("p", { class: "note", style: "margin:2px 0 0" }, "Tous les présents partent à 3 sur chaque critère. Tu ne touches que ceux qui sortent du lot.")),
+      h("div", { class: "row", style: "gap:6px" },
+        h("button", { class: "btn small", type: "button", onclick: () => { ids.forEach(fid => { const r = s.rows[fid]; if (r.st !== "p") return; for (const [k] of critsDe(fid)) if (r.crit[k] == null) r.crit[k] = 3; }); s.rapide = true; render(); } }, "Mettre tout le monde à 3"),
+        s.rapide ? h("button", { class: "btn ghost small", type: "button", onclick: () => { ids.forEach(fid => { s.rows[fid].crit = {}; }); s.rapide = false; render(); } }, "Tout effacer") : null)),
+    aObs.length ? h("p", { style: "margin:8px 0 0" }, h("span", { class: "pill obs" }, `À observer en priorité : ${aObs.length}`), " ", h("span", { class: "note" }, aObs.slice(0, 8).map(fid => (S.fiches[fid].nom || "").split(" ")[0]).join(", ") + (aObs.length > 8 ? "…" : "") + " (pas notés depuis 2 semaines ou plus)")) : null);
+  box.append(rapide);
   if (deja.length) {
     const auteurs = [...new Set(deja.map(fid => exist(fid).parNom).filter(Boolean))];
     box.append(h("div", { class: "card", style: "border-color:var(--or)" }, h("p", { style: "margin:0" }, `L'appel de cette séance a déjà été fait${auteurs.length ? " par " + auteurs.join(" et ") : ""} : ${deja.filter(fid => exist(fid).p).length} présents sur ${deja.length}. Il est repris ci-dessous. En enregistrant, tu le mets à jour joueur par joueur, sans doublon.`)));
@@ -2916,7 +3084,8 @@ function saisieView() {
     majSt();
     const a = ann && ann[fid];
     card.append(h("div", { class: "saisie-head" }, h("span", { class: "row", style: "gap:8px;align-items:center" }, h("strong", {}, f.nom || "Sans nom"),
-      ann ? (a ? h("span", { class: "pill " + (a.p ? "ok" : "no") }, a.p ? "A dit oui" : "A dit non") : h("span", { class: "pill" }, "Pas répondu")) : null), tog));
+      ann ? (a ? h("span", { class: "pill " + (a.p ? "ok" : "no") }, a.p ? "A dit oui" : "A dit non") : h("span", { class: "pill" }, "Pas répondu")) : null,
+      aObs.includes(fid) ? h("span", { class: "pill obs" }, (() => { const j = joursDepuisNote(f); return j == null ? "Jamais noté" : `Pas noté depuis ${j} j`; })()) : null), tog));
     const crits = h("div", { class: "crits" });
     for (const [k, lab] of critsJ(S.tab, s.type, f)) {
       const sc = h("div", { class: "scale", role: "group", "aria-label": lab });
@@ -2961,7 +3130,7 @@ function saisieView() {
       const keys = new Set(critsJ(S.tab, s.type, f).map(c => c[0])), crit = Object.fromEntries(Object.entries(r.crit).filter(([k]) => keys.has(k)));
       const stats = (s.type === "Match" && (S.tab === "U19" || isGK(f)) && r.stats && Object.keys(r.stats).length) ? { ...r.stats } : null;
       if (st === "p" && (Object.keys(crit).length || r.com.trim() || stats)) {
-        const nn = { id: nid(), date: s.date, type: s.type, crit, com: r.com.trim().slice(0, 500), at: new Date().toISOString(), ...(stats ? { stats } : {}) };
+        const nn = { id: nid(), date: s.date, type: s.type, crit, com: r.com.trim().slice(0, 500), at: new Date().toISOString(), ...(stats ? { stats } : {}), ...(th ? { theme: { phase: th.phase, principe: th.principe, objectif: String(th.objectif || "").slice(0, 200) } } : {}) };
         if (S.scope) patch.notesAdj = [...adjNotes(f).filter(x => !(x.par === S.me && x.date === s.date && x.type === s.type)), { ...nn, par: S.me, parNom: ((S.coachs[S.me] || {}).nom || "Adjoint").split(" ")[0] }];
         else patch.notes = [...rawNotes(f).filter(x => !(x.date === s.date && x.type === s.type)), nn];
         rated++;
@@ -2982,7 +3151,7 @@ function saisieView() {
 }
 async function writeFicheQuiet(fid, patch) {
   if (S.demo) { S.fiches[fid] = { ...S.fiches[fid], ...patch }; return; }
-  await S.db.doc("fiches/" + fid).update(patch);
+  await ecrireFiche(fid, patch);
 }
 
 function ajoutView() {
@@ -3055,9 +3224,7 @@ function joueurView() {
       h("div", { class: "row" }, h("button", { class: "btn small", onclick: async () => { try { await saveAvatar(S.me, S.avDraft || S.avatars[S.me]); am.textContent = "Avatar enregistré : il sera sur ta carte."; } catch (e) { am.textContent = "Échec : réessaie."; } } }, "Enregistrer"), am)));
     return box;
   }
-  const nv = nouveautes();
-  if (nv.length) box.append(h("div", { class: "card notif" }, h("div", { class: "notif-l" }, h("b", {}, "Nouveau"), ...nv.map(n => h("button", { class: "linkbtn", onclick: () => { S.psub = n.sub; render(); } }, n.t))),
-    h("button", { class: "linkbtn", "aria-label": "J'ai vu", onclick: () => { marquerVu(); render(); } }, "OK, vu")));
+  box.append(semaineCard());
   if ("Notification" in window && Notification.permission === "default" && !S.notifAsk) box.append(h("div", { class: "card row", style: "align-items:center" }, h("span", { style: "flex:1;min-width:200px" }, "Être prévenu d'une nouvelle note ou d'un vote ouvert pendant que le site est ouvert ?"),
     h("button", { class: "btn small ghost", onclick: async () => { S.notifAsk = true; try { await Notification.requestPermission(); } catch (e) {} render(); } }, "Activer"), h("button", { class: "linkbtn", onclick: () => { S.notifAsk = true; render(); } }, "Non merci")));
   box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, masquerNotes(S.me, S.myFiche), false));
@@ -3065,6 +3232,49 @@ function joueurView() {
   return box;
 }
 function vuLe() { try { return localStorage.getItem("vu-" + S.me) || ""; } catch (e) { return ""; } }
+/* bloc « Cette semaine » en haut de l'espace joueur */
+if ("serviceWorker" in navigator && location.protocol === "https:") window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; softRender(); });
+const enAppli = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+function badgesVus() { try { return JSON.parse(localStorage.getItem("bdg-" + S.me) || "null"); } catch (e) { return null; } }
+function semaineCard() {
+  const f = S.myFiche, g = groupOf(f), G = GROUPS[g], items = [];
+  const it = (ico, txt, sub, act, lab, chaud) => items.push(h("div", { class: "sem-it" + (chaud ? " chaud" : "") }, h("span", { class: "sem-ico", "aria-hidden": "true" }, ico),
+    h("div", { class: "sem-tx" }, h("b", {}, txt), sub ? h("small", {}, sub) : null), act ? h("button", { class: "btn small" + (chaud ? "" : " ghost"), onclick: act }, lab || "Voir") : null));
+  const go = sub => () => { S.psub = sub; render(); };
+  // nouveautés (notes, votes)
+  for (const n of nouveautes()) it(n.sub === "equipe" ? "🗳️" : "📝", n.t, null, () => { if (n.sub === "fiche") marquerVu(); S.psub = n.sub; render(); }, n.sub === "equipe" ? "Voter" : "Voir", n.sub === "equipe");
+  // auto-évaluation
+  if (g !== "U10") {
+    watchAutos(S.me);
+    const { todo, bientot } = autoAFaire(f, S.autos[S.me] || []);
+    for (const t of todo.slice(0, 2)) it("🪞", t.type === "Match" ? `Auto-évaluation du match du ${fmtDate(t.date)}` : "Auto-évaluation de la semaine", t.date >= MASQUE_DEBUT ? "À faire pour découvrir les notes du coach." : "Donne ton ressenti.", () => { S.psub = "fiche"; render(); setTimeout(() => { const el = document.getElementById("auto-card"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80); }, "Faire", true);
+    if (!todo.length && bientot) it("⏳", "Auto-évaluation de la semaine", "S'ouvre vendredi à 22h.");
+  }
+  const mq = masquerNotes(S.me, f); if (mq && mq._masque) it("🔒", `${mq._masque} note${mq._masque > 1 ? "s" : ""} du coach en attente`, "Visible après ton auto-évaluation.");
+  // convocation
+  const eq = S.equipes[g] || {};
+  const compo = (eq.compos || []).filter(c => c.date >= today()).sort((a, b) => a.date < b.date ? -1 : 1)[0];
+  if (compo) { const conv = [...(compo.xi || []), ...(compo.rempl || [])].includes(S.me), tit = (compo.xi || []).includes(S.me);
+    it("📋", conv ? `Convoqué : ${compo.titre || "match"}` : `Pas convoqué : ${compo.titre || "match"}`, `${fmtLong(compo.date)}${conv ? (tit ? " · titulaire" : " · remplaçant") : ""}`, go("equipe"), "Compo", conv); }
+  // prochaine séance
+  const prochaine = seancesOf(g).map(([, x]) => x).filter(x => x.date >= today()).sort((a, b) => (a.date + (a.heure || "")) < (b.date + (b.heure || "")) ? -1 : 1)[0];
+  if (prochaine) it("📅", `${prochaine.type === "Match" ? "Match" : "Entraînement"} ${jourLong(prochaine.date).toLowerCase()}`, prochaine.heure ? "à " + prochaine.heure : null);
+  // nouveaux badges
+  const got = badges(S.me, mq || f, eq).filter(b => b.got).map(b => b.nom), vus = badgesVus();
+  if (vus === null) { try { localStorage.setItem("bdg-" + S.me, JSON.stringify(got)); } catch (e) {} }
+  else { const nb = got.filter(n => !vus.includes(n)); if (nb.length) it("🏅", nb.length > 1 ? `${nb.length} nouveaux badges` : "Nouveau badge", nb.join(", "), () => { try { localStorage.setItem("bdg-" + S.me, JSON.stringify(got)); } catch (e) {} S.psub = "fiche"; render(); }, "Voir", true); }
+  // appli
+  if (!enAppli() && !S.appliNon) {
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (installEvt) it("📲", "Installer l'appli Endoume", "Une icône sur ton téléphone, en plein écran.", async () => { try { installEvt.prompt(); await installEvt.userChoice; } catch (e) {} installEvt = null; render(); }, "Installer");
+    else if (ios) it("📲", "Mettre Endoume sur ton écran d'accueil", "Dans Safari : bouton Partager, puis « Sur l'écran d'accueil ».", () => { S.appliNon = true; render(); }, "OK");
+  }
+  const card = h("div", { class: "card semaine" }, h("h3", {}, "Cette semaine"));
+  if (items.length) card.append(...items); else card.append(h("p", { class: "note", style: "margin:0" }, "Rien à faire pour l'instant. Profite !"));
+  return card;
+}
 function marquerVu() { try { localStorage.setItem("vu-" + S.me, new Date().toISOString()); } catch (e) {} }
 function votesOuverts() {
   const g = S.myFiche ? groupOf(S.myFiche) : null;
@@ -3315,7 +3525,7 @@ onAuthStateChanged(auth, async u => {
       DB.where("fiches", "groupe", g).onSnapshot(snap => {
         clearTimeout(slowT); S.slow = false;
         const next = {}; snap.docs.forEach(d => { if (d.exists) next[d.id] = d.data(); });
-        parG.fiches[g] = next; S.fiches = merge("fiches"); S.loaded = true;
+        parG.fiches[g] = next; poserFiches(merge("fiches")); S.loaded = true;
         for (const fid of Object.keys(next)) if (!S.subs["o-" + fid]) S.subs["o-" + fid] = db.doc("objectifs/" + fid).onSnapshot(os => { if (os.exists) S.objectifs[fid] = os.data(); softRender(); }, () => {});
         if (S.view === "saisie" || S.view === "ajout") return;
         if (S.view === "fiche" && !S.fiches[S.sel]) { S.view = "list"; S.sel = null; }
@@ -3331,7 +3541,7 @@ onAuthStateChanged(auth, async u => {
     db.collection("fiches").onSnapshot(snap => {
       clearTimeout(slowT); S.slow = false;
       const next = {}; snap.docs.forEach(d => { if (d.exists) next[d.id] = d.data(); });
-      S.fiches = next; S.loaded = true;
+      poserFiches(next); S.loaded = true;
       if (S.view === "saisie" || S.view === "ajout") return;
       if (S.view === "fiche" && !S.fiches[S.sel]) { S.view = "list"; S.sel = null; }
       softRender();
@@ -3354,7 +3564,9 @@ onAuthStateChanged(auth, async u => {
     db.doc("fiches/" + S.me).onSnapshot(snap => {
       clearTimeout(slowT); S.slow = false;
       const avant = S.myFiche ? sortedNotes(S.myFiche).length : null;
-      S.myFiche = snap.exists ? snap.data() : null;
+      S.myRaw = snap.exists ? snap.data() : null;
+      S.myFiche = S.myRaw ? avecPrive(S.me, S.myRaw) : null;
+      chargerPrive();
       if (avant != null && S.myFiche && sortedNotes(S.myFiche).length > avant) notifier("Nouvelle note", "Ton coach vient de te noter. Ouvre ta fiche pour voir.");
       if (S.myFiche && !S.eqSub) {
         const g = groupOf(S.myFiche);

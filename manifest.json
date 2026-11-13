@@ -1,0 +1,16 @@
+{
+  "name": "Suivi joueurs US Endoume",
+  "short_name": "Endoume",
+  "description": "Notes, présences, badges et équipe — US Endoume Marseille Catalans",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#100e0f",
+  "theme_color": "#100e0f",
+  "icons": [
+    { "src": "assets/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
