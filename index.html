@@ -1011,10 +1011,13 @@ function records(f, parent) {
   }
   return msgs;
 }
-function badgesBox(fid, f) {
+function badgesBox(fid, f, asCoach) {
   const wrap = h("div", {}), box = h("div", { class: "badges" });
-  const list = badges(fid, f, S.equipes[groupOf(f)]), cats = [...new Set(list.map(b => b.cat))];
-  wrap.append(h("p", { class: "bdg-tot" }, `${list.filter(b => b.got).length} badge${list.filter(b => b.got).length > 1 ? "s" : ""} débloqué${list.filter(b => b.got).length > 1 ? "s" : ""} sur ${list.length}`), box);
+  const tous = badges(fid, f, S.equipes[groupOf(f)]), nb = tous.filter(b => b.got).length;
+  const list = asCoach ? tous : tous.filter(b => b.got), cats = [...new Set(list.map(b => b.cat))];
+  const pl = nb > 1 ? "s" : "";
+  wrap.append(h("p", { class: "bdg-tot" }, asCoach ? `${nb} badge${pl} débloqué${pl} sur ${tous.length}`
+    : nb ? `${nb} badge${pl} débloqué${pl}. D'autres sont encore cachés, à découvrir au fil de la saison.` : "Aucun badge pour l'instant. Ils se débloquent tout seuls au fil de la saison."), box);
   for (const c of cats) {
     box.append(h("h4", { class: "bdg-cat" }, c));
     for (const b of list.filter(x => x.cat === c).sort((x, y) => (y.got ? 1 : 0) - (x.got ? 1 : 0))) {
@@ -2023,7 +2026,7 @@ function ficheView(fid, f, asCoach) {
     side.append(h("div", { class: "card" }, h("h3", {}, "Mot du coach"), h("label", { class: "field" }, mt), h("div", { class: "row", style: "margin-top:8px" },
       h("button", { class: "btn small", onclick: async () => { const v = mt.value.trim().slice(0, 160); try { await writeFiche(fid, { mot: v }); mm.textContent = "Mot enregistré."; } catch (e) { mm.textContent = "Échec : réessaie."; } } }, "Épingler"), mm)));
   } else if (f.mot) side.append(h("div", { class: "card" }, h("h3", {}, "Le mot du coach"), h("div", { class: "mot" }, f.mot)));
-  side.append(h("div", { class: "card" }, h("h3", {}, "Badges"), badgesBox(fid, f)));
+  side.append(h("div", { class: "card" }, h("h3", {}, "Badges"), badgesBox(fid, f, asCoach)));
   wrap.append(h("div", { class: "top-fiche" }, h("div", { class: "stack", style: "align-items:center" }, fcard(f, parent, fid),
     !asCoach && fid === S.me && !S.demo ? h("button", { class: "btn ghost small", onclick: () => { S.avEdit = !S.avEdit; S.avDraft = null; render(); } }, S.avEdit ? "Fermer" : (S.avatars[fid] ? "Modifier mon avatar" : "Créer mon avatar")) : null), side));
   if (!asCoach && fid === S.me && S.avEdit && !S.demo) {
