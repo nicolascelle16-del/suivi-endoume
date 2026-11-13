@@ -2730,10 +2730,10 @@ function dashAlertes() {
     const pn = dFiches(g).filter(([fid, f]) => !f.exemple && sortedNotes(f).length && (joursDepuisNote(f) || 0) >= 14);
     if (pn.length >= 2) out.push({ g, t: `${pn.length} joueurs ${GROUPS[g].label} pas notés depuis 2 semaines`, d: pn.map(([, f]) => f.nom.split(" ")[0]).join(", ") + ". À observer en priorité à la prochaine séance.", go: go(g) });
   }
-  // fiches en double possibles (même nom ou même mail)
+  // fiches en double possibles dans un même groupe (même nom ou même mail) ; un gardien U19 a normalement une fiche U19 et une fiche Gardiens
   const cle = f => (f.nom || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
   const vus = {};
-  for (const [fid, f] of dFiches()) { if (f.exemple) continue; for (const k of [cle(f) && "n:" + cle(f), f.email && "m:" + String(f.email).toLowerCase()]) if (k) (vus[k] = vus[k] || new Set()).add(fid); }
+  for (const [fid, f] of dFiches()) { if (f.exemple) continue; for (const k of [cle(f) && "n:" + groupOf(f) + cle(f), f.email && "m:" + groupOf(f) + String(f.email).toLowerCase()]) if (k) (vus[k] = vus[k] || new Set()).add(fid); }
   const dbl = new Set(); for (const set of Object.values(vus)) if (set.size > 1) dbl.add([...set].sort().join("|"));
   for (const k of dbl) { const fids = k.split("|"); out.push({ g: null, t: `Fiche en double : ${nom(fids[0])}`, d: fids.map(fid => `${GROUPS[groupOf(S.fiches[fid])].label}${isTemp(fid) ? " (sans compte)" : ""}`).join(" et ") + ". Vérifie avant de supprimer celle en trop.", go: go(groupOf(S.fiches[fids[0]]), fids[0]) }); }
   for (const [fid, f] of dFiches()) {
