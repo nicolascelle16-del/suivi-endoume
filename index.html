@@ -186,6 +186,13 @@ details.eq-sec .eq-s { font-size: 12px; color: var(--muted); }
 .hdm-l { text-align: center; line-height: 1.25; }
 .hdm-l b { display: block; font-family: var(--label); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--or); }
 .hdm-l span { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+.fcard.mini { width: 165px; height: 231px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
+.fcard.mini .fc-in { transform: scale(.55); }
+.fcard .fc-note.fc-star { font-size: 52px; color: var(--or); }
+.fcard .fc-vit { position: absolute; left: 16px; right: 16px; top: 260px; text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.fcard .fc-vt { white-space: nowrap; font-family: var(--display); font-size: 25px; color: #fff; text-transform: uppercase; line-height: 1; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+.fcard .fc-vl { white-space: nowrap; font-family: var(--label); font-style: italic; font-weight: 600; font-size: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--or); }
+.fcard .fc-vd { font-family: var(--label); font-weight: 600; font-size: 16px; letter-spacing: .1em; color: #d8d2c6; }
 @media (max-width: 600px) {
   .eq-tiles { grid-template-columns: 1fr 1fr; gap: 6px; }
   .eq-tile { padding: 8px 10px; border-radius: 10px; }
@@ -198,10 +205,8 @@ details.eq-sec .eq-s { font-size: 12px; color: var(--muted); }
   details.eq-sec .eq-s { display: none; }
   .hdm-box { padding: 12px 8px; }
   .hdm-cards { gap: 8px; flex-wrap: nowrap; }
-  .hdm-cards .fcard { width: 156px; height: 218px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
-  .hdm-cards .fcard .fc-in { transform: scale(.52); }
-  .hdm-cards.seul .fcard { width: 210px; height: 294px; }
-  .hdm-cards.seul .fcard .fc-in { transform: scale(.7); }
+  .hdm-cards .fcard.mini { width: 156px; height: 218px; }
+  .hdm-cards .fcard.mini .fc-in { transform: scale(.52); }
   .hdm-l b { font-size: 10px; letter-spacing: .08em; white-space: nowrap; }
   .hdm-l span { max-width: 156px; font-size: 11px; }
 }
@@ -923,8 +928,8 @@ function fcardDraw(d, fid, cls) {
   const inn = h("div", { class: "fc-in" });
   card.append(inn);
   inn.append(h("div", { class: "fc-gauche" },
-    h("div", { class: "fc-note" + (d.mot ? " fc-mot" : "") }, d.note || "–"),
-    h("div", { class: "fc-lab" }, parent ? "NIVEAU" : "NOTE"),
+    h("div", { class: "fc-note" + (d.mot ? " fc-mot" : "") + (d.vitrine ? " fc-star" : "") }, d.vitrine ? "★" : d.note || "–"),
+    h("div", { class: "fc-lab" }, d.vitrine ? (d.titre === "Joueur du match" ? "JDM" : "HDM") : parent ? "NIVEAU" : "NOTE"),
     h("div", { class: "fc-filet" }),
     d.pos ? h("div", { class: "fc-pos" }, d.pos) : null,
     h("div", { class: "fc-grp" }, d.grp || "")));
@@ -938,6 +943,11 @@ function fcardDraw(d, fid, cls) {
     : h("div", { class: "fc-st" + (it.hi ? " hi" : "") },
         h("div", {}, h("b", {}, it.v == null ? "–" : Math.round(it.v * 20)), h("span", {}, it.lab)),
         h("div", { class: "fc-jauge" }, h("i", { style: `width:${it.v == null ? 0 : Math.round(it.v * 20)}%` })));
+  if (d.vitrine) {
+    inn.append(h("div", { class: "fc-vit" }, h("div", { class: "fc-vt" }, d.titre), h("div", { class: "fc-vl" }, d.lab), h("div", { class: "fc-vd" }, d.date)));
+    inn.append(h("div", { class: "fc-club" }, "ENDOUME · 1925"));
+    return card;
+  }
   const half = Math.ceil(items.length / 2);
   inn.append(h("div", { class: "fc-crit" + (parent ? " par" : "") },
     h("div", { class: "fc-col" }, ...items.slice(0, half).map(cell)),
@@ -1695,7 +1705,8 @@ function equipeView(g, asCoach) {
   if (choixC) hdms.push({ e: choixC, lab: "Choix du coach" });
   if (choixV) { const same = choixC && choixC.fid === choixV.fid && choixC.date === choixV.date; if (same) hdms[0].lab = "Choix du coach et des joueurs"; else hdms.push({ e: choixV, lab: "Élu par les joueurs" }); }
   if (hdms.length) {
-    const live = e => { const f = S.fiches[e.fid]; return f ? fcardData(masquerNotes(e.fid, f), parentG) : null; };
+    // carte « vitrine » : identité seulement, aucune note
+    const live = e => { const f = S.fiches[e.fid]; if (!f) return null; const d = fcardData(f, parentG); return { nom: d.nom, pos: d.pos, grp: d.grp, poste: d.poste }; };
     if (asCoach && !S.demo && (!S.scope || S.scope.includes(g))) {
       const maj = (eq.hommes || []).map(x => { if (!hdms.some(o => o.e === x)) return x; const c = live(x); return c && stable(c) !== stable(x.carte || null) ? { ...x, carte: c } : x; });
       const cle = g + stable(maj);
@@ -1704,8 +1715,9 @@ function equipeView(g, asCoach) {
     const zone = h("div", { class: "hdm-cards" + (hdms.length === 1 ? " seul" : "") });
     for (const { e, lab } of hdms) {
       watchAvatar(e.fid);
-      const d = (asCoach && live(e)) || e.carte || { parent: parentG, note: "–", nom: e.nom, items: [] };
-      zone.append(h("div", { class: "hdm-c" }, h("div", { class: "hdm-l" }, h("b", {}, lab), h("span", {}, `${fmtDate(e.date)}${e.titre ? " · " + e.titre : ""}`)), fcardDraw(d, e.fid)));
+      const c = (asCoach && live(e)) || e.carte || { nom: e.nom };
+      const d = { vitrine: true, nom: c.nom || e.nom, pos: c.pos || "", grp: c.grp || "", poste: c.poste || "", titre: g === "U10" ? "Joueur du match" : "Homme du match", lab, date: fmtDate(e.date) };
+      zone.append(h("div", { class: "hdm-c" }, fcardDraw(d, e.fid, "mini"), e.titre ? h("div", { class: "hdm-l" }, h("span", {}, e.titre)) : null));
     }
     box.append(h("div", { class: "card hdm-box" }, h("h3", {}, g === "U10" ? "Joueur du match" : "Hommes du match"), zone));
   }
