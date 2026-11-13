@@ -181,6 +181,30 @@ details.eq-sec[open] > summary::after { content: "–"; }
 details.eq-sec .eq-t { font-family: var(--label); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--or); font-style: italic; font-weight: 600; }
 details.eq-sec .eq-s { font-size: 12px; color: var(--muted); }
 .eq-in .tablebox { overflow-x: auto; }
+.hdm-cards { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+.hdm-c { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; min-width: 0; }
+.hdm-l { text-align: center; line-height: 1.25; }
+.hdm-l b { display: block; font-family: var(--label); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--or); }
+.hdm-l span { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+@media (max-width: 600px) {
+  .eq-tiles { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .eq-tile { padding: 8px 10px; border-radius: 10px; }
+  .eq-tv { font-size: 14px; -webkit-line-clamp: 1; }
+  .eq-tile.t-obj { grid-column: 1 / -1; }
+  .eq-tile.t-obj .eq-tv { -webkit-line-clamp: 3; }
+  .eq-ts { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  details.eq-sec > summary { padding: 10px 12px; }
+  details.eq-sec .eq-t { font-size: 12px; }
+  details.eq-sec .eq-s { display: none; }
+  .hdm-box { padding: 12px 8px; }
+  .hdm-cards { gap: 8px; flex-wrap: nowrap; }
+  .hdm-cards .fcard { width: 156px; height: 218px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
+  .hdm-cards .fcard .fc-in { transform: scale(.52); }
+  .hdm-cards.seul .fcard { width: 210px; height: 294px; }
+  .hdm-cards.seul .fcard .fc-in { transform: scale(.7); }
+  .hdm-l b { font-size: 10px; letter-spacing: .08em; white-space: nowrap; }
+  .hdm-l span { max-width: 156px; font-size: 11px; }
+}
 .eq-in table.stats th, .eq-in table.stats td { white-space: nowrap; padding: 7px 6px; }
 details.eq-sec > .card.eq-in { border: 0; background: transparent; box-shadow: none; margin: 0; padding-top: 0; }
 .bdg.t-b .ico { background: linear-gradient(140deg, #c98a52, #7a4a24); }
@@ -881,33 +905,36 @@ function posteAbr(p) {
   for (const [k, v] of R) if (t.includes(k)) return v;
   return p.slice(0, 3).toUpperCase();
 }
-function fcard(f, parent, fid) {
-  const g = groupOf(f), G = GROUPS[g], ns = sortedNotes(f).slice(-5);
-  const o = overall(f, 5);
-  const card = h("div", { class: "fcard", role: "img", "aria-label": `Carte de ${f.nom || "joueur"}` });
-  const inn = h("div", { class: "fc-in" });
-  card.append(inn);
-  const noteTxt = o == null ? "–" : parent ? LEVELS[Math.round(o)] : String(Math.round(o * 20));
-  inn.append(h("div", { class: "fc-gauche" },
-    h("div", { class: "fc-note" + (parent && o != null ? " fc-mot" : "") }, noteTxt),
-    h("div", { class: "fc-lab" }, parent ? "NIVEAU" : "NOTE"),
-    h("div", { class: "fc-filet" }),
-    posteAbr(f.poste) ? h("div", { class: "fc-pos" }, posteAbr(f.poste)) : null,
-    h("div", { class: "fc-grp" }, (f.sousCat || G.label || "").toUpperCase())));
-  inn.append(avatarNode(fid, f.nom, "fc-ini"));
-  const nom = f.nom || "Joueur", taille = nom.length > 22 ? 18 : nom.length > 16 ? 21 : nom.length > 12 ? 24 : 30;
-  inn.append(h("div", { class: "fc-id" },
-    h("div", { class: "fc-nom", style: `font-size:${taille}px` }, nom),
-    f.poste ? h("div", { class: "fc-poste" }, f.poste) : null));
+function fcardData(f, parent) {
+  const g = groupOf(f), G = GROUPS[g], ns = sortedNotes(f).slice(-5), o = overall(f, 5), r2 = v => v == null ? null : Math.round(v * 100) / 100;
   const items = [];
   const all = sortedNotes(f), nouv = GRILLES[g] ? all.filter(n => !isOldNote(n, g) && n.crit && Object.keys(n.crit).length) : [];
   if (GRILLES[g]) {
     const ent = nouv.filter(n => n.type !== "Match").slice(-5), mat = nouv.filter(n => n.type === "Match").slice(-5);
-    for (const [k, lab] of GRILLES[g].E) items.push({ lab: parent ? lab.split(" ")[0] : (ABBR[k] || k), v: critAvg(ent, k) });
-    items.push({ lab: "MATCH", v: mean(mat.map(n => noteAvg(n, g)).filter(v => v != null)), hi: true });
-  } else for (const [k, lab] of G.crit) items.push({ lab: parent ? lab.split(" ")[0] : (ABBR[k] || k), v: critAvg(ns, k) });
+    for (const [k, lab] of GRILLES[g].E) items.push({ lab: parent ? lab.split(" ")[0] : (ABBR[k] || k), v: r2(critAvg(ent, k)) });
+    items.push({ lab: "MATCH", v: r2(mean(mat.map(n => noteAvg(n, g)).filter(v => v != null))), hi: true });
+  } else for (const [k, lab] of G.crit) items.push({ lab: parent ? lab.split(" ")[0] : (ABBR[k] || k), v: r2(critAvg(ns, k)) });
+  return { parent: !!parent, note: o == null ? "–" : parent ? LEVELS[Math.round(o)] : String(Math.round(o * 20)), mot: !!(parent && o != null),
+    pos: posteAbr(f.poste) || "", grp: (f.sousCat || G.label || "").toUpperCase(), nom: f.nom || "Joueur", poste: f.poste || "", items };
+}
+function fcardDraw(d, fid, cls) {
+  const parent = !!d.parent, items = Array.isArray(d.items) ? d.items : [];
+  const card = h("div", { class: "fcard" + (cls ? " " + cls : ""), role: "img", "aria-label": `Carte de ${d.nom || "joueur"}` });
+  const inn = h("div", { class: "fc-in" });
+  card.append(inn);
+  inn.append(h("div", { class: "fc-gauche" },
+    h("div", { class: "fc-note" + (d.mot ? " fc-mot" : "") }, d.note || "–"),
+    h("div", { class: "fc-lab" }, parent ? "NIVEAU" : "NOTE"),
+    h("div", { class: "fc-filet" }),
+    d.pos ? h("div", { class: "fc-pos" }, d.pos) : null,
+    h("div", { class: "fc-grp" }, d.grp || "")));
+  inn.append(avatarNode(fid, d.nom, "fc-ini"));
+  const nom = d.nom || "Joueur", taille = nom.length > 22 ? 18 : nom.length > 16 ? 21 : nom.length > 12 ? 24 : 30;
+  inn.append(h("div", { class: "fc-id" },
+    h("div", { class: "fc-nom", style: `font-size:${taille}px` }, nom),
+    d.poste ? h("div", { class: "fc-poste" }, d.poste) : null));
   const cell = it => parent
-    ? h("div", { class: "fc-st" }, h("span", {}, it.lab.toUpperCase()), stars(it.v))
+    ? h("div", { class: "fc-st" }, h("span", {}, String(it.lab).toUpperCase()), stars(it.v))
     : h("div", { class: "fc-st" + (it.hi ? " hi" : "") },
         h("div", {}, h("b", {}, it.v == null ? "–" : Math.round(it.v * 20)), h("span", {}, it.lab)),
         h("div", { class: "fc-jauge" }, h("i", { style: `width:${it.v == null ? 0 : Math.round(it.v * 20)}%` })));
@@ -918,6 +945,14 @@ function fcard(f, parent, fid) {
     h("div", { class: "fc-col" }, ...items.slice(half).map(cell))));
   inn.append(h("div", { class: "fc-club" }, "ENDOUME · 1925"));
   return card;
+}
+function fcard(f, parent, fid) { return fcardDraw(fcardData(f, parent), fid); }
+const stable = o => Array.isArray(o) ? "[" + o.map(stable).join(",") + "]" : o && typeof o === "object" ? "{" + Object.keys(o).sort().map(k => JSON.stringify(k) + ":" + stable(o[k])).join(",") + "}" : JSON.stringify(o === undefined ? null : o);
+const avVus = new Set();
+function watchAvatar(fid) {
+  if (!fid || avVus.has(fid) || S.avatars[fid] || S.demo || !S.db) return;
+  avVus.add(fid);
+  try { S.db.doc("avatars/" + fid).onSnapshot(d => { if (d.exists) { S.avatars = { ...S.avatars, [fid]: d.data() }; softRender(); } }, () => {}); } catch (e) {}
 }
 
 /* ---------- badges et records ---------- */
@@ -1594,8 +1629,8 @@ function equipeView(g, asCoach) {
     b.onclick = async () => { b.disabled = true; try { await fn(); m.textContent = "Enregistré."; render(); } catch (e) { m.textContent = "Échec : réessaie."; } b.disabled = false; }; return h("div", { class: "row" }, b, m); };
 
   // objectif collectif
-  const obj = h("div", { class: "card" }, h("h3", {}, "Objectif collectif du cycle"));
-  if (eq.objectif) obj.append(h("div", { class: "hero-eq" }, eq.objectif)); else obj.append(h("p", { class: "note" }, "Pas encore d'objectif collectif."));
+  const obj = h("div", { class: "card" }, h("h3", {}, "Objectif collectif du match"));
+  if (eq.objectif) obj.append(h("div", { class: "hero-eq" }, eq.objectif)); else obj.append(h("p", { class: "note" }, "Pas encore d'objectif collectif pour le match."));
   if (asCoach) { const t = h("input", { id: "eq-obj-" + g, maxlength: "160", placeholder: "Ex. plus de 4 passes avant de frapper, 6 fois par match" }); t.value = eq.objectif || "";
     obj.append(h("div", { class: "stack", style: "margin-top:10px" }, h("label", { class: "field" }, "Modifier l'objectif", t), saveBtn("Enregistrer", () => writeEquipe(g, { objectif: t.value.trim().slice(0, 160) })))); }
 
@@ -1630,10 +1665,10 @@ function equipeView(g, asCoach) {
     return d;
   };
   const ouvrir = key => { ouv[g + ":" + key] = true; render(); setTimeout(() => { const el = document.getElementById("eqs-" + (g + ":" + key).replace(/[^a-z0-9]/gi, "")); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60); };
-  const tuile = (lab, val, sub, key, chaud) => h("button", { type: "button", class: "eq-tile" + (chaud ? " chaud" : ""), onclick: key ? () => ouvrir(key) : null },
+  const tuile = (lab, val, sub, key, chaud, extra) => h("button", { type: "button", class: "eq-tile" + (chaud ? " chaud" : "") + (extra ? " t-" + extra : ""), onclick: key ? () => ouvrir(key) : null },
     h("span", { class: "eq-tl" }, lab), h("span", { class: "eq-tv" }, val), sub ? h("span", { class: "eq-ts" }, sub) : null);
   const tiles = h("div", { class: "eq-tiles" });
-  let champ = null;
+  let champ = null, contre = "";
   if (g === "U19") {
     champ = champView();
     const c = S.champ;
@@ -1641,7 +1676,7 @@ function equipeView(g, asCoach) {
       const ME = c.equipe || "USM ENDOUME CATALANS", short = t => (c.noms && c.noms[t]) || t;
       const next = (c.matchs || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).find(m => !m.score);
       const moi = c.classement.find(x => x.t === ME);
-      if (next) { const dom = next.h === ME, opp = dom ? next.a : next.h, r = c.classement.find(x => x.t === opp);
+      if (next) { const dom = next.h === ME, opp = dom ? next.a : next.h, r = c.classement.find(x => x.t === opp); contre = short(opp);
         tiles.append(tuile("Prochain match", short(opp), `${fmtDate(next.date)}${next.heure ? " · " + next.heure : ""} · ${dom ? "dom." : "ext."}${r ? ` · adv. ${r.rang === 1 ? "1er" : r.rang + "e"}` : ""}`, "cal", true)); }
       if (moi) tiles.append(tuile("Classement", moi.rang === 1 ? "1er" : `${moi.rang}e`, `${moi.pts} pts · ${moi.v}V ${moi.n}N ${moi.d}D`, "cl"));
     }
@@ -1649,11 +1684,31 @@ function equipeView(g, asCoach) {
   const vOuv = Object.values(S.votes || {}).filter(v => v && v.groupe === g && v.ouvert);
   const aVoter = !asCoach && votesOuverts().length > 0;
   if (g !== "U10" && vOuv.length) tiles.append(tuile("Vote", aVoter ? "À toi de voter" : "Vote ouvert", vOuv.map(v => v.titre || voteLabel(v.type, g)).join(", "), "votes", true));
-  if (eq.objectif) tiles.append(tuile("Objectif du cycle", eq.objectif, null, "obj"));
-  else if (asCoach) tiles.append(tuile("Objectif du cycle", "À fixer", null, "obj"));
-  tiles.append(tuile(g === "U10" ? "Joueur du match" : "Homme du match", hommes.length ? hommes[0].nom : "–", hommes.length ? fmtDate(hommes[0].date) : "pas encore désigné", asCoach || hommes.length > 1 ? "hm" : null));
+  if (eq.objectif) tiles.append(tuile("Objectif du match", eq.objectif, contre ? "contre " + contre : null, "obj", false, "obj"));
+  else if (asCoach) tiles.append(tuile("Objectif du match", "À fixer", contre ? "contre " + contre : null, "obj"));
+
   tiles.append(tuile("Joueur du mois", eq.mois && eq.mois.nom ? eq.mois.nom : "–", eq.mois && eq.mois.label ? eq.mois.label : "pas encore désigné", asCoach ? "jm" : null));
   box.append(tiles);
+  // les deux hommes du match : choix du coach et élu par les joueurs
+  const parentG = !!G.parent, choixC = hommes.find(x => !x.titre), choixV = hommes.find(x => x.titre);
+  const hdms = [];
+  if (choixC) hdms.push({ e: choixC, lab: "Choix du coach" });
+  if (choixV) { const same = choixC && choixC.fid === choixV.fid && choixC.date === choixV.date; if (same) hdms[0].lab = "Choix du coach et des joueurs"; else hdms.push({ e: choixV, lab: "Élu par les joueurs" }); }
+  if (hdms.length) {
+    const live = e => { const f = S.fiches[e.fid]; return f ? fcardData(masquerNotes(e.fid, f), parentG) : null; };
+    if (asCoach && !S.demo && (!S.scope || S.scope.includes(g))) {
+      const maj = (eq.hommes || []).map(x => { if (!hdms.some(o => o.e === x)) return x; const c = live(x); return c && stable(c) !== stable(x.carte || null) ? { ...x, carte: c } : x; });
+      const cle = g + stable(maj);
+      if (maj.some((x, i) => x !== (eq.hommes || [])[i]) && S.carteSync !== cle) { S.carteSync = cle; writeEquipe(g, { hommes: maj }).catch(() => {}); }
+    }
+    const zone = h("div", { class: "hdm-cards" + (hdms.length === 1 ? " seul" : "") });
+    for (const { e, lab } of hdms) {
+      watchAvatar(e.fid);
+      const d = (asCoach && live(e)) || e.carte || { parent: parentG, note: "–", nom: e.nom, items: [] };
+      zone.append(h("div", { class: "hdm-c" }, h("div", { class: "hdm-l" }, h("b", {}, lab), h("span", {}, `${fmtDate(e.date)}${e.titre ? " · " + e.titre : ""}`)), fcardDraw(d, e.fid)));
+    }
+    box.append(h("div", { class: "card hdm-box" }, h("h3", {}, g === "U10" ? "Joueur du match" : "Hommes du match"), zone));
+  }
   if (champ) {
     const cl = champ.querySelector('[data-k="cl"]'), cal = champ.querySelector('[data-k="cal"]');
     if (cl) box.append(fold("cl", "Classement", null, cl));
@@ -1663,7 +1718,7 @@ function equipeView(g, asCoach) {
   if (g === "U19") { const compos = (eq.compos || []); if (asCoach || compos.length) box.append(fold("compos", "Compositions de match", compos.length ? `${compos.length} publiée${compos.length > 1 ? "s" : ""}` : "aucune", composCard(g, asCoach), asCoach && !!S.compoDraft[g])); }
   if (g !== "U10" && (asCoach || Object.values(S.votes || {}).some(v => v && v.groupe === g))) box.append(fold("votes", "Votes des joueurs", vOuv.length ? "vote en cours" : "aucun vote en cours", votesCard(g, asCoach), aVoter));
   { const an = Array.isArray(eq.analyses) ? eq.analyses.length : 0; if (asCoach || an) box.append(fold("ana", "Analyses de match", an ? `${an} publiée${an > 1 ? "s" : ""}` : "aucune", analysesCard(g, asCoach), !!(S.anaEdit && S.anaEdit.g === g))); }
-  if (asCoach || eq.objectif) box.append(fold("obj", "Objectif collectif du cycle", eq.objectif ? null : "pas encore fixé", obj));
+  if (asCoach || eq.objectif) box.append(fold("obj", "Objectif collectif du match", eq.objectif ? null : "pas encore fixé", obj));
   if (asCoach || hommes.length > 1) box.append(fold("hm", g === "U10" ? "Joueur du match" : "Homme du match", hommes.length ? "historique" + (asCoach ? " et désignation" : "") : null, hm));
   if (asCoach) box.append(fold("jm", "Joueur du mois", asCoach ? "désignation" : null, jm));
 
