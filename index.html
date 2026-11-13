@@ -166,6 +166,23 @@ details.crit-d p { margin: 6px 0 2px; padding: 6px 9px; font-size: 13.5px; line-
 .bdg { display: flex; gap: 8px; align-items: center; background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 10px; padding: 8px; }
 .bdg .ico { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: var(--label); font-weight: 600; font-size: 15px; background: var(--rouge); color: #fff; }
 .bdg.off { opacity: .45; }
+.eq-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.eq-tile { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--ligne); min-width: 0; }
+.eq-tile:focus-visible { outline: 2px solid var(--or); outline-offset: 2px; }
+.eq-tile.chaud { border-color: var(--rouge); background: linear-gradient(160deg, rgba(224,24,45,.18), var(--surface) 70%); }
+.eq-tl { font-family: var(--label); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--or); }
+.eq-tv { font-weight: 700; font-size: 16px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.eq-ts { font-size: 12px; color: var(--muted); }
+details.eq-sec { background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; }
+details.eq-sec > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; }
+details.eq-sec > summary::-webkit-details-marker { display: none; }
+details.eq-sec > summary::after { content: "+"; margin-left: auto; color: var(--or); font-size: 18px; line-height: 1; }
+details.eq-sec[open] > summary::after { content: "–"; }
+details.eq-sec .eq-t { font-family: var(--label); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--or); font-style: italic; font-weight: 600; }
+details.eq-sec .eq-s { font-size: 12px; color: var(--muted); }
+.eq-in .tablebox { overflow-x: auto; }
+.eq-in table.stats th, .eq-in table.stats td { white-space: nowrap; padding: 7px 6px; }
+details.eq-sec > .card.eq-in { border: 0; background: transparent; box-shadow: none; margin: 0; padding-top: 0; }
 .bdg.t-b .ico { background: linear-gradient(140deg, #c98a52, #7a4a24); }
 .bdg.t-a .ico { background: linear-gradient(140deg, #e3e3e8, #8d8d99); color: #1b1a1f; }
 .bdg.t-o .ico { background: linear-gradient(140deg, #f3df9b, #b48a2c); color: #2a1f05; }
@@ -1044,14 +1061,14 @@ function champView() {
   const next = matchs.find(m => !m.score);
   if (next) {
     const dom = next.h === ME, opp = dom ? next.a : next.h, r = c.classement.find(x => x.t === opp);
-    box.append(h("div", { class: "card", style: "border-color:var(--rouge)" }, h("h3", {}, "Prochain match"),
+    box.append(h("div", { class: "card", "data-k": "next", style: "border-color:var(--rouge)" }, h("h3", {}, "Prochain match"),
       h("div", { class: "hero-eq", style: "display:flex;align-items:center;gap:10px;flex-wrap:wrap" }, team(next.h, 40), h("span", { style: "color:var(--muted)" }, "contre"), team(next.a, 40)),
       h("p", { class: "note", style: "margin:4px 0 0" }, `J${next.j} · ${fmtLong(next.date)}${next.heure ? " à " + next.heure : ""} · ${dom ? "à domicile" : "à l'extérieur"}${r ? ` · adversaire ${r.rang}e avec ${r.pts} pts` : ""}`)));
   }
   const tb = h("tbody");
   for (const r of c.classement) tb.append(h("tr", { style: r.t === ME ? "background:rgba(208,24,47,.15)" : null },
     h("td", {}, r.rang), h("td", {}, team(r.t)), h("td", {}, h("b", {}, r.pts)), h("td", {}, r.j), h("td", {}, `${r.v}-${r.n}-${r.d}`), h("td", {}, `${r.bp}-${r.bc}`), h("td", {}, (r.bp - r.bc > 0 ? "+" : "") + (r.bp - r.bc))));
-  box.append(h("div", { class: "card" }, h("h3", {}, `${c.titre || "Classement"}`),
+  box.append(h("div", { class: "card", "data-k": "cl" }, h("h3", {}, `${c.titre || "Classement"}`),
     h("div", { class: "tablebox" }, h("table", { class: "stats" }, h("thead", {}, h("tr", {}, ["#", "Équipe", "Pts", "J", "V-N-D", "Buts", "Diff"].map(x => h("th", {}, x)))), tb)),
     h("p", { class: "note" }, `Classement FFF au ${maj}, sous réserve des procédures en cours.${c.remarque ? " " + c.remarque : ""}`)));
   const tb2 = h("tbody");
@@ -1062,7 +1079,7 @@ function champView() {
     tb2.append(h("tr", { style: next && m === next ? "background:rgba(214,172,78,.12)" : null }, h("td", {}, "J" + m.j), h("td", {}, fmtDate(m.date)), h("td", {}, dom ? "Dom." : "Ext."), h("td", {}, team(opp)),
       h("td", { style: res.startsWith("V") ? "color:#9fe0b1;font-weight:600" : res.startsWith("D") ? "color:#ff9aa6;font-weight:600" : null }, res || (m.heure || "–"))));
   }
-  box.append(h("div", { class: "card" }, h("h3", {}, "Calendrier et résultats d'Endoume"), h("div", { class: "tablebox" }, h("table", { class: "stats" }, h("thead", {}, h("tr", {}, ["J", "Date", "Lieu", "Adversaire", "Résultat"].map(x => h("th", {}, x)))), tb2))));
+  box.append(h("div", { class: "card", "data-k": "cal" }, h("h3", {}, "Calendrier et résultats d'Endoume"), h("div", { class: "tablebox" }, h("table", { class: "stats" }, h("thead", {}, h("tr", {}, ["J", "Date", "Lieu", "Adversaire", "Résultat"].map(x => h("th", {}, x)))), tb2))));
   return box;
 }
 
@@ -1573,7 +1590,6 @@ function equipeView(g, asCoach) {
   const G = GROUPS[g], eq = S.equipes[g] || {}, box = h("div", { class: "stack" });
   const M = "match";
   const players = Object.entries(S.fiches).filter(([, f]) => groupOf(f) === g).sort((a, b) => (a[1].nom || "").localeCompare(b[1].nom || "", "fr"));
-  if (g === "U19") box.append(champView());
   const saveBtn = (label, fn) => { const m = h("span", { class: "note" }); const b = h("button", { class: "btn small" }, label);
     b.onclick = async () => { b.disabled = true; try { await fn(); m.textContent = "Enregistré."; render(); } catch (e) { m.textContent = "Échec : réessaie."; } b.disabled = false; }; return h("div", { class: "row" }, b, m); };
 
@@ -1583,10 +1599,6 @@ function equipeView(g, asCoach) {
   if (asCoach) { const t = h("input", { id: "eq-obj-" + g, maxlength: "160", placeholder: "Ex. plus de 4 passes avant de frapper, 6 fois par match" }); t.value = eq.objectif || "";
     obj.append(h("div", { class: "stack", style: "margin-top:10px" }, h("label", { class: "field" }, "Modifier l'objectif", t), saveBtn("Enregistrer", () => writeEquipe(g, { objectif: t.value.trim().slice(0, 160) })))); }
 
-  box.append(obj);
-  if (g === "U19") box.append(composCard(g, asCoach));
-  if (g !== "U10") box.append(votesCard(g, asCoach));
-  box.append(analysesCard(g, asCoach));
 
   // homme du match / joueur du mois
   const hommes = (eq.hommes || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
@@ -1606,7 +1618,54 @@ function equipeView(g, asCoach) {
     jm.append(h("div", { class: "row", style: "margin-top:10px" }, h("label", { class: "field" }, "Joueur", sel2)),
       saveBtn(`Désigner pour ${lab}`, () => writeEquipe(g, { mois: { fid: sel2.value, nom: S.fiches[sel2.value].nom, label: lab } })));
   }
-  box.append(h("div", { class: "two" }, hm, jm));
+
+  // --- présentation compacte : résumé en tuiles + sections repliables ---
+  const ouv = S.eqOpen || (S.eqOpen = {});
+  const fold = (key, titre, sous, card, defaut) => {
+    const k = g + ":" + key, d = h("details", { class: "eq-sec", id: "eqs-" + k.replace(/[^a-z0-9]/gi, ""), open: (k in ouv ? ouv[k] : !!defaut) || null });
+    const t = card.querySelector(":scope > h3"); if (t) t.remove();
+    card.classList.add("eq-in");
+    d.append(h("summary", {}, h("span", { class: "eq-t" }, titre), sous ? h("span", { class: "eq-s" }, sous) : null), card);
+    d.addEventListener("toggle", () => { ouv[k] = d.open; });
+    return d;
+  };
+  const ouvrir = key => { ouv[g + ":" + key] = true; render(); setTimeout(() => { const el = document.getElementById("eqs-" + (g + ":" + key).replace(/[^a-z0-9]/gi, "")); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60); };
+  const tuile = (lab, val, sub, key, chaud) => h("button", { type: "button", class: "eq-tile" + (chaud ? " chaud" : ""), onclick: key ? () => ouvrir(key) : null },
+    h("span", { class: "eq-tl" }, lab), h("span", { class: "eq-tv" }, val), sub ? h("span", { class: "eq-ts" }, sub) : null);
+  const tiles = h("div", { class: "eq-tiles" });
+  let champ = null;
+  if (g === "U19") {
+    champ = champView();
+    const c = S.champ;
+    if (c && Array.isArray(c.classement)) {
+      const ME = c.equipe || "USM ENDOUME CATALANS", short = t => (c.noms && c.noms[t]) || t;
+      const next = (c.matchs || []).slice().sort((a, b) => a.date < b.date ? -1 : 1).find(m => !m.score);
+      const moi = c.classement.find(x => x.t === ME);
+      if (next) { const dom = next.h === ME, opp = dom ? next.a : next.h, r = c.classement.find(x => x.t === opp);
+        tiles.append(tuile("Prochain match", short(opp), `${fmtDate(next.date)}${next.heure ? " · " + next.heure : ""} · ${dom ? "dom." : "ext."}${r ? ` · adv. ${r.rang === 1 ? "1er" : r.rang + "e"}` : ""}`, "cal", true)); }
+      if (moi) tiles.append(tuile("Classement", moi.rang === 1 ? "1er" : `${moi.rang}e`, `${moi.pts} pts · ${moi.v}V ${moi.n}N ${moi.d}D`, "cl"));
+    }
+  }
+  const vOuv = Object.values(S.votes || {}).filter(v => v && v.groupe === g && v.ouvert);
+  const aVoter = !asCoach && votesOuverts().length > 0;
+  if (g !== "U10" && vOuv.length) tiles.append(tuile("Vote", aVoter ? "À toi de voter" : "Vote ouvert", vOuv.map(v => v.titre || voteLabel(v.type, g)).join(", "), "votes", true));
+  if (eq.objectif) tiles.append(tuile("Objectif du cycle", eq.objectif, null, "obj"));
+  else if (asCoach) tiles.append(tuile("Objectif du cycle", "À fixer", null, "obj"));
+  tiles.append(tuile(g === "U10" ? "Joueur du match" : "Homme du match", hommes.length ? hommes[0].nom : "–", hommes.length ? fmtDate(hommes[0].date) : "pas encore désigné", asCoach || hommes.length > 1 ? "hm" : null));
+  tiles.append(tuile("Joueur du mois", eq.mois && eq.mois.nom ? eq.mois.nom : "–", eq.mois && eq.mois.label ? eq.mois.label : "pas encore désigné", asCoach ? "jm" : null));
+  box.append(tiles);
+  if (champ) {
+    const cl = champ.querySelector('[data-k="cl"]'), cal = champ.querySelector('[data-k="cal"]');
+    if (cl) box.append(fold("cl", "Classement", null, cl));
+    if (cal) box.append(fold("cal", "Calendrier et résultats", null, cal));
+    if (!cl && !cal) box.append(champ);
+  }
+  if (g === "U19") { const compos = (eq.compos || []); if (asCoach || compos.length) box.append(fold("compos", "Compositions de match", compos.length ? `${compos.length} publiée${compos.length > 1 ? "s" : ""}` : "aucune", composCard(g, asCoach), asCoach && !!S.compoDraft[g])); }
+  if (g !== "U10" && (asCoach || Object.values(S.votes || {}).some(v => v && v.groupe === g))) box.append(fold("votes", "Votes des joueurs", vOuv.length ? "vote en cours" : "aucun vote en cours", votesCard(g, asCoach), aVoter));
+  { const an = Array.isArray(eq.analyses) ? eq.analyses.length : 0; if (asCoach || an) box.append(fold("ana", "Analyses de match", an ? `${an} publiée${an > 1 ? "s" : ""}` : "aucune", analysesCard(g, asCoach), !!(S.anaEdit && S.anaEdit.g === g))); }
+  if (asCoach || eq.objectif) box.append(fold("obj", "Objectif collectif du cycle", eq.objectif ? null : "pas encore fixé", obj));
+  if (asCoach || hommes.length > 1) box.append(fold("hm", g === "U10" ? "Joueur du match" : "Homme du match", hommes.length ? "historique" + (asCoach ? " et désignation" : "") : null, hm));
+  if (asCoach) box.append(fold("jm", "Joueur du mois", asCoach ? "désignation" : null, jm));
 
   return box;
 }
