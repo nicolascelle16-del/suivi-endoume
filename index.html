@@ -1341,14 +1341,18 @@ const lundiDe = d => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate(
 const plusJours = (d, n) => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
 function autoAFaire(f, autos) {
   const notes = sortedNotes(f), fait = (type, date) => autos.some(a => a.type === type && a.date === date), limite = ilYa(21), now = new Date();
-  const matchs = notes.filter(n => n.type === "Match" && n.date >= limite && !fait("Match", n.date)).slice(-2).reverse()
-    .map(n => ({ key: "M" + n.date, type: "Match", date: n.date, lab: `Ton match du ${fmtLong(n.date)}`, court: `Match du ${fmtDate(n.date)}` }));
+  // périodes notées par le coach mais encore illisibles pour le joueur (notes protégées) : connues par la liste « prives » de la fiche
+  const cles = (f && (f.prives || (f._plein && f._plein.prives))) || [];
+  const dMatchs = [...new Set([...notes.filter(n => n.type === "Match").map(n => n.date), ...cles.filter(k => k[0] === "M").map(k => k.slice(1))])].sort();
+  const matchs = dMatchs.filter(d => d >= limite && !fait("Match", d)).slice(-2).reverse()
+    .map(d => ({ key: "M" + d, type: "Match", date: d, lab: `Ton match du ${fmtLong(d)}`, court: `Match du ${fmtDate(d)}` }));
   const sem = {}; for (const n of notes.filter(n => n.type !== "Match" && n.date >= limite)) { const l = lundiDe(n.date); sem[l] = (sem[l] || 0) + 1; }
+  for (const k of cles) if (k[0] === "S") { const l = plusJours(k.slice(1), -4); if (k.slice(1) >= limite && !sem[l]) sem[l] = "?"; }
   let bientot = null; const semaines = [];
   for (const l of Object.keys(sem).sort().reverse()) {
     const ven = plusJours(l, 4);
     if (now < new Date(ven + "T22:00:00")) { bientot = `vendredi ${fmtDate(ven)} à 22h`; continue; }
-    if (!fait("Semaine", ven)) semaines.push({ key: "S" + ven, type: "Semaine", date: ven, lab: `Ta semaine du ${fmtDate(l)} au ${fmtDate(ven)} (${sem[l]} entraînement${sem[l] > 1 ? "s" : ""} noté${sem[l] > 1 ? "s" : ""})`, court: `Semaine du ${fmtDate(l)}` });
+    if (!fait("Semaine", ven)) semaines.push({ key: "S" + ven, type: "Semaine", date: ven, lab: `Ta semaine du ${fmtDate(l)} au ${fmtDate(ven)}${sem[l] === "?" ? " (entraînements notés)" : ` (${sem[l]} entraînement${sem[l] > 1 ? "s" : ""} noté${sem[l] > 1 ? "s" : ""})`}`, court: `Semaine du ${fmtDate(l)}` });
   }
   return { todo: [...matchs, ...semaines.slice(0, 2)], bientot };
 }
@@ -1437,7 +1441,9 @@ function masquerNotes(fid, f) {
     return now < new Date(ven + "T22:00:00") || cles.has("S" + ven);
   };
   const notes = Array.isArray(f.notes) ? f.notes : [], adj = Array.isArray(f.notesAdj) ? f.notesAdj : [];
-  const nb = notes.filter(cache).length;
+  // périodes protégées pas encore lisibles par le joueur (il doit d'abord s'auto-évaluer)
+  const charge = (S.prive && S.prive[fid]) || {}, attente = (Array.isArray(f.prives) ? f.prives : []).filter(k => !charge[k]).length;
+  const nb = notes.filter(cache).length + attente;
   if (!nb) return f;
   return { ...f, notes: notes.filter(n => !cache(n)), notesAdj: adj.filter(n => !cache(n)), _plein: f, _masque: nb };
 }
@@ -2300,7 +2306,7 @@ function ficheView(fid, f, asCoach) {
   // objectif individuel : U19 uniquement, choisi par le joueur
   if (g === "U19") wrap.append(objectifCard(fid, f, asCoach));
 
-  if (f._masque && !asCoach) wrap.append(h("div", { class: "record", style: "border-color:var(--rouge)" }, `${f._masque} note${f._masque > 1 ? "s" : ""} du coach en attente : fais ton auto-évaluation (la semaine s'ouvre le vendredi à 22h, le match dès qu'il est noté) pour ${f._masque > 1 ? "les" : "la"} découvrir.`));
+  if (f._masque && !asCoach) wrap.append(h("div", { class: "record", style: "border-color:var(--rouge)" }, `${f._masque} évaluation${f._masque > 1 ? "s" : ""} du coach en attente : fais ton auto-évaluation (la semaine s'ouvre le vendredi à 22h, le match dès qu'il est noté) pour ${f._masque > 1 ? "les" : "la"} découvrir.`));
   if (!notes.length) { watchAutos(fid); wrap.append(h("div", { class: "empty" }, f._masque ? "Tes notes apparaîtront ici après ton auto-évaluation." : "Aucune évaluation du coach pour l'instant."), (g === "U10" && !asCoach) ? null : autoCard(fid, f, asCoach)); return wrap; }
 
   // moyennes par critère
@@ -3252,7 +3258,7 @@ function semaineCard() {
     for (const t of todo.slice(0, 2)) it("🪞", t.type === "Match" ? `Auto-évaluation du match du ${fmtDate(t.date)}` : "Auto-évaluation de la semaine", t.date >= MASQUE_DEBUT ? "À faire pour découvrir les notes du coach." : "Donne ton ressenti.", () => { S.psub = "fiche"; render(); setTimeout(() => { const el = document.getElementById("auto-card"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80); }, "Faire", true);
     if (!todo.length && bientot) it("⏳", "Auto-évaluation de la semaine", "S'ouvre vendredi à 22h.");
   }
-  const mq = masquerNotes(S.me, f); if (mq && mq._masque) it("🔒", `${mq._masque} note${mq._masque > 1 ? "s" : ""} du coach en attente`, "Visible après ton auto-évaluation.");
+  const mq = masquerNotes(S.me, f); if (mq && mq._masque) it("🔒", `${mq._masque} évaluation${mq._masque > 1 ? "s" : ""} du coach en attente`, "Visible après ton auto-évaluation.");
   // convocation
   const eq = S.equipes[g] || {};
   const compo = (eq.compos || []).filter(c => c.date >= today()).sort((a, b) => a.date < b.date ? -1 : 1)[0];
