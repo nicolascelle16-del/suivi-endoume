@@ -3280,7 +3280,9 @@ function semaineCard() {
     else if (ios) it("📲", "Mettre Endoume sur ton écran d'accueil", "Dans Safari : bouton Partager, puis « Sur l'écran d'accueil ».", () => { S.appliNon = true; render(); }, "OK");
   }
   const card = h("div", { class: "card semaine" }, h("h3", {}, "Cette semaine"));
-  if (g === "U19") card.append(h("div", { class: "regle-auto" }, h("b", {}, "📌 La règle"), h("span", {}, "Pas d'auto-évaluation = pas de note de match."), h("span", {}, "Tu t'évalues, puis tu vois la note du coach.")));
+  // la règle ne s'affiche qu'aux joueurs concernés : ceux que le coach a notés et qui ont une auto-évaluation à faire
+  const aFaire = g === "U19" && (autoAFaire(f, S.autos[S.me] || []).todo.length > 0 || (mq && mq._masque));
+  if (aFaire) card.append(h("div", { class: "regle-auto" }, h("b", {}, "📌 La règle"), h("span", {}, "Pas d'auto-évaluation = pas de note de match."), h("span", {}, "Tu t'évalues, puis tu vois la note du coach.")));
   if (items.length) card.append(...items); else card.append(h("p", { class: "note", style: "margin:0" }, "Rien à faire pour l'instant. Profite !"));
   return card;
 }
