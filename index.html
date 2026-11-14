@@ -128,6 +128,8 @@ details.crit-d p { margin: 6px 0 2px; padding: 6px 9px; font-size: 13.5px; line-
 .sem-tx small { color: var(--muted); font-size: 12.5px; }
 .sem-it.chaud .sem-tx b { color: #fff; }
 .sem-it.chaud { box-shadow: inset 3px 0 0 var(--rouge); padding-left: 8px; }
+.regle-auto { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; margin: 4px 0 6px; border-radius: 10px; border: 1px solid var(--rouge); background: rgba(224,24,45,.12); font-size: 14.5px; line-height: 1.35; }
+.regle-auto b { font-size: 15px; }
 .com-coach { border-color: var(--or); background: linear-gradient(160deg, rgba(205,189,143,.12), var(--surface) 65%); }
 .com-coach blockquote { margin: 6px 0 4px; font-size: 17px; line-height: 1.4; font-style: italic; border-left: 3px solid var(--or); padding-left: 10px; }
 .com-coach small { color: var(--muted); }
@@ -2306,7 +2308,7 @@ function ficheView(fid, f, asCoach) {
   // objectif individuel : U19 uniquement, choisi par le joueur
   if (g === "U19") wrap.append(objectifCard(fid, f, asCoach));
 
-  if (f._masque && !asCoach) wrap.append(h("div", { class: "record", style: "border-color:var(--rouge)" }, `${f._masque} évaluation${f._masque > 1 ? "s" : ""} du coach en attente : fais ton auto-évaluation (la semaine s'ouvre le vendredi à 22h, le match dès qu'il est noté) pour ${f._masque > 1 ? "les" : "la"} découvrir.`));
+  if (f._masque && !asCoach) wrap.append(h("div", { class: "regle-auto" }, h("b", {}, "🔒 Ta note est bloquée"), h("span", {}, "Pas d'auto-évaluation = pas de note."), h("span", {}, "Fais-la juste en dessous pour la débloquer.")));
   if (!notes.length) { watchAutos(fid); wrap.append(h("div", { class: "empty" }, f._masque ? "Tes notes apparaîtront ici après ton auto-évaluation." : "Aucune évaluation du coach pour l'instant."), (g === "U10" && !asCoach) ? null : autoCard(fid, f, asCoach)); return wrap; }
 
   // moyennes par critère
@@ -3278,6 +3280,7 @@ function semaineCard() {
     else if (ios) it("📲", "Mettre Endoume sur ton écran d'accueil", "Dans Safari : bouton Partager, puis « Sur l'écran d'accueil ».", () => { S.appliNon = true; render(); }, "OK");
   }
   const card = h("div", { class: "card semaine" }, h("h3", {}, "Cette semaine"));
+  if (g === "U19") card.append(h("div", { class: "regle-auto" }, h("b", {}, "📌 La règle"), h("span", {}, "Pas d'auto-évaluation = pas de note de match."), h("span", {}, "Tu t'évalues, puis tu vois la note du coach.")));
   if (items.length) card.append(...items); else card.append(h("p", { class: "note", style: "margin:0" }, "Rien à faire pour l'instant. Profite !"));
   return card;
 }
