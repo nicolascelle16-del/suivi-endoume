@@ -2860,7 +2860,7 @@ function accordCard() {
   const adj = P[0].adj, d = P.map(p => p.a - p.c), proche = d.filter(x => Math.abs(x) <= 1).length / d.length, ident = d.filter(x => x === 0).length / d.length, biais = mean(d);
   const seances = new Set(P.map(p => p.date + p.type)).size, joueurs = new Set(P.map(p => p.fid)).size;
   const parCrit = {}; for (const p of P) (parCrit[p.lab] = parCrit[p.lab] || []).push(Math.abs(p.a - p.c));
-  const pire = Object.entries(parCrit).map(([l, v]) => [l, mean(v)]).sort((a, b) => b[1] - a[1])[0];
+  const pire = Object.entries(parCrit).filter(([, v]) => v.length >= 5).map(([l, v]) => [l, mean(v)]).sort((a, b) => b[1] - a[1])[0];
   const biaisTxt = Math.abs(biais) < .2 ? "Vous notez au même niveau." : `${adj} note en moyenne ${biais > 0 ? "plus large" : "plus sévère"} que toi (${biais > 0 ? "+" : "−"}${n1(Math.abs(biais))}).`;
   card.append(h("div", { class: "dk-row" }, ringSVG(proche, proche >= .8 ? "#3fae6a" : proche >= .6 ? "#cdbd8f" : "#e0182d", Math.round(proche * 100) + "%", "d'accord"),
     h("div", { class: "dk-main" },
