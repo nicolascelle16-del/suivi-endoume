@@ -8,7 +8,7 @@ import asyncio, os, re, shutil, sys, tempfile
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ECRANS = ["login", "dash", "dash10", "list", "fiche", "saisie", "saisiem", "saisie10", "smatch", "pres",
-          "eq", "jeq", "jradar", "jauto", "p10", "acces", "adj", "adjdash", "adjfiche", "bmfs", "bmfm", "bmfnew", "conf"]
+          "eq", "jacc", "jgb", "jeq", "jradar", "jauto", "p10", "acces", "adj", "adjdash", "adjfiche", "bmfs", "bmfm", "bmfnew", "conf"]
 
 
 def harnais(source=None):

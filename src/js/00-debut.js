@@ -74,5 +74,5 @@ const isTemp = fid => typeof fid === "string" && fid.startsWith("j-");
 
 const S = { db: null, user: null, me: null, admin: false, demo: false, demoAs: "coach",
   fiches: {}, loaded: false, slow: false, tab: "U19", view: "list", sel: null, saisie: null,
-  myFiche: undefined, prive: {}, fichesRaw: {}, myRaw: null, flash: "", avatars: {}, objectifs: {}, avDraft: null, avEdit: false, inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, votants: {}, seances: {}, reponses: {}, convoc: {}, compoDraft: {}, compoSel: {}, voteDraft: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "fiche", eqSub: null };
+  myFiche: undefined, prive: {}, fichesRaw: {}, myRaw: null, flash: "", avatars: {}, objectifs: {}, avDraft: null, avEdit: false, inscriptions: {}, coachs: {}, votes: {}, bulletins: {}, myBallots: {}, votants: {}, seances: {}, reponses: {}, convoc: {}, compoDraft: {}, compoSel: {}, voteDraft: {}, autos: {}, subs: {}, equipes: {}, champ: null, champSub: null, sub: "joueurs", psub: "accueil", eqSub: null };
 

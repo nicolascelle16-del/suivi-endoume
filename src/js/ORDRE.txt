@@ -22,6 +22,7 @@
 21-tableau-de-bord-coach.js
 22-tableau-de-bord-visuel.js
 23-vue-joueur-parent.js
+23b-accueil-premium.js
 24-profil-araignee.js
 25-recap-mensuel-par-mail.js
 26-confidentialite.js

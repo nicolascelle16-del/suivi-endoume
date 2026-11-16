@@ -48,6 +48,7 @@ function ficheView(fid, f, asCoach) {
   if (asCoach && !S.scope && !isTemp(fid) && !f.exemple && !S.demo) wrap.append(compteCard(fid, f));
   // objectif individuel : U19 uniquement, choisi par le joueur
   if (g === "U19") wrap.append(objectifCard(fid, f, asCoach));
+  if (asCoach) wrap.append(objectifCoachCard(fid, f));
 
   if (f._masque && !asCoach) wrap.append(h("div", { class: "regle-auto" }, h("b", {}, "🔒 Ta note est bloquée"), h("span", {}, "Pas d'auto-évaluation = pas de note."), h("span", {}, "Fais-la juste en dessous pour la débloquer.")));
   if (!notes.length) { watchAutos(fid); wrap.append(h("div", { class: "empty" }, f._masque ? "Tes notes apparaîtront ici après ton auto-évaluation." : "Aucune évaluation du coach pour l'instant."), (g === "U10" && !asCoach) ? null : autoCard(fid, f, asCoach)); return wrap; }

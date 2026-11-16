@@ -4,7 +4,7 @@ function confView() {
   const box = h("div", { class: "stack conf", style: "margin-top:20px" });
   const sec = (t, ...k) => h("section", { class: "card stack" }, h("h3", { style: "margin:0" }, t), ...k);
   const ul = items => h("ul", {}, items.map(x => h("li", {}, x)));
-  box.append(h("div", { class: "bar" }, h("h2", {}, "Confidentialité"), h("button", { class: "btn ghost small", onclick: () => { S.conf = false; if (location.hash === "#confidentialite") history.replaceState(null, "", location.pathname + location.search); S.me ? render() : loginView(); } }, "Retour")));
+  box.append(h("div", { class: "bar" }, h("h2", {}, "Confidentialité et mentions légales"), h("button", { class: "btn ghost small", onclick: () => { S.conf = false; if (location.hash === "#confidentialite") history.replaceState(null, "", location.pathname + location.search); S.me ? render() : loginView(); } }, "Retour")));
   box.append(h("p", { style: "margin:0" }, "Ce site sert à suivre la progression des joueurs de l'US Endoume Marseille Catalans (U19, U10 et pôle gardiens). Il est géré par le coach Nicolas Celle, éducateur au club. Voici, simplement, ce qu'il enregistre, qui le voit et combien de temps."));
   box.append(sec("Ce qui est enregistré", ul([
     "Le compte : l'adresse mail et le mot de passe (le mot de passe est chiffré par Google, personne ne peut le lire, pas même le coach).",
@@ -31,7 +31,14 @@ function confView() {
   box.append(sec("Les mineurs", h("p", { style: "margin:0" }, "Pour un joueur de moins de 18 ans, le compte est créé avec l'accord d'un parent ou du représentant légal. Pour les U10, c'est le parent qui crée et utilise le compte.")));
   box.append(sec("Vos droits", h("p", { style: "margin:0" }, "Vous pouvez à tout moment demander à voir, corriger ou supprimer les données d'un joueur : il suffit d'en parler au coach ou au club. La suppression du compte efface la fiche.")));
   box.append(sec("Cookies", h("p", { style: "margin:0" }, "Aucun cookie publicitaire ni de mesure d'audience. Le site garde seulement sur votre téléphone ce qui sert à rester connecté.")));
-  box.append(h("p", { class: "note", style: "margin:0" }, "Dernière mise à jour : 12 novembre 2026."));
+  box.append(sec("Mentions légales", ul([
+    "Éditeur et responsable de la publication : Nicolas Celle, éducateur à l'US Endoume Marseille Catalans. Site personnel, non commercial, réalisé à titre bénévole pour le suivi des joueurs du club.",
+    "Contact : directement auprès de Nicolas Celle, ou par l'intermédiaire du club US Endoume Marseille Catalans.",
+    "Hébergement du site : GitHub Inc. (GitHub Pages), 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis.",
+    "Hébergement des données : Google Firebase, Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande.",
+    "Polices de caractères (Barlow, Barlow Condensed, Inter, Oranienbaum) hébergées sur le site, sous licence SIL Open Font License."
+  ])));
+  box.append(h("p", { class: "note", style: "margin:0" }, "Dernière mise à jour : 16 novembre 2026."));
   return box;
 }
 function showConf() { S.conf = true; document.getElementById("role").textContent = "Confidentialité"; const app = document.getElementById("app"); app.textContent = ""; app.append(confView()); window.scrollTo(0, 0); }

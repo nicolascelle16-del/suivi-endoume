@@ -51,7 +51,7 @@ function ringSVG(pct, color, big, small) {
   const el = h("div", { class: "ring" });
   el.innerHTML = `<svg viewBox="0 0 84 84" role="img" aria-label="${esc(big)}"><circle cx="42" cy="42" r="${r}" fill="none" stroke="#2c2728" stroke-width="8"/>` +
     (pct == null ? "" : `<circle cx="42" cy="42" r="${r}" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C * p} ${C}" transform="rotate(-90 42 42)"/>`) +
-    `<text x="42" y="${small ? 44 : 48}" text-anchor="middle" fill="#f5f2ec" font-size="${String(big).length > 4 ? 15 : 19}" font-family="Oranienbaum, Georgia, serif">${esc(big)}</text>` +
+    `<text x="42" y="${small ? 44 : 48}" text-anchor="middle" fill="#f5f2ec" font-size="${String(big).length > 4 ? 15 : 19}" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="800">${esc(big)}</text>` +
     (small ? `<text x="42" y="58" text-anchor="middle" fill="#aaa294" font-size="9">${esc(small)}</text>` : "") + `</svg>`;
   return el;
 }
@@ -68,7 +68,7 @@ function donutSondage(oui, non, sr) {
   const tot = oui + non + sr || 1, r = 30, C = 2 * Math.PI * r; let off = 0;
   const seg = (n, col) => { const len = C * n / tot, s = `<circle cx="38" cy="38" r="${r}" fill="none" stroke="${col}" stroke-width="10" stroke-dasharray="${len} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 38 38)"/>`; off += len; return n ? s : ""; };
   const el = h("div", { class: "ring sm" });
-  el.innerHTML = `<svg viewBox="0 0 76 76"><circle cx="38" cy="38" r="${r}" fill="none" stroke="#2c2728" stroke-width="10"/>${seg(oui, "#3fae6a")}${seg(non, "#e0182d")}${seg(sr, "#5a5455")}<text x="38" y="43" text-anchor="middle" fill="#f5f2ec" font-size="17" font-family="Oranienbaum, Georgia, serif">${oui}</text></svg>`;
+  el.innerHTML = `<svg viewBox="0 0 76 76"><circle cx="38" cy="38" r="${r}" fill="none" stroke="#2c2728" stroke-width="10"/>${seg(oui, "#3fae6a")}${seg(non, "#e0182d")}${seg(sr, "#5a5455")}<text x="38" y="43" text-anchor="middle" fill="#f5f2ec" font-size="17" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="800">${oui}</text></svg>`;
   return el;
 }
 const CAT_AL = [["auto", "Auto-évals", /auto-évaluation/i], ["comptes", "Comptes", /compte/i], ["oui", "Oui sans venir", /a dit oui/i], ["baisse", "En baisse", /en baisse|baisse 3 fois/i], ["rotation", "À observer", /pas notés depuis/i], ["double", "Doublons", /en double/i], ["absent", "Absents", /pas venu/i], ["bmf", "Analyses BMF", /analyse réflexive/i], ["save", "Sauvegarde", /sauvegarde/i]];
@@ -78,8 +78,8 @@ function dashView() {
   const box = h("div", { class: "dash dash2" });
   const mk = today().slice(0, 7), prevMk = moisDe(mk, -1), debMois = mk + "-01";
   const goG = (g, sub) => () => { S.dash = false; S.tab = g; S.view = "list"; S.sub = sub || "joueurs"; render(); };
-  box.append(h("div", { class: "d-head" }, h("h2", {}, "Tableau de bord"), h("span", { class: "note" }, jourLong(today()))));
-  if (S.flash) { box.append(h("p", { class: "ok" }, S.flash)); S.flash = ""; }
+  box.append(accueilCoach());
+  box.append(h("div", { class: "d-head" }, h("h2", {}, "Vue d'ensemble du club"), h("span", { class: "note" }, jourLong(today()))));
   const grid = h("div", { class: "dz" }), kpis = h("div", { class: "dz" }), grps = h("div", { class: "dz dz-g", style: `--n:${visG().length}` }), bas = h("div", { class: "dz" });
 
   // prochaine séance (sondage) et prochain match

@@ -3,7 +3,7 @@ function joueurView() {
   const box = h("div", { style: "margin-top:20px" });
   if (S.demo && S.demoAs !== "coach") {
     const fid = Object.keys(S.fiches).find(k => groupOf(S.fiches[k]) === S.demoAs);
-    if (fid) box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.fiches[fid]), false) : ficheView(fid, S.fiches[fid], false));
+    if (fid) { const gd = groupOf(S.fiches[fid]); box.append(psubtabs(gd), S.psub === "equipe" ? equipeView(gd, false) : S.psub === "accueil" && gd !== "U10" ? accueilJoueur(fid, S.fiches[fid]) : ficheView(fid, S.fiches[fid], false)); }
     return box;
   }
   if (!S.me) { box.append(h("div", { class: "empty" }, "Connecte-toi pour voir ta fiche.")); return box; }
@@ -27,11 +27,12 @@ function joueurView() {
       h("div", { class: "row" }, h("button", { class: "btn small", onclick: async () => { try { await saveAvatar(S.me, S.avDraft || S.avatars[S.me]); am.textContent = "Avatar enregistré : il sera sur ta carte."; } catch (e) { am.textContent = "Échec : réessaie."; } } }, "Enregistrer"), am)));
     return box;
   }
-  box.append(semaineCard());
+  const gM = groupOf(S.myFiche), accueil = S.psub === "accueil" && gM !== "U10";
+  if (!accueil) box.append(semaineCard());
   if ("Notification" in window && Notification.permission === "default" && !S.notifAsk) box.append(h("div", { class: "card row", style: "align-items:center" }, h("span", { style: "flex:1;min-width:200px" }, "Être prévenu d'une nouvelle note ou d'un vote ouvert pendant que le site est ouvert ?"),
     h("button", { class: "btn small ghost", onclick: async () => { S.notifAsk = true; try { await Notification.requestPermission(); } catch (e) {} render(); } }, "Activer"), h("button", { class: "linkbtn", onclick: () => { S.notifAsk = true; render(); } }, "Non merci")));
-  box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, masquerNotes(S.me, S.myFiche), false));
-  if (S.psub !== "equipe" && !S.demo) box.append(h("div", { style: "margin-top:12px" }, monCompteCard()));
+  box.append(psubtabs(gM), S.psub === "equipe" ? equipeView(gM, false) : accueil ? accueilJoueur(S.me, S.myFiche) : ficheView(S.me, masquerNotes(S.me, S.myFiche), false));
+  if (S.psub !== "equipe" && !accueil && !S.demo) box.append(h("div", { style: "margin-top:12px" }, monCompteCard()));
   if (location.hash === "#mails" && !S.mailsVu) { S.mailsVu = true; setTimeout(() => { const el = document.getElementById("mon-compte"); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 300); }
   return box;
 }
@@ -96,10 +97,12 @@ function nouveautes() {
   return out;
 }
 function notifier(titre, corps) { try { if ("Notification" in window && Notification.permission === "granted") new Notification(titre, { body: corps, icon: document.querySelector(".crest").src, tag: titre }); } catch (e) {} }
-function psubtabs() {
+function psubtabs(g) {
+  const acc = g !== "U10", cur = S.psub === "accueil" && !acc ? "fiche" : S.psub;
   return h("div", { class: "subtabs", role: "tablist" },
-    h("button", { class: "subtab", role: "tab", "aria-selected": String(S.psub === "fiche"), onclick: () => { S.psub = "fiche"; render(); } }, "Ma fiche"),
-    h("button", { class: "subtab", role: "tab", "aria-selected": String(S.psub === "equipe"), onclick: () => { S.psub = "equipe"; render(); } }, "L'équipe"));
+    acc ? h("button", { class: "subtab", role: "tab", "aria-selected": String(cur === "accueil"), onclick: () => { S.psub = "accueil"; render(); } }, "Accueil") : null,
+    h("button", { class: "subtab", role: "tab", "aria-selected": String(cur === "fiche"), onclick: () => { S.psub = "fiche"; render(); } }, "Ma fiche"),
+    h("button", { class: "subtab", role: "tab", "aria-selected": String(cur === "equipe"), onclick: () => { S.psub = "equipe"; render(); } }, "L'équipe"));
 }
 
 
