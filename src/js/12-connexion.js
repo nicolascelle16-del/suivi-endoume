@@ -43,7 +43,7 @@ function loginView() {
       const txt = h("span", { id: "accord-txt" }), suf = h("span");
       const maj = () => {
         txt.textContent = S.signGroupe === "U10" ? "Je suis le parent ou le représentant légal de l'enfant, et j'accepte les règles de la page " : "J'accepte les règles de la page ";
-        suf.textContent = S.signGroupe === "U10" || S.signGroupe === "ADJ" ? "." : ". Si j'ai moins de 18 ans, mon parent ou représentant légal est d'accord.";
+        suf.textContent = S.signGroupe === "U10" || S.signGroupe === "ADJ" ? "." : ". J'ai 15 ans ou plus. Si j'ai moins de 15 ans, mon parent ou représentant légal crée ce compte avec moi et donne son accord.";
       };
       maj(); S.majAccord = maj;
       return h("label", { class: "check accord" }, c, h("span", {}, txt, h("button", { type: "button", class: "linkbtn", style: "display:inline;padding:0", onclick: showConf }, "Confidentialité"), suf));

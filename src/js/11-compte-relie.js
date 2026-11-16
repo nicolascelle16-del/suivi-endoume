@@ -34,7 +34,15 @@ function compteCard(fid, f) {
   return card;
 }
 function monCompteCard() {
-  const card = h("div", { class: "card stack" }, h("h3", { style: "margin:0" }, "Mon compte"), h("p", { class: "note", style: "margin:0" }, `Connecté avec ${S.email || "ton adresse"}.`));
+  const card = h("div", { class: "card stack", id: "mon-compte" }, h("h3", { style: "margin:0" }, "Mon compte"), h("p", { class: "note", style: "margin:0" }, `Connecté avec ${S.email || "ton adresse"}.`));
+  // désinscription des mails (lien présent dans chaque mail)
+  const f = S.myRaw || S.myFiche;
+  if (f) {
+    const cb = h("input", { type: "checkbox" }); cb.checked = !f.mailsNon;
+    const etat = h("span", { class: "note" });
+    cb.onchange = async () => { cb.disabled = true; try { await S.db.doc("fiches/" + S.me).update({ mailsNon: !cb.checked }); etat.textContent = cb.checked ? "Mails réactivés." : "Tu ne recevras plus de mails du suivi."; } catch (e) { etat.textContent = "Échec : réessaie."; cb.checked = !cb.checked; } cb.disabled = false; };
+    card.append(h("label", { class: "check" }, cb, h("span", {}, "Recevoir un mail quand j'ai une nouvelle note ou un récap")), etat);
+  }
   if (!S.monCompteOpen) { card.append(h("button", { class: "linkbtn", style: "align-self:flex-start", onclick: () => { S.monCompteOpen = true; render(); } }, "Changer mon adresse mail")); return card; }
   const ne = h("input", { type: "email", autocomplete: "email", placeholder: "Nouvelle adresse" }), pw = h("input", { type: "password", autocomplete: "current-password", placeholder: "Mot de passe actuel" });
   const m = h("span", { class: "note" });

@@ -32,6 +32,7 @@ function joueurView() {
     h("button", { class: "btn small ghost", onclick: async () => { S.notifAsk = true; try { await Notification.requestPermission(); } catch (e) {} render(); } }, "Activer"), h("button", { class: "linkbtn", onclick: () => { S.notifAsk = true; render(); } }, "Non merci")));
   box.append(psubtabs(), S.psub === "equipe" ? equipeView(groupOf(S.myFiche), false) : ficheView(S.me, masquerNotes(S.me, S.myFiche), false));
   if (S.psub !== "equipe" && !S.demo) box.append(h("div", { style: "margin-top:12px" }, monCompteCard()));
+  if (location.hash === "#mails" && !S.mailsVu) { S.mailsVu = true; setTimeout(() => { const el = document.getElementById("mon-compte"); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 300); }
   return box;
 }
 function vuLe() { try { return localStorage.getItem("vu-" + S.me) || ""; } catch (e) { return ""; } }

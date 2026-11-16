@@ -84,7 +84,10 @@ service cloud.firestore {
       allow read: if isCoach() || isAdj(resource.data.groupe) || (signedIn() && request.auth.uid == fid);
       allow create, delete: if isCoach();
       allow update: if isCoach() || (isAdj(resource.data.groupe)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notesAdj', 'presences', 'prives']));
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notesAdj', 'presences', 'prives']))
+        || (signedIn() && request.auth.uid == fid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mailsNon'])
+            && request.resource.data.mailsNon is bool);
       // notes U19 en attente d'auto-évaluation : le joueur ne les lit qu'après son auto-évaluation de la période (ou après 22 jours)
       match /prive/{cle} {
         allow read: if isCoach()

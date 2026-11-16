@@ -21,6 +21,7 @@ function doPost(e) {
       const f = JSON.parse(r.getContentText()).fields || {};
       const email = f.email && f.email.stringValue;
       if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) continue;
+      if (f.mailsNon && f.mailsNon.booleanValue === true) continue;
       const nom = (f.nom && f.nom.stringValue) || "";
       const prenom = nom.split(" ")[0] || "";
       const groupe = (f.groupe && f.groupe.stringValue) || "U19";
@@ -53,12 +54,12 @@ function message(kind, groupe, prenom, par) {
     corps = parent ? qui + " vient d'ajouter une nouvelle évaluation pour " + prenom + ". Connectez-vous pour la voir." : qui + " vient d'ajouter une nouvelle évaluation. Connecte-toi pour la voir.";
   }
   const signe = par || "Coach Nico";
-  const texte = salut + "\n\n" + corps + "\n\n" + SITE + "\n\n" + signe + "\nUS Endoume Marseille Catalans";
+  const texte = salut + "\n\n" + corps + "\n\n" + SITE + "\n\n" + signe + "\nUS Endoume Marseille Catalans\n\nSe désinscrire de ces mails : " + SITE + "#mails";
   const html = '<div style="font-family:Arial,sans-serif;font-size:15px;color:#111;max-width:520px">' +
     '<p>' + salut + '</p><p>' + corps + '</p>' +
     '<p><a href="' + SITE + '" style="display:inline-block;background:#e0182d;color:#fff;text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:bold">Ouvrir le suivi</a></p>' +
     '<p>' + signe + '<br>US Endoume Marseille Catalans</p>' +
-    '<p style="font-size:12px;color:#777">Message automatique du suivi des joueurs. Pour ne plus recevoir ces mails, réponds simplement à ce message.</p></div>';
+    '<p style="font-size:12px;color:#777">Message automatique du suivi des joueurs de l\'US Endoume, envoyé par ' + signe + '. <a href="' + SITE + '#mails" style="color:#777">Se désinscrire de ces mails</a></p></div>';
   return { sujet: sujet, html: html, texte: texte };
 }
 
@@ -120,11 +121,11 @@ function recap(groupe, prenom, d) {
 '<tr><td style="background:' + NOIR + ';padding:16px 24px;text-align:center">' +
   '<div style="font-family:' + serif + ';font-size:16px;color:#ffffff">Coach Nico</div>' +
   '<div style="font-family:' + sans + ';font-size:11px;letter-spacing:3px;color:' + OR + ';margin-top:4px">US ENDOUME MARSEILLE CATALANS</div>' +
-  '<div style="font-family:' + sans + ';font-size:11px;color:#8a8378;margin-top:10px">Message du suivi des joueurs. Pour ne plus le recevoir, réponds simplement à ce mail.</div>' +
+  '<div style="font-family:' + sans + ';font-size:11px;color:#8a8378;margin-top:10px">Message du suivi des joueurs de l\'US Endoume. <a href="' + SITE + '#mails" style="color:#8a8378">Se désinscrire de ces mails</a></div>' +
 '</td></tr>' +
 '</table></td></tr></table></div>';
   const texte = (parent ? "Bonjour, voici le récap de " + d.mois + " pour " + prenom : "Salut " + prenom + ", voici ton récap de " + d.mois) + "\n\n" +
-    (d.lignes || []).map(function (l) { return l[0] + " : " + l[1]; }).join("\n") + (d.fort ? "\nPoint fort : " + d.fort : "") + (d.axe ? "\nÀ travailler : " + d.axe : "") + "\n\n" + SITE + "\n\nCoach Nico";
+    (d.lignes || []).map(function (l) { return l[0] + " : " + l[1]; }).join("\n") + (d.fort ? "\nPoint fort : " + d.fort : "") + (d.axe ? "\nÀ travailler : " + d.axe : "") + "\n\n" + SITE + "\n\nCoach Nico\n\nSe désinscrire de ces mails : " + SITE + "#mails";
   return { sujet: sujet, html: html, texte: texte };
 }
 
