@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function estStaff() { return signedIn() && exists(/databases/$(database)/documents/coachs/$(request.auth.uid)); }
+    function staffDoc() { return get(/databases/$(database)/documents/coachs/$(request.auth.uid)).data; }
+    function isCoach() { return estStaff() && !('groupes' in staffDoc()); }
+    function isAdj(g) { return estStaff() && ('groupes' in staffDoc()) && g in staffDoc().groupes; }
+    function hasFiche() { return signedIn() && exists(/databases/$(database)/documents/fiches/$(request.auth.uid)); }
+    function monGroupe() { return get(/databases/$(database)/documents/fiches/$(request.auth.uid)).data.get('groupe', 'U19'); }
+
+    match /coachs/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isCoach());
+      allow write: if isCoach();
+    }
+    match /bloques/{uid} {
+      allow read: if isCoach() || (signedIn() && request.auth.uid == uid);
+      allow write: if isCoach();
+    }
+    match /inscriptions/{uid} {
+      allow read: if isCoach() || (signedIn() && request.auth.uid == uid);
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && !exists(/databases/$(database)/documents/bloques/$(uid))
+        && request.resource.data.keys().hasOnly(['nom', 'email', 'at', 'groupe', 'poste', 'role', 'accord', 'accordAt'])
+        && (!('accord' in request.resource.data) || request.resource.data.accord == true)
+        && (!('role' in request.resource.data) || request.resource.data.role == 'adjoint')
+        && request.resource.data.nom is string && request.resource.data.nom.size() <= 60
+        && (!('groupe' in request.resource.data) || request.resource.data.groupe in ['U19', 'U10', 'GB'])
+        && (!('poste' in request.resource.data) || (request.resource.data.poste is string && request.resource.data.poste.size() <= 40));
+      allow delete: if isCoach();
+    }
+    match /avatars/{uid} {
+      allow read: if estStaff() || hasFiche() || (signedIn() && request.auth.uid == uid);
+      allow write: if (isCoach() || (signedIn() && request.auth.uid == uid))
+        && request.resource.data.keys().hasOnly(['peau', 'cheveux', 'coupe', 'barbe', 'expr', 'maillot', 'acc', 'num', 'at', 'visage', 'yeux', 'formeYeux', 'sourcils', 'nez', 'corps', 'taille', 'nomDos', 'short', 'chaussettes', 'chaussures', 'img'])
+        && request.resource.data.peau is int && request.resource.data.peau >= 0 && request.resource.data.peau < 8
+        && request.resource.data.cheveux is int && request.resource.data.cheveux >= 0 && request.resource.data.cheveux < 8
+        && request.resource.data.coupe in ['ras', 'court', 'degrade', 'flattop', 'boucle', 'afro', 'tresses', 'nattes', 'long', 'crete', 'chauve']
+        && request.resource.data.barbe in ['non', 'legere', 'moustache', 'bouc', 'oui']
+        && (!('expr' in request.resource.data) || request.resource.data.expr in ['sourire', 'dents', 'serieux'])
+        && request.resource.data.maillot in ['dom', 'ext', 'third', 'gb']
+        && request.resource.data.acc in ['non', 'bandeau', 'lunettes', 'boucles']
+        && request.resource.data.num is string && request.resource.data.num.size() <= 2
+        && (!('visage' in request.resource.data) || request.resource.data.visage in ['ovale', 'rond', 'fin'])
+        && (!('yeux' in request.resource.data) || (request.resource.data.yeux is int && request.resource.data.yeux >= 0 && request.resource.data.yeux <= 4))
+        && (!('formeYeux' in request.resource.data) || request.resource.data.formeYeux in ['amande', 'rond'])
+        && (!('sourcils' in request.resource.data) || request.resource.data.sourcils in ['epais', 'fins'])
+        && (!('nez' in request.resource.data) || request.resource.data.nez in ['moyen', 'fin', 'large'])
+        && (!('corps' in request.resource.data) || request.resource.data.corps in ['athletique', 'fine', 'puissante'])
+        && (!('taille' in request.resource.data) || (request.resource.data.taille is int && request.resource.data.taille >= 94 && request.resource.data.taille <= 106))
+        && (!('nomDos' in request.resource.data) || (request.resource.data.nomDos is string && request.resource.data.nomDos.size() <= 12 && request.resource.data.nomDos.matches('^[A-Z0-9 .-]*$')))
+        && (!('short' in request.resource.data) || (request.resource.data.short is int && request.resource.data.short >= 0 && request.resource.data.short <= 3))
+        && (!('chaussettes' in request.resource.data) || (request.resource.data.chaussettes is int && request.resource.data.chaussettes >= 0 && request.resource.data.chaussettes <= 3))
+        && (!('chaussures' in request.resource.data) || (request.resource.data.chaussures is int && request.resource.data.chaussures >= 0 && request.resource.data.chaussures <= 5))
+        && (!('img' in request.resource.data) || (request.resource.data.img is string && request.resource.data.img.size() <= 60000 && request.resource.data.img.matches('^data:image/jpeg;base64,.*$')));
+    }
+    match /objectifs/{uid} {
+      allow read: if isCoach() || (signedIn() && request.auth.uid == uid)
+        || isAdj(get(/databases/$(database)/documents/fiches/$(uid)).data.groupe);
+      allow write: if hasFiche() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['obj', 'at'])
+        && request.resource.data.obj is string && request.resource.data.obj.size() <= 160;
+      allow delete: if isCoach();
+    }
+    match /carnet/{id} {
+      allow read, write: if isCoach();
+    }
+    match /seances/{sid} {
+      allow read: if isCoach() || isAdj(resource.data.groupe);
+      allow create: if isCoach() || isAdj(request.resource.data.groupe);
+      allow update: if isCoach() || (isAdj(resource.data.groupe) && isAdj(request.resource.data.groupe));
+      allow delete: if isCoach() || isAdj(resource.data.groupe);
+      match /reponses/{uid} {
+        allow read: if isCoach() || (signedIn() && request.auth.uid == uid);
+        allow create, update: if hasFiche() && request.auth.uid == uid
+          && get(/databases/$(database)/documents/fiches/$(uid)).data.groupe == get(/databases/$(database)/documents/seances/$(sid)).data.groupe
+          && request.resource.data.keys().hasOnly(['p', 'motif', 'at'])
+          && request.resource.data.p is bool
+          && (!('motif' in request.resource.data) || (request.resource.data.motif is string && request.resource.data.motif.size() <= 200));
+        allow delete: if isCoach();
+      }
+    }
+    match /fiches/{fid} {
+      allow read: if isCoach() || isAdj(resource.data.groupe) || (signedIn() && request.auth.uid == fid);
+      allow create, delete: if isCoach();
+      allow update: if isCoach() || (isAdj(resource.data.groupe)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notesAdj', 'presences', 'prives']));
+      // notes U19 en attente d'auto-évaluation : le joueur ne les lit qu'après son auto-évaluation de la période (ou après 22 jours)
+      match /prive/{cle} {
+        allow read: if isCoach()
+          || isAdj(get(/databases/$(database)/documents/fiches/$(fid)).data.groupe)
+          || (signedIn() && request.auth.uid == fid
+              && (exists(/databases/$(database)/documents/fiches/$(fid)/auto/$(cle)) || request.time > resource.data.libre));
+        allow write: if isCoach() || isAdj(get(/databases/$(database)/documents/fiches/$(fid)).data.groupe);
+      }
+      match /auto/{aid} {
+        allow read: if isCoach() || (signedIn() && request.auth.uid == fid)
+          || isAdj(get(/databases/$(database)/documents/fiches/$(fid)).data.groupe);
+        allow create: if signedIn() && request.auth.uid == fid
+          && exists(/databases/$(database)/documents/fiches/$(fid))
+          && request.resource.data.keys().hasOnly(['date', 'type', 'crit', 'com', 'at'])
+          && request.resource.data.type in ['Semaine', 'Match']
+          && request.resource.data.com is string && request.resource.data.com.size() <= 1000;
+        allow delete: if isCoach();
+      }
+    }
+    match /equipe/{g} {
+      allow read: if isCoach() || isAdj(g) || (hasFiche() && monGroupe() == g);
+      allow write: if isCoach() || isAdj(g);
+    }
+    match /championnat/{c} {
+      allow read: if isCoach() || isAdj('U19') || (hasFiche() && monGroupe() == 'U19');
+      allow write: if isCoach();
+    }
+    match /votes/{vid} {
+      allow read: if isCoach() || isAdj(resource.data.groupe) || (hasFiche() && monGroupe() == resource.data.groupe);
+      allow create: if isCoach() || isAdj(request.resource.data.groupe);
+      allow update: if isCoach() || (isAdj(resource.data.groupe) && isAdj(request.resource.data.groupe));
+      allow delete: if isCoach() || isAdj(resource.data.groupe);
+      function V() { return get(/databases/$(database)/documents/votes/$(vid)).data; }
+      function peutVoter() { return hasFiche() && V().ouvert == true
+        && get(/databases/$(database)/documents/fiches/$(request.auth.uid)).data.groupe == V().groupe
+        && (!('convoques' in V()) || request.auth.uid in V().convoques); }
+      match /votants/{uid} {
+        allow read: if isCoach() || isAdj(V().groupe) || (signedIn() && request.auth.uid == uid);
+        allow create: if request.auth.uid == uid && peutVoter()
+          && request.resource.data.keys().hasOnly(['ok']);
+        allow delete: if isCoach();
+      }
+      match /urne/{bid} {
+        allow read: if isCoach() || isAdj(V().groupe);
+        allow create: if peutVoter()
+          && !exists(/databases/$(database)/documents/votes/$(vid)/votants/$(request.auth.uid))
+          && existsAfter(/databases/$(database)/documents/votes/$(vid)/votants/$(request.auth.uid))
+          && request.resource.data.keys().hasOnly(['choix'])
+          && request.resource.data.choix is string
+          && request.resource.data.choix != request.auth.uid
+          && (!('convoques' in V()) || request.resource.data.choix in V().convoques);
+        allow delete: if isCoach();
+      }
+      match /bulletins/{uid} {
+        allow read: if isCoach() || isAdj(V().groupe) || (signedIn() && request.auth.uid == uid);
+        allow create, update: if hasFiche() && request.auth.uid == uid
+          && get(/databases/$(database)/documents/votes/$(vid)).data.ouvert == true
+          && get(/databases/$(database)/documents/fiches/$(uid)).data.groupe == get(/databases/$(database)/documents/votes/$(vid)).data.groupe
+          && request.resource.data.keys().hasOnly(['choix', 'at'])
+          && request.resource.data.choix != uid;
+        allow delete: if isCoach();
+      }
+    }
+  }
+}

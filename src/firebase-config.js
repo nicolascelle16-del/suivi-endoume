@@ -1,0 +1,1 @@
+{"apiKey": "AIzaSyA06TpNjasBn1vQLlp36_ImHEQ-JW3LBPE", "authDomain": "suivi-endoume.firebaseapp.com", "projectId": "suivi-endoume", "storageBucket": "suivi-endoume.firebasestorage.app", "messagingSenderId": "117976790225", "appId": "1:117976790225:web:e74232bf5749edcdff81f0"}
