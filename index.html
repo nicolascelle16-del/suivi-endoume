@@ -3150,7 +3150,8 @@ function saisieView() {
     if (ko) { save.disabled = false; msg.className = "err"; msg.textContent = `${ok} fiche${ok > 1 ? "s" : ""} enregistrée${ok > 1 ? "s" : ""}, ${ko} en échec. Réessaie pour celles-là.`; return; }
     S.postSaisie = { g: S.tab, date: s.date, type: s.type };
     const aMail = notifies.filter(fid => !isTemp(fid) && !(S.fiches[fid] || {}).exemple);
-    if (aMail.length) envoyerMails(s.type === "Match" && S.tab !== "U10" ? "match" : "note", aMail);
+    const auteur = S.scope ? `${((S.coachs[S.me] || {}).nom || "Ton coach").split(" ")[0]}, coach adjoint` : "Coach Nico";
+    if (aMail.length) envoyerMails(s.type === "Match" && S.tab !== "U10" ? "match" : "note", aMail, { par: auteur });
     S.flash = `Séance du ${fmtDate(s.date)} enregistrée : ${rated} joueur${rated > 1 ? "s" : ""} noté${rated > 1 ? "s" : ""}, présences à jour.${aMail.length && MAIL_URL ? " Les joueurs concernés sont prévenus par mail." : ""}`;
     S.view = "list"; S.saisie = null; render();
   };
