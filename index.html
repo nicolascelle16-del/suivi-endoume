@@ -120,6 +120,30 @@ details.crit-d p { margin: 6px 0 2px; padding: 6px 9px; font-size: 13.5px; line-
 .chip b { color: var(--or); font-variant-numeric: tabular-nums; }
 .com-text { font-size: 15px; }
 .pill.obs { border-color: var(--or); color: var(--or); }
+.cmp-t { display: flex; flex-direction: column; margin-top: 6px; }
+.cmp-r { display: grid; grid-template-columns: 1fr 52px 52px 52px; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--ligne); font-size: 14px; }
+.cmp-r.cmp-h { border-top: 0; font-family: var(--label); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding-bottom: 2px; }
+.cmp-r > span:not(.cmp-l) { text-align: center; }
+.cmp-v { font-weight: 700; }
+.cmp-v.co { color: var(--or); }
+.cmp-d { border-radius: 999px; font-weight: 700; font-size: 13px; padding: 2px 0; }
+.cmp-d.ok { background: rgba(63,166,107,.18); color: #8fe0b0; }
+.cmp-d.haut { background: rgba(240,150,40,.2); color: #ffc078; }
+.cmp-d.bas { background: rgba(80,140,255,.2); color: #9cc0ff; }
+.pill.v-ok { border-color: #3fa66b; color: #8fe0b0; }
+.pill.v-haut { border-color: #f09628; color: #ffc078; }
+.pill.v-bas { border-color: #508cff; color: #9cc0ff; }
+.cmp-com { margin: 8px 0 0; font-style: italic; color: #d8d2c6; border-left: 3px solid var(--or); padding-left: 10px; font-size: 14px; }
+.linkbtn.small { font-size: 13px; }
+details.hnote > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+details.hnote > summary::-webkit-details-marker { display: none; }
+details.hnote > summary::after { content: "+"; margin-left: auto; color: var(--or); font-size: 18px; }
+details.hnote[open] > summary::after { content: "–"; }
+details.hnote[open] > summary { margin-bottom: 8px; }
+.hn-d { font-weight: 700; min-width: 58px; }
+.hn-avg { font-family: var(--label); font-weight: 700; font-size: 20px; min-width: 34px; text-align: center; }
+.hn-avg.hi { color: #8fe0b0; } .hn-avg.mid { color: var(--or); } .hn-avg.lo { color: #ff8a8a; }
+.hn-q { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .semaine h3 { margin: 0 0 6px; }
 .sem-it { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--ligne); }
 .sem-it:first-of-type { border-top: 0; }
@@ -1490,6 +1514,7 @@ function autoCard(fid, f, asCoach) {
   if (!autos.length) card.append(h("p", { class: "note", style: "margin:0" }, "Aucune auto-évaluation pour l'instant."));
   for (const a of autos.slice(0, 12)) {
     const coach = coachRef(notes, a);
+    if (asCoach) { card.append(autoCompare(fid, a, coach)); continue; }
     const rows = h("div", { class: "chips" });
     for (const k of Object.keys(a.crit || {})) {
       const lab = LABEL[k] || k, mine = a.crit[k], co = coach && coach.crit && coach.crit[k];
@@ -1501,6 +1526,34 @@ function autoCard(fid, f, asCoach) {
     card.append(item);
   }
   return card;
+}
+
+/* vue coach : auto-évaluation du joueur face à la note du coach, critère par critère */
+function autoCompare(fid, a, coach) {
+  const titre = a.type === "Match" ? `Match · ${fmtLong(a.date)}` : `Semaine du ${fmtDate(lundiDe(a.date))} au ${fmtDate(plusJours(lundiDe(a.date), 4))}`;
+  const lignes = [], ecarts = [];
+  for (const k of Object.keys(a.crit || {})) {
+    const j = a.crit[k], c = coach && coach.crit && coach.crit[k];
+    if (typeof j !== "number") continue;
+    const d = typeof c === "number" ? Math.round((j - c) * 10) / 10 : null;
+    if (d != null) ecarts.push(d);
+    lignes.push(h("div", { class: "cmp-r" }, h("span", { class: "cmp-l" }, LABEL[k] || k),
+      h("span", { class: "cmp-v" }, String(j).replace(".", ",")),
+      h("span", { class: "cmp-v co" }, typeof c === "number" ? String(Math.round(c * 10) / 10).replace(".", ",") : "–"),
+      h("span", { class: "cmp-d " + (d == null ? "" : d >= 1 ? "haut" : d <= -1 ? "bas" : "ok") }, d == null ? "" : d === 0 ? "=" : (d > 0 ? "+" : "−") + String(Math.abs(d)).replace(".", ","))));
+  }
+  const m = ecarts.length ? mean(ecarts) : null;
+  const verdict = m == null ? h("span", { class: "pill" }, "pas encore noté par le coach")
+    : m >= .5 ? h("span", { class: "pill v-haut" }, `Se surestime +${n1(m)}`)
+    : m <= -.5 ? h("span", { class: "pill v-bas" }, `Se sous-estime −${n1(-m)}`)
+    : h("span", { class: "pill v-ok" }, "Lucide");
+  const del = h("button", { class: "linkbtn danger small" }, "Supprimer");
+  del.onclick = async () => { if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "Confirmer"; return; } try { await S.db.doc("fiches/" + fid + "/auto/" + a.id).delete(); } catch (e) { del.textContent = "Échec"; } };
+  return h("div", { class: "hitem cmp" },
+    h("div", { class: "hhead" }, h("strong", {}, titre), verdict),
+    h("div", { class: "cmp-t" }, h("div", { class: "cmp-r cmp-h" }, h("span", {}, ""), h("span", {}, "Joueur"), h("span", {}, "Coach"), h("span", {}, "Écart")), ...lignes),
+    a.com ? h("blockquote", { class: "cmp-com" }, a.com) : null,
+    h("div", { style: "text-align:right" }, del));
 }
 
 /* ---------- accès (coachs et comptes en attente) ---------- */
@@ -2373,7 +2426,15 @@ function ficheView(fid, f, asCoach) {
     if (typeof stt.pd === "number" && stt.pd) chips.append(h("span", { class: "chip" }, "Passes déc. ", h("b", {}, String(stt.pd))));
     if (typeof stt.be === "number") chips.append(h("span", { class: "chip" + (stt.be === 0 ? " ok" : "") }, stt.be === 0 ? "Clean sheet" : "Buts encaissés ", stt.be === 0 ? null : h("b", {}, String(stt.be))));
     if (n.theme && (n.theme.phase || n.theme.principe)) chips.append(h("span", { class: "chip theme" }, "Thème ", h("b", {}, [n.theme.phase, n.theme.principe].filter(Boolean).join(" · "))));
-    const item = h("div", { class: "hitem" },
+    let item;
+    if (asCoach) {
+      const av = noteAvg(n, g), cls = av == null ? "" : av >= 4 ? "hi" : av < 3 ? "lo" : "mid";
+      const qui = n.detail ? [n.detail.coach ? "Nico" : null, ...n.detail.adj.map(x => x.nom)].filter(Boolean).join(" + ") : (n.parNom || "");
+      item = h("details", { class: "hitem hnote", open: hist.children.length === 0 || null },
+        h("summary", {}, h("span", { class: "hn-d" }, fmtDate(n.date)), h("span", { class: "pill" + (n.type === "Match" ? " match" : "") }, n.type === "Match" ? "Match" : "Entr."),
+          h("span", { class: "hn-avg " + cls }, av == null ? "–" : n1(av)), h("span", { class: "hn-q" }, [qui, n.com ? "💬" : "", isOldNote(n, g) ? "ancienne grille" : ""].filter(Boolean).join(" · "))),
+        chips, n.com ? h("div", { class: "com-text" }, n.com) : null);
+    } else item = h("div", { class: "hitem" },
       h("div", { class: "hhead" }, h("strong", {}, fmtLong(n.date)), h("span", { class: "pill" + (n.type === "Match" ? " match" : "") }, n.type === "Match" ? "Match" : "Entraînement"), isOldNote(n, g) ? h("span", { class: "pill" }, "Ancienne grille") : null),
       chips, n.com ? h("div", { class: "com-text" }, n.com) : null);
     if (asCoach && !S.scope) {
