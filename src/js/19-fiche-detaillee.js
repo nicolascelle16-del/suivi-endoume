@@ -155,9 +155,14 @@ async function envoyerMails(kind, fids, extra) {
   try {
     const token = await auth.currentUser.getIdToken();
     const r = await fetch(MAIL_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ token, kind, fids: fids.slice(0, 40), ...(extra || {}) }) });
-    return await r.json();
+    const rep = await r.json();
+    if (rep && typeof rep.quota === "number") { S.quota = { n: rep.quota, at: Date.now() }; softRender(); }
+    if (rep && rep.bloques > 0) { S.flash = `⚠️ ${rep.bloques} mail${rep.bloques > 1 ? "s" : ""} pas envoyé${rep.bloques > 1 ? "s" : ""} : la limite Gmail du jour est atteinte (environ 100 mails par 24 h). Les joueurs verront quand même leurs notes sur le site.`; render(); }
+    return rep;
   } catch (e) { return null; }
 }
+/* quota Gmail restant (compte de Nico, partagé avec le coach adjoint) : lu une fois par session sur l'accueil */
+function lireQuota() { if (S.quotaLu || !MAIL_URL || S.demo || !auth.currentUser) return; S.quotaLu = true; envoyerMails("quota", ["quota"]); }
 async function writeFiche(fid, patch) {
   if (S.demo) { S.fiches[fid] = { ...S.fiches[fid], ...patch }; render(); return; }
   await ecrireFiche(fid, patch);

@@ -1,4 +1,15 @@
 /* ---------- tableau de bord visuel ---------- */
+/* mails restants aujourd'hui (limite Gmail d'environ 100 envois par 24 h, partagée avec le coach adjoint) */
+function quotaCard() {
+  lireQuota();
+  const q = S.quota, n = q ? q.n : null, MAX = 100, coul = n == null ? "#7c6f4f" : n >= 40 ? "#3fae6a" : n >= 15 ? "#cdbd8f" : "#e0182d";
+  return h("div", { class: "dk span2" }, h("div", { class: "dk-l" }, "Mails du jour"),
+    h("div", { class: "dk-row" }, ringSVG(n == null ? null : Math.min(1, n / MAX), coul, n == null ? "…" : String(n), "restants"),
+      h("div", { class: "dk-main" },
+        h("div", {}, n == null ? "Lecture du compteur…" : n >= 40 ? "Large marge pour aujourd'hui." : n >= 15 ? "Attention : il en reste peu aujourd'hui." : "Presque plus de mails possibles aujourd'hui."),
+        h("div", { class: "d-sub" }, "Limite Gmail : environ 100 mails par 24 h, pour toi et Seb ensemble. Le compteur repart tout seul."),
+        q ? h("div", { class: "d-sub" }, `Mis à jour à ${new Date(q.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`) : null)));
+}
 /* cohérence des notes entre Nico et le coach adjoint (mêmes joueurs, mêmes séances) */
 function accordStaff() {
   const paires = [];
@@ -139,7 +150,7 @@ function dashView() {
         h("div", { class: "dk-main bmf-mini" }, [["U10 séances", bc.U10.s, 15], ["U10 matchs", bc.U10.m, 10], ["U19", bc.U19.s + Math.min(1, bc.U19.m), 5], ["Gardiens", bc.GB.s + Math.min(1, bc.GB.m), 5]].map(([l, v, mx]) =>
           h("div", { class: "bm" }, h("span", {}, l), h("div", { class: "track" }, h("div", { class: "fill" + (v >= mx ? " done" : ""), style: `width:${Math.min(100, v / mx * 100)}%` })), h("b", {}, `${v}/${mx}`)))))));
   }
-  if (!S.scope) bas.append(accordCard());
+  if (!S.scope) { bas.append(accordCard()); bas.append(quotaCard()); }
   const rc = h("div", { class: "dk " + (S.scope ? "span4" : "span2") }, h("div", { class: "dk-l" }, "Récap du mois par mail"));
   if (S.dashRecap) rc.append(recapCard(), h("button", { class: "linkbtn", onclick: () => { S.dashRecap = false; render(); } }, "Fermer"));
   else rc.append(h("div", { class: "dk-row" }, h("div", { class: "dk-big", style: "font-size:30px" }, "✉"), h("div", { class: "dk-main" }, h("div", {}, "Envoie à chaque joueur son récap aux couleurs du club."), h("button", { class: "btn small", style: "margin-top:8px;align-self:flex-start", onclick: () => { S.dashRecap = true; render(); } }, "Préparer le récap"))));
@@ -412,7 +423,8 @@ function saisieView() {
     const aMail = notifies.filter(fid => !isTemp(fid) && !(S.fiches[fid] || {}).exemple);
     const auteur = S.scope ? `${((S.coachs[S.me] || {}).nom || "Ton coach").split(" ")[0]}, coach adjoint` : "Coach Nico";
     if (aMail.length) envoyerMails(s.type === "Match" && S.tab !== "U10" ? "match" : "note", aMail, { par: auteur });
-    S.flash = `Séance du ${fmtDate(s.date)} enregistrée : ${rated} joueur${rated > 1 ? "s" : ""} noté${rated > 1 ? "s" : ""}, présences à jour.${aMail.length && MAIL_URL ? " Les joueurs concernés sont prévenus par mail." : ""}`;
+    const peu = S.quota && S.quota.n < aMail.length ? ` ⚠️ Il ne reste qu'environ ${S.quota.n} mails aujourd'hui : certains joueurs ne seront peut-être pas prévenus.` : "";
+    S.flash = `Séance du ${fmtDate(s.date)} enregistrée : ${rated} joueur${rated > 1 ? "s" : ""} noté${rated > 1 ? "s" : ""}, présences à jour.${aMail.length && MAIL_URL ? " Les joueurs concernés sont prévenus par mail." : ""}${peu}`;
     S.view = "list"; S.saisie = null; render();
   };
   box.append(h("div", { class: "row save-bar" }, save, msg));

@@ -10,8 +10,9 @@ function doPost(e) {
     const token = String(req.token || ""), kind = String(req.kind || "note");
     const par = String(req.par || "").replace(/[<>&"']/g, "").slice(0, 40);
     const fids = Array.isArray(req.fids) ? req.fids.slice(0, 40) : [];
+    if (kind === "quota") return token ? out({ ok: true, quota: MailApp.getRemainingDailyQuota() }) : out({ ok: false, err: "requête vide" });
     if (!token || !fids.length || ["note", "match", "auto", "recap"].indexOf(kind) < 0) return out({ ok: false, err: "requête vide" });
-    let sent = 0;
+    let sent = 0, bloques = 0;
     for (const fid of fids) {
       if (!/^[A-Za-z0-9_-]{6,60}$/.test(fid)) continue;
       const r = UrlFetchApp.fetch("https://firestore.googleapis.com/v1/projects/" + PROJET + "/databases/(default)/documents/fiches/" + fid,
@@ -26,10 +27,11 @@ function doPost(e) {
       const data = kind === "recap" ? (req.recaps || {})[fid] : null;
       if (kind === "recap" && !data) continue;
       const m = kind === "recap" ? recap(groupe, prenom, data) : message(kind, groupe, prenom, par);
+      if (MailApp.getRemainingDailyQuota() < 1) { bloques++; continue; }
       MailApp.sendEmail({ to: email, subject: m.sujet, htmlBody: m.html, body: m.texte, name: (par ? par.replace(/, coach adjoint$/, "") : "Coach Nico") + " · US Endoume" });
       sent++;
     }
-    return out({ ok: true, sent: sent });
+    return out({ ok: true, sent: sent, bloques: bloques, quota: MailApp.getRemainingDailyQuota() });
   } catch (err) {
     return out({ ok: false, err: String(err) });
   }
