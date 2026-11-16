@@ -120,6 +120,10 @@ details.crit-d p { margin: 6px 0 2px; padding: 6px 9px; font-size: 13.5px; line-
 .chip b { color: var(--or); font-variant-numeric: tabular-nums; }
 .com-text { font-size: 15px; }
 .pill.obs { border-color: var(--or); color: var(--or); }
+.accord .acc-det { margin-top: 8px; }
+.accord .acc-det summary { cursor: pointer; color: var(--or); font-size: 14px; }
+.accord .acc-l { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; width: 100%; padding: 7px 0; border-top: 1px solid var(--ligne); }
+.accord .acc-l:hover span:first-child { color: var(--or); }
 .cmp-t { display: flex; flex-direction: column; margin-top: 6px; }
 .cmp-r { display: grid; grid-template-columns: 1fr 52px 52px 52px; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--ligne); font-size: 14px; }
 .cmp-r.cmp-h { border-top: 0; font-family: var(--label); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding-bottom: 2px; }
@@ -2837,6 +2841,42 @@ function dashLineChart(series, keys) {
   const el = h("div", { class: "chart" }); el.innerHTML = s + "</svg>"; return el;
 }
 /* ---------- tableau de bord visuel ---------- */
+/* cohérence des notes entre Nico et le coach adjoint (mêmes joueurs, mêmes séances) */
+function accordStaff() {
+  const paires = [];
+  for (const [fid, f] of dFiches("U19")) for (const n of sortedNotes(f)) {
+    if (!n.detail || !n.detail.coach || !n.detail.adj.length) continue;
+    for (const a of n.detail.adj) for (const [k, lab] of critsForNote(n, "U19")) {
+      const c = n.detail.coach[k], v = a.crit && a.crit[k];
+      if (typeof c === "number" && typeof v === "number") paires.push({ fid, nom: f.nom, date: n.date, type: n.type, k, lab, c, a: v, adj: a.nom });
+    }
+  }
+  return paires;
+}
+function accordCard() {
+  const P = accordStaff(), card = h("div", { class: "dk span4 accord" }, h("div", { class: "dk-l" }, "Nico et le coach adjoint : même avis ?"));
+  if (!P.length) { card.append(h("p", { class: "note", style: "margin:4px 0 0" }, "Pas encore de séance U19 notée par vous deux.")); return card; }
+  card.firstChild.textContent = `Nico et ${P[0].adj} : même avis ?`;
+  const adj = P[0].adj, d = P.map(p => p.a - p.c), proche = d.filter(x => Math.abs(x) <= 1).length / d.length, ident = d.filter(x => x === 0).length / d.length, biais = mean(d);
+  const seances = new Set(P.map(p => p.date + p.type)).size, joueurs = new Set(P.map(p => p.fid)).size;
+  const parCrit = {}; for (const p of P) (parCrit[p.lab] = parCrit[p.lab] || []).push(Math.abs(p.a - p.c));
+  const pire = Object.entries(parCrit).map(([l, v]) => [l, mean(v)]).sort((a, b) => b[1] - a[1])[0];
+  const biaisTxt = Math.abs(biais) < .2 ? "Vous notez au même niveau." : `${adj} note en moyenne ${biais > 0 ? "plus large" : "plus sévère"} que toi (${biais > 0 ? "+" : "−"}${n1(Math.abs(biais))}).`;
+  card.append(h("div", { class: "dk-row" }, ringSVG(proche, proche >= .8 ? "#3fae6a" : proche >= .6 ? "#cdbd8f" : "#e0182d", Math.round(proche * 100) + "%", "d'accord"),
+    h("div", { class: "dk-main" },
+      h("div", {}, h("b", {}, `${Math.round(ident * 100)}% de notes identiques`), `, ${Math.round(proche * 100)}% à 1 point près.`),
+      h("div", { class: "d-sub" }, `${seances} séance${seances > 1 ? "s" : ""} notée${seances > 1 ? "s" : ""} à deux, ${joueurs} joueurs, ${P.length} critères comparés.`),
+      h("div", { style: "margin-top:4px" }, biaisTxt),
+      pire && pire[1] >= .5 ? h("div", { class: "d-sub" }, `Critère où vous divergez le plus : ${pire[0]} (écart moyen ${n1(pire[1])}).`) : null)));
+  const gros = P.filter(p => Math.abs(p.a - p.c) >= 2).sort((a, b) => a.date < b.date ? 1 : -1);
+  if (gros.length) {
+    const det = h("details", { class: "acc-det" }, h("summary", {}, `${gros.length} désaccord${gros.length > 1 ? "s" : ""} de 2 points ou plus`));
+    for (const p of gros.slice(0, 12)) det.append(h("button", { class: "acc-l", onclick: () => { S.dash = false; S.tab = "U19"; S.view = "fiche"; S.sel = p.fid; render(); } },
+      h("span", {}, `${p.nom} · ${fmtDate(p.date)} ${p.type === "Match" ? "(match)" : ""}`), h("span", { class: "d-sub" }, `${p.lab} : toi ${p.c}, ${p.adj} ${p.a}`)));
+    card.append(det);
+  } else card.append(h("p", { class: "d-sub", style: "margin:6px 0 0" }, "Aucun désaccord de 2 points ou plus. 👍"));
+  return card;
+}
 function ringSVG(pct, color, big, small) {
   const r = 34, C = 2 * Math.PI * r, p = pct == null ? 0 : Math.max(0, Math.min(1, pct));
   const el = h("div", { class: "ring" });
@@ -2941,6 +2981,7 @@ function dashView() {
         h("div", { class: "dk-main bmf-mini" }, [["U10 séances", bc.U10.s, 15], ["U10 matchs", bc.U10.m, 10], ["U19", bc.U19.s + Math.min(1, bc.U19.m), 5], ["Gardiens", bc.GB.s + Math.min(1, bc.GB.m), 5]].map(([l, v, mx]) =>
           h("div", { class: "bm" }, h("span", {}, l), h("div", { class: "track" }, h("div", { class: "fill" + (v >= mx ? " done" : ""), style: `width:${Math.min(100, v / mx * 100)}%` })), h("b", {}, `${v}/${mx}`)))))));
   }
+  if (!S.scope) bas.append(accordCard());
   const rc = h("div", { class: "dk " + (S.scope ? "span4" : "span2") }, h("div", { class: "dk-l" }, "Récap du mois par mail"));
   if (S.dashRecap) rc.append(recapCard(), h("button", { class: "linkbtn", onclick: () => { S.dashRecap = false; render(); } }, "Fermer"));
   else rc.append(h("div", { class: "dk-row" }, h("div", { class: "dk-big", style: "font-size:30px" }, "✉"), h("div", { class: "dk-main" }, h("div", {}, "Envoie à chaque joueur son récap aux couleurs du club."), h("button", { class: "btn small", style: "margin-top:8px;align-self:flex-start", onclick: () => { S.dashRecap = true; render(); } }, "Préparer le récap"))));
