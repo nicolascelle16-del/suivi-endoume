@@ -38,7 +38,7 @@
   --ligne: #2a2626;
   --texte: #f4efe6;
   --muted: #a39e96;
-  --faible: #75706a;
+  --faible: #8e8880;
   --rouge: #c8102e;
   --rouge-fonce: #8e0e1c;
   --or: #c9a24a;
@@ -642,7 +642,7 @@ button.card:hover { border-color: var(--or); }
 .acc-match { all: unset; box-sizing: border-box; cursor: pointer; background: var(--rouge); border-radius: 18px; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .acc-match:focus-visible { outline: 2px solid var(--or); outline-offset: 2px; }
 .acc-mt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.acc-mj { font: 700 13px/1.2 var(--display); letter-spacing: .12em; color: var(--or-clair); }
+.acc-mj { font: 700 13px/1.2 var(--display); letter-spacing: .12em; color: #fff0cc; }
 .acc-mn { font: 800 26px/1 var(--display); text-transform: uppercase; }
 .acc-ml { font-size: 12px; color: #fbe3e6; }
 .acc-conv { flex: none; background: var(--noir); color: var(--muted); font-weight: 700; font-size: 12px; padding: 8px 12px; border-radius: 999px; letter-spacing: .04em; text-transform: uppercase; text-align: center; }
@@ -685,7 +685,16 @@ button.card:hover { border-color: var(--or); }
 .acc-saisir:hover { background: #dc1a38; }
 .acc.acc-coach { max-width: 760px; }
 .acc-coach + .d-head { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--ligne); }
+.acc-err { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.acc-err-l { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); border-left: 2px solid var(--baisse); padding-left: 8px; }
+.acc-err-l b { color: var(--texte); font-weight: 600; word-break: break-word; }
+.acc-err .btn { align-self: flex-start; }
 @media (max-width: 380px) { .acc-big { font-size: 88px; } .acc-ot { font-size: 31px; } .acc-k-v { font-size: 34px; } }
+/* contraste (WCAG AA) : badges pas encore débloqués lisibles, puce de groupe en texte clair (la couleur du groupe reste sur la bordure) */
+.bdg.off { opacity: 1; }
+.bdg.off .ico { filter: grayscale(1); opacity: .55; }
+.bdg.off b, .bdg.off small { color: var(--muted); }
+.d-g { color: var(--texte); }
 </style>
 </head>
 <body>
@@ -3838,10 +3847,11 @@ function accueilCoach() {
     const parJour = {}; for (const [fid, se] of ouiAbs) { const j = jourLong(se.date).split(" ")[0]; (parJour[j] = parJour[j] || []).push(nom(fid)); }
     items.push({ c: "rouge", t: `${ouiAbs.length} « oui » au sondage, absent${ouiAbs.length > 1 ? "s" : ""}`, d: Object.entries(parJour).map(([j, n]) => `${j} : ${n.join(", ")}`).join(" · "), lab: "Voir", go: () => { S.dash = false; S.tab = g; S.view = "list"; S.sub = "presences"; render(); } });
   }
+  const ei = erreursItem(); if (ei) items.push(ei);
   const at = h("section", { class: "acc-sec" }, secT("À traiter cette semaine"));
   if (!items.length) at.append(h("div", { class: "acc-boite acc-rien" }, "✓ Rien à traiter pour l'instant."));
   else at.append(h("div", { class: "acc-boite acc-list" }, items.map(it => h("div", { class: "acc-li" }, h("i", { class: "acc-pt " + it.c, "aria-hidden": "true" }),
-    h("div", { class: "acc-li-t" }, h("b", {}, it.t), h("span", {}, it.d)), h("button", { class: "linkbtn acc-act", onclick: it.go }, it.lab)))));
+    h("div", { class: "acc-li-t" }, h("b", {}, it.t), h("span", {}, it.d), it.detail || null), h("button", { class: "linkbtn acc-act", onclick: it.go }, it.lab)))));
   box.append(at);
   // classement de l'indice
   const cl = fs.map(([fid, f]) => [fid, indiceA(f, today())]).filter(x => x[1] != null).sort((a, b) => b[1] - a[1]);
@@ -3998,6 +4008,7 @@ function confView() {
     "Les données sont stockées chez Google (Firebase), et le site est hébergé par GitHub.",
     `Elles sont conservées ${CONSERVATION} : elles sont supprimées sur simple demande, par exemple quand le joueur quitte le club.`,
     "Le coach fait des sauvegardes régulières, conservées de façon privée.",
+    "Si le site plante, l'erreur technique est enregistrée sans nom, adresse ni identifiant (message, écran, rôle, navigateur), pour que le coach puisse corriger. Elle est effacée au bout de 30 jours.",
     "Les mails d'avis (nouvelle évaluation, rappel d'auto-évaluation) partent de la boîte Gmail du coach, vers l'adresse du compte. Ils ne contiennent pas les notes."
   ])));
   box.append(sec("Les mineurs", h("p", { style: "margin:0" }, "Pour un joueur de moins de 18 ans, le compte est créé avec l'accord d'un parent ou du représentant légal. Pour les U10, c'est le parent qui crée et utilise le compte.")));
@@ -4015,13 +4026,61 @@ function confView() {
 }
 function showConf() { S.conf = true; document.getElementById("role").textContent = "Confidentialité"; const app = document.getElementById("app"); app.textContent = ""; app.append(confView()); window.scrollTo(0, 0); }
 
+/* ---------- journal des erreurs du site ----------
+   Quand le site plante chez quelqu'un, l'erreur est enregistrée dans erreurs/{id}, SANS nom, adresse ni identifiant :
+   le message technique, l'écran, le rôle (coach, adjoint, joueur, parent), la version du site et le navigateur.
+   Seul le coach les lit (accueil coach, « À traiter »). Effacées au bout de 30 jours. */
+const VERSION_SITE = "9d89b6c5";
+const JOURNAL = { n: 0, vus: new Set() };
+function roleActuel() {
+  if (S.admin) return S.scope ? "adjoint" : "coach";
+  if (S.myFiche) return groupOf(S.myFiche) === "U10" ? "parent" : "joueur";
+  return "visiteur";
+}
+function ecranActuel() { return S.conf ? "confidentialite" : S.admin ? (S.bmf ? "bmf" : S.dash ? "accueil" : (S.view || "liste") + (S.sub ? "/" + S.sub : "")) : S.me ? "joueur/" + (S.psub || "") : "connexion"; }
+function journaliser(err, ou) {
+  try {
+    if (S.demo || !auth.currentUser || JOURNAL.n >= 5) return;
+    const msg = String((err && (err.message || err.reason || err)) || "erreur inconnue").replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "[mail]").slice(0, 300);
+    const cle = msg + "|" + ou; if (JOURNAL.vus.has(cle)) return; JOURNAL.vus.add(cle); JOURNAL.n++;
+    DB.doc("erreurs/" + nid()).set({ msg, ou: String(ou || "").slice(0, 200), ecran: ecranActuel().slice(0, 60), role: roleActuel(), at: new Date().toISOString(), version: VERSION_SITE, nav: navigator.userAgent.replace(/\s+/g, " ").slice(0, 160) }).catch(() => {});
+  } catch (e) {}
+}
+window.addEventListener("error", e => journaliser(e.error || e.message, `${(e.filename || "").split("/").pop()}:${e.lineno || 0}:${e.colno || 0}`));
+window.addEventListener("unhandledrejection", e => journaliser(e.reason, "promesse"));
+/* lecture côté coach : une seule fois par ouverture (pas d'écoute permanente), et ménage au-delà de 30 jours */
+async function chargerErreurs() {
+  if (!S.admin || S.scope || S.demo || S.erreursCharge) return; S.erreursCharge = true;
+  try {
+    const q = await DB.collection("erreurs").get(), limite = new Date(Date.now() - 30 * 864e5).toISOString(), garde = [];
+    for (const d of q.docs) { const x = { id: d.id, ...d.data() }; if (!x.at || x.at < limite) DB.doc("erreurs/" + d.id).delete().catch(() => {}); else garde.push(x); }
+    S.erreurs = garde.sort((a, b) => a.at < b.at ? 1 : -1); softRender();
+  } catch (e) { S.erreursCharge = false; }
+}
+function erreursItem() {
+  chargerErreurs();
+  const es = (S.erreurs || []).filter(x => x.at >= new Date(Date.now() - 7 * 864e5).toISOString());
+  if (!es.length) return null;
+  const parMsg = {}; for (const x of es) (parMsg[x.msg] = parMsg[x.msg] || []).push(x);
+  return { c: "rouge", t: `${es.length} erreur${es.length > 1 ? "s" : ""} du site cette semaine`, d: `${Object.keys(parMsg).length} problème${Object.keys(parMsg).length > 1 ? "s" : ""} différent${Object.keys(parMsg).length > 1 ? "s" : ""} · ${[...new Set(es.map(x => x.role))].join(", ")}`, lab: S.voirErreurs ? "Masquer" : "Voir", go: () => { S.voirErreurs = !S.voirErreurs; render(); },
+    detail: S.voirErreurs ? h("div", { class: "acc-err" }, Object.entries(parMsg).map(([m, l]) => h("div", { class: "acc-err-l" }, h("b", {}, `${l.length} × ${m}`), h("span", {}, `${l[0].ecran} · ${[...new Set(l.map(x => x.role))].join(", ")} · dernière : ${fmtDate(l[0].at.slice(0, 10))} · version ${l[0].version}${l[0].ou ? " · " + l[0].ou : ""}`))),
+      h("button", { class: "btn ghost small", onclick: async () => { for (const x of S.erreurs || []) await DB.doc("erreurs/" + x.id).delete().catch(() => {}); S.erreurs = []; S.voirErreurs = false; render(); } }, "Tout effacer (c'est corrigé)")) : null };
+}
 /* ---------- rendu ---------- */
 function render() {
   if (S.conf) { showConf(); return; }
   const app = document.getElementById("app"); app.textContent = "";
   const role = document.getElementById("role");
   role.textContent = S.admin ? "Espace coach" : "Mon espace";
-  app.append(S.admin ? coachView() : joueurView());
+  try { app.append(S.admin ? coachView() : joueurView()); }
+  catch (e) {
+    // un écran qui plante ne laisse plus une page vide : message simple, et l'erreur part dans le journal du coach
+    journaliser(e, "affichage"); app.textContent = "";
+    app.append(h("div", { class: "card stack", role: "alert", style: "margin-top:20px" }, h("h3", { style: "margin:0" }, "Oups, cet écran a un problème"),
+      h("p", { style: "margin:0" }, S.admin ? "L'erreur est enregistrée dans « À traiter ». Recharge la page pour réessayer." : "Le coach est prévenu automatiquement. Recharge la page pour réessayer."),
+      h("button", { class: "btn small", onclick: () => location.reload() }, "Recharger")));
+    if (S.demo || window.__TEST_RENDU) throw e;
+  }
 }
 
 document.getElementById("lien-conf").onclick = showConf;

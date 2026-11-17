@@ -13,6 +13,19 @@ service cloud.firestore {
       allow read: if signedIn() && (request.auth.uid == uid || isCoach());
       allow write: if isCoach();
     }
+    match /erreurs/{id} {
+      // journal des plantages du site : sans donnée perso, écrit par tout compte connecté, lu et effacé par le coach
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['msg', 'ou', 'ecran', 'role', 'at', 'version', 'nav'])
+        && request.resource.data.msg is string && request.resource.data.msg.size() <= 300
+        && request.resource.data.ou is string && request.resource.data.ou.size() <= 200
+        && request.resource.data.ecran is string && request.resource.data.ecran.size() <= 60
+        && request.resource.data.role in ['coach', 'adjoint', 'joueur', 'parent', 'visiteur']
+        && request.resource.data.at is string && request.resource.data.at.size() <= 30
+        && request.resource.data.version is string && request.resource.data.version.size() <= 12
+        && request.resource.data.nav is string && request.resource.data.nav.size() <= 160;
+      allow read, delete: if isCoach();
+    }
     match /bloques/{uid} {
       allow read: if isCoach() || (signedIn() && request.auth.uid == uid);
       allow write: if isCoach();

@@ -26,6 +26,7 @@
 24-profil-araignee.js
 25-recap-mensuel-par-mail.js
 26-confidentialite.js
+26b-journal-erreurs.js
 27-rendu.js
 28-exemples-apercu.js
 29-demarrage.js

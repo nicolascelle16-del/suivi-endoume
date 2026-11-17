@@ -28,6 +28,7 @@ Pour trouver une fonction : cherche son nom dans l'index en bas, puis ouvre seul
 | `championnat/u19` | calendrier et classement U19 D2 | coach écrit |
 | `coachs/{uid}` | rôle : coach (tous les groupes) ou adjoint (groupes listés) | coach |
 | `carnet/{id}` | carnet BMF : fiches de séance et de match | coach |
+| `erreurs/{id}` | journal des plantages du site, sans donnée perso (message, écran, rôle, version, navigateur), effacé après 30 jours | tout compte connecté crée ; le coach lit et efface |
 | `inscriptions`, `objectifs`, `bloques` | comptes en attente, objectifs individuels, adresses bloquées | |
 
 Règles du serveur : `serveur/firestore.rules`. Mails : `serveur/mails-apps-script.gs` (Apps Script, déployé à part).
@@ -37,11 +38,11 @@ Règles du serveur : `serveur/firestore.rules`. Mails : `serveur/mails-apps-scri
 ### `00-debut.js` —  (78 lignes)
 Définit : `FIREBASE_CONFIG`, `fbApp`, `wrapDoc`, `docRef`, `colRef`, `whereRef`, `DB`, `GROUPS`, `GRILLES`, `GK_M`, `GKK`, `isGK`, `mGrid`, `critsJ`, `DESC`, `critsOf`, `isOldNote`, `critsForNote`, `critLabel`, `LEVELS`, `SEG`, `isTemp`, `S`
 Utilise : 01 (groupOf, h) ; 20 (sel)
-Utilisé par : 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23b, 24, 25, 26, 27, 28, 29
+Utilisé par : 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23b, 24, 25, 26, 26b, 27, 28, 29
 
 ### `01-petits-outils.js` — petits outils (72 lignes)
 Définit : `h`, `esc`, `today`, `fmtDate`, `fmtLong`, `nid`, `groupOf`, `byDate`, `rawNotes`, `adjNotes`, `POIDS`, `combineNotes`, `debutSaison`, `libSaison`, `dansSaison`, `sortedNotes`, `sortedNotesTout`, `noteAvg`, `critAvg`, `overall`, `n1`, `initials`, `ABBR`, `stars`
-Utilisé par : 00, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23b, 24, 25, 26, 29
+Utilisé par : 00, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23b, 24, 25, 26, 26b, 27, 29
 
 ### `02-avatar.js` — avatar (143 lignes)
 Définit : `AV`, `AV_DEF`, `avClean`, `hx`, `toHex`, `mixC`, `CREST_S`, `avSeq`, `avatarSVG`, `avatarNode`, `avatarEditor`
@@ -96,7 +97,7 @@ Utilisé par : 19, 23
 ### `12-connexion.js` — connexion (63 lignes)
 Définit : `AUTH_ERR`, `loginView`, `renderTimer`, `softRender`
 Utilise : 00 (S) ; 01 (h) ; 02 (AV_DEF, avatarEditor) ; 10 (postePicker) ; 26 (showConf) ; 27 (render)
-Utilisé par : 04, 08, 09, 11, 19, 23, 26, 29
+Utilisé par : 04, 08, 09, 11, 19, 23, 26, 26b, 29
 
 ### `13-page-equipe.js` — page équipe (113 lignes)
 Définit : `writeEquipe`, `equipeView`
@@ -153,9 +154,9 @@ Définit : `joueurView`, `vuLe`, `installEvt`, `enAppli`, `badgesVus`, `semaineC
 Utilise : 00 (GROUPS, S) ; 01 (groupOf, h, sortedNotes, today) ; 02 (avatarEditor) ; 03 (saveAvatar) ; 05 (badges) ; 08 (watchBulletins) ; 09 (MASQUE_DEBUT, autoAFaire, masquerNotes, watchAutos) ; 11 (monCompteCard) ; 12 (softRender) ; 13 (equipeView) ; 17 (seancesOf) ; 19 (ficheView) ; 23 (accueilJoueur) ; 27 (render)
 Utilisé par : 13, 23b, 27, 29
 
-### `23b-accueil-premium.js` — accueil premium : joueur (U19, gardiens) et coach (270 lignes)
+### `23b-accueil-premium.js` — accueil premium : joueur (U19, gardiens) et coach (271 lignes)
 Définit : `finSem`, `numSemaine`, `libSemaine`, `nomCourt`, `critsEnt`, `notesEnt`, `indiceA`, `serieIndice`, `calculStatsGroupe`, `statsGroupe`, `publierStatsGroupes`, `objectifSemaine`, `secT`, `coche`, `courbeIndice`, `radarAcc`, `prochainMatch`, `signature`, `accueilJoueur`, `objectifCoachCard`, `accueilCoach`
-Utilise : 00 (DESC, GRILLES, GROUPS, S, isOldNote, isTemp, mGrid) ; 01 (critAvg, groupOf, h, n1, noteAvg, sortedNotes, today) ; 04 (fcard, stable) ; 09 (autoAFaire, lundiDe, masquerNotes, plusJours, watchAutos) ; 13 (writeEquipe) ; 16 (compteAssid, mean) ; 17 (ditOf, jourLong) ; 19 (MAIL_URL, envoyerMails, writeFiche) ; 20 (sel) ; 21 (dFiches, presRange, visG) ; 22 (startSaisie) ; 23 (semaineCard) ; 24 (RLAB, moyCrit) ; 27 (render)
+Utilise : 00 (DESC, GRILLES, GROUPS, S, isOldNote, isTemp, mGrid) ; 01 (critAvg, groupOf, h, n1, noteAvg, sortedNotes, today) ; 04 (fcard, stable) ; 09 (autoAFaire, lundiDe, masquerNotes, plusJours, watchAutos) ; 13 (writeEquipe) ; 16 (compteAssid, mean) ; 17 (ditOf, jourLong) ; 19 (MAIL_URL, envoyerMails, writeFiche) ; 20 (sel) ; 21 (dFiches, presRange, visG) ; 22 (startSaisie) ; 23 (semaineCard) ; 24 (RLAB, moyCrit) ; 26 (erreursItem) ; 27 (render)
 Utilisé par : 19, 22, 23
 
 ### `24-profil-araignee.js` — profil en araignée : coach et auto (50 lignes)
@@ -168,15 +169,20 @@ Définit : `recapJoueur`, `recapCard`
 Utilise : 00 (GRILLES, GROUPS, LEVELS, S, isOldNote, isTemp, mGrid) ; 01 (critAvg, groupOf, h, n1, sortedNotes, today) ; 09 (watchAutos) ; 16 (compteAssid, monthKey, monthLab) ; 19 (MAIL_URL, envoyerMails) ; 21 (avgNotes, dFiches, moisDe, visG) ; 27 (render)
 Utilisé par : 22
 
-### `26-confidentialite.js` — confidentialité (45 lignes)
+### `26-confidentialite.js` — confidentialité (46 lignes)
 Définit : `CONSERVATION`, `confView`, `showConf`
 Utilise : 00 (S) ; 01 (h) ; 12 (loginView) ; 27 (render)
 Utilisé par : 12, 27
 
-### `27-rendu.js` — rendu (11 lignes)
+### `26b-journal-erreurs.js` — journal des erreurs du site (40 lignes)
+Définit : `VERSION_SITE`, `JOURNAL`, `roleActuel`, `ecranActuel`, `journaliser`, `chargerErreurs`, `erreursItem`
+Utilise : 00 (DB, S) ; 01 (groupOf, h, nid) ; 12 (softRender) ; 27 (render)
+Utilisé par : 23b, 27
+
+### `27-rendu.js` — rendu (19 lignes)
 Définit : `render`
-Utilise : 00 (S) ; 22 (coachView) ; 23 (joueurView) ; 26 (showConf)
-Utilisé par : 03, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23b, 24, 25, 26, 29
+Utilise : 00 (S) ; 01 (h) ; 22 (coachView) ; 23 (joueurView) ; 26 (showConf) ; 26 (journaliser)
+Utilisé par : 03, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23b, 24, 25, 26, 26b, 29
 
 ### `28-exemples-apercu.js` — exemples pour l'aperçu (32 lignes)
 Définit : `demoData`, `demoEquipes`
@@ -228,6 +234,7 @@ Utilise : 00 (DB, GROUPS, S) ; 01 (groupOf, h, sortedNotes) ; 03 (saveAvatar) ; 
 - `CAT_AL` → 22-tableau-de-bord-visuel.js
 - `catOf` → 22-tableau-de-bord-visuel.js
 - `champView` → 06-championnat-u19.js
+- `chargerErreurs` → 26b-journal-erreurs.js
 - `chargerPrive` → 09-auto-evaluations.js
 - `chart` → 18-presences-coach.js
 - `clePeriode` → 09-auto-evaluations.js
@@ -266,10 +273,12 @@ Utilise : 00 (DB, GROUPS, S) ; 01 (groupOf, h, sortedNotes) ; 03 (saveAvatar) ; 
 - `ditOf` → 17-sondage-whatsapp.js
 - `docRef` → 00-debut.js
 - `donutSondage` → 22-tableau-de-bord-visuel.js
+- `ecranActuel` → 26b-journal-erreurs.js
 - `ecrireFiche` → 09-auto-evaluations.js
 - `enAppli` → 23-vue-joueur-parent.js
 - `envoyerMails` → 19-fiche-detaillee.js
 - `equipeView` → 13-page-equipe.js
+- `erreursItem` → 26b-journal-erreurs.js
 - `esc` → 01-petits-outils.js
 - `estPrive` → 09-auto-evaluations.js
 - `exporterTout` → 10-acces-coachs.js
@@ -305,6 +314,8 @@ Utilise : 00 (DB, GROUPS, S) ; 01 (groupOf, h, sortedNotes) ; 03 (saveAvatar) ; 
 - `isTemp` → 00-debut.js
 - `joueurView` → 23-vue-joueur-parent.js
 - `jourLong` → 17-sondage-whatsapp.js
+- `JOURNAL` → 26b-journal-erreurs.js
+- `journaliser` → 26b-journal-erreurs.js
 - `joursDepuisNote` → 22-tableau-de-bord-visuel.js
 - `LEVELS` → 00-debut.js
 - `libSaison` → 01-petits-outils.js
@@ -390,6 +401,7 @@ Utilise : 00 (DB, GROUPS, S) ; 01 (groupOf, h, sortedNotes) ; 03 (saveAvatar) ; 
 - `resumeSeance` → 20-carnet-bmf.js
 - `ringSVG` → 22-tableau-de-bord-visuel.js
 - `RLAB` → 24-profil-araignee.js
+- `roleActuel` → 26b-journal-erreurs.js
 - `S` → 00-debut.js
 - `saisieView` → 22-tableau-de-bord-visuel.js
 - `saisonCard` → 16-ma-saison.js
@@ -427,6 +439,7 @@ Utilise : 00 (DB, GROUPS, S) ; 01 (groupOf, h, sortedNotes) ; 03 (saveAvatar) ; 
 - `today` → 01-petits-outils.js
 - `toHex` → 02-avatar.js
 - `unlinkAccount` → 11-compte-relie.js
+- `VERSION_SITE` → 26b-journal-erreurs.js
 - `visG` → 21-tableau-de-bord-coach.js
 - `voteLabel` → 08-votes.js
 - `votesCard` → 08-votes.js

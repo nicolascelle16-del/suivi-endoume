@@ -251,10 +251,11 @@ function accueilCoach() {
     const parJour = {}; for (const [fid, se] of ouiAbs) { const j = jourLong(se.date).split(" ")[0]; (parJour[j] = parJour[j] || []).push(nom(fid)); }
     items.push({ c: "rouge", t: `${ouiAbs.length} « oui » au sondage, absent${ouiAbs.length > 1 ? "s" : ""}`, d: Object.entries(parJour).map(([j, n]) => `${j} : ${n.join(", ")}`).join(" · "), lab: "Voir", go: () => { S.dash = false; S.tab = g; S.view = "list"; S.sub = "presences"; render(); } });
   }
+  const ei = erreursItem(); if (ei) items.push(ei);
   const at = h("section", { class: "acc-sec" }, secT("À traiter cette semaine"));
   if (!items.length) at.append(h("div", { class: "acc-boite acc-rien" }, "✓ Rien à traiter pour l'instant."));
   else at.append(h("div", { class: "acc-boite acc-list" }, items.map(it => h("div", { class: "acc-li" }, h("i", { class: "acc-pt " + it.c, "aria-hidden": "true" }),
-    h("div", { class: "acc-li-t" }, h("b", {}, it.t), h("span", {}, it.d)), h("button", { class: "linkbtn acc-act", onclick: it.go }, it.lab)))));
+    h("div", { class: "acc-li-t" }, h("b", {}, it.t), h("span", {}, it.d), it.detail || null), h("button", { class: "linkbtn acc-act", onclick: it.go }, it.lab)))));
   box.append(at);
   // classement de l'indice
   const cl = fs.map(([fid, f]) => [fid, indiceA(f, today())]).filter(x => x[1] != null).sort((a, b) => b[1] - a[1]);

@@ -27,6 +27,7 @@ DONNEES = """## Données (Firestore)
 | `championnat/u19` | calendrier et classement U19 D2 | coach écrit |
 | `coachs/{uid}` | rôle : coach (tous les groupes) ou adjoint (groupes listés) | coach |
 | `carnet/{id}` | carnet BMF : fiches de séance et de match | coach |
+| `erreurs/{id}` | journal des plantages du site, sans donnée perso (message, écran, rôle, version, navigateur), effacé après 30 jours | tout compte connecté crée ; le coach lit et efface |
 | `inscriptions`, `objectifs`, `bloques` | comptes en attente, objectifs individuels, adresses bloquées | |
 
 Règles du serveur : `serveur/firestore.rules`. Mails : `serveur/mails-apps-script.gs` (Apps Script, déployé à part).

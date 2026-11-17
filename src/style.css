@@ -22,7 +22,7 @@
   --ligne: #2a2626;
   --texte: #f4efe6;
   --muted: #a39e96;
-  --faible: #75706a;
+  --faible: #8e8880;
   --rouge: #c8102e;
   --rouge-fonce: #8e0e1c;
   --or: #c9a24a;
@@ -626,7 +626,7 @@ button.card:hover { border-color: var(--or); }
 .acc-match { all: unset; box-sizing: border-box; cursor: pointer; background: var(--rouge); border-radius: 18px; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .acc-match:focus-visible { outline: 2px solid var(--or); outline-offset: 2px; }
 .acc-mt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.acc-mj { font: 700 13px/1.2 var(--display); letter-spacing: .12em; color: var(--or-clair); }
+.acc-mj { font: 700 13px/1.2 var(--display); letter-spacing: .12em; color: #fff0cc; }
 .acc-mn { font: 800 26px/1 var(--display); text-transform: uppercase; }
 .acc-ml { font-size: 12px; color: #fbe3e6; }
 .acc-conv { flex: none; background: var(--noir); color: var(--muted); font-weight: 700; font-size: 12px; padding: 8px 12px; border-radius: 999px; letter-spacing: .04em; text-transform: uppercase; text-align: center; }
@@ -669,4 +669,13 @@ button.card:hover { border-color: var(--or); }
 .acc-saisir:hover { background: #dc1a38; }
 .acc.acc-coach { max-width: 760px; }
 .acc-coach + .d-head { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--ligne); }
+.acc-err { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.acc-err-l { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); border-left: 2px solid var(--baisse); padding-left: 8px; }
+.acc-err-l b { color: var(--texte); font-weight: 600; word-break: break-word; }
+.acc-err .btn { align-self: flex-start; }
 @media (max-width: 380px) { .acc-big { font-size: 88px; } .acc-ot { font-size: 31px; } .acc-k-v { font-size: 34px; } }
+/* contraste (WCAG AA) : badges pas encore débloqués lisibles, puce de groupe en texte clair (la couleur du groupe reste sur la bordure) */
+.bdg.off { opacity: 1; }
+.bdg.off .ico { filter: grayscale(1); opacity: .55; }
+.bdg.off b, .bdg.off small { color: var(--muted); }
+.d-g { color: var(--texte); }

@@ -3,7 +3,7 @@
 
   python3 outils/build.py            -> écrit index.html et lance les contrôles
   python3 outils/build.py --verifier -> ne réécrit rien : échoue si index.html n'est pas à jour
-  python3 outils/build.py --tests    -> ajoute le test de rendu (Chrome + Playwright)
+  python3 outils/build.py --tests    -> ajoute le test de rendu et les tests des calculs (Chrome + Playwright)
 
 Organisation :
   src/page.html            squelette HTML (marqueurs /*@STYLE@*/ et //@JS@)
@@ -13,7 +13,7 @@ Organisation :
   src/firebase-config.js   configuration publique Firebase (injectée à la place de __CONFIG__)
   docs/CARTE-DU-CODE.md    carte du code, régénérée à chaque build (outils/carte.py)
 """
-import os, subprocess, sys, tempfile
+import hashlib, os, subprocess, sys, tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import carte
 
@@ -34,7 +34,9 @@ def assembler():
     assert page.count("/*@STYLE@*/") == 1 and page.count("//@JS@") == 1, "marqueurs manquants dans page.html"
     html = page.replace("/*@STYLE@*/", css).replace("//@JS@", js)
     assert html.count("__CONFIG__") == 1, "__CONFIG__ doit apparaître une fois dans le code"
-    return html.replace("__CONFIG__", conf)
+    version = hashlib.sha256(html.encode("utf-8")).hexdigest()[:8]
+    assert html.count('"__VERSION__"') == 1, "__VERSION__ doit apparaître une fois dans le code"
+    return html.replace("__CONFIG__", conf).replace('"__VERSION__"', f'"{version}"')
 
 
 def controler(html):
@@ -64,6 +66,8 @@ def main():
             t.write(html); candidat = t.name
         r = subprocess.run([sys.executable, S("tests", "rendu.py"), candidat])
         if r.returncode: erreurs.append("le test de rendu a échoué : index.html n'a pas été modifié")
+        r = subprocess.run([sys.executable, S("tests", "logique.py"), candidat])
+        if r.returncode: erreurs.append("une règle de calcul est cassée : index.html n'a pas été modifié")
     if not erreurs and "--verifier" not in sys.argv:
         open(S("index.html"), "w", encoding="utf-8").write(html)
         carte.main()

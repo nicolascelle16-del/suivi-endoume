@@ -26,6 +26,7 @@ function confView() {
     "Les données sont stockées chez Google (Firebase), et le site est hébergé par GitHub.",
     `Elles sont conservées ${CONSERVATION} : elles sont supprimées sur simple demande, par exemple quand le joueur quitte le club.`,
     "Le coach fait des sauvegardes régulières, conservées de façon privée.",
+    "Si le site plante, l'erreur technique est enregistrée sans nom, adresse ni identifiant (message, écran, rôle, navigateur), pour que le coach puisse corriger. Elle est effacée au bout de 30 jours.",
     "Les mails d'avis (nouvelle évaluation, rappel d'auto-évaluation) partent de la boîte Gmail du coach, vers l'adresse du compte. Ils ne contiennent pas les notes."
   ])));
   box.append(sec("Les mineurs", h("p", { style: "margin:0" }, "Pour un joueur de moins de 18 ans, le compte est créé avec l'accord d'un parent ou du représentant légal. Pour les U10, c'est le parent qui crée et utilise le compte.")));

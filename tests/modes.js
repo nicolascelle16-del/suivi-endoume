@@ -1,3 +1,4 @@
+window.__TEST_RENDU=true;
 window.__go=m=>{const R={onSnapshot:()=>()=>{},get:async()=>({exists:false,docs:[]}),doc:()=>R,set:async()=>{},update:async()=>{},delete:async()=>{}};S.db={doc:()=>R,collection:()=>R};
 document.getElementById("logout").hidden=false;S.fiches=demoData();S.equipes=demoEquipes();S.loaded=true;
 const k=Object.keys(S.fiches).filter(f=>groupOf(S.fiches[f])==="U19");S.seances={s1:{groupe:"U19",date:today(),type:"Entraînement",heure:"19:00",dit:{[k[0]]:true,[k[1]]:false}}};
