@@ -80,5 +80,13 @@ window.__logique = () => {
     const [fid7, f7] = fiche("U19", []);
     ok("Pas de notes : pas d'objectif inventé", objectifSemaine(fid7, f7).vide, "objectif créé sans notes");
   }
+  // 6. noms courts sans doublon (plusieurs « Mohamed B. »)
+  {
+    const n = nomsDistincts([["a", "Mohamed BENALI"], ["b", "Mohamed BOUZID"], ["c", "Mohamed BRAHIMI"], ["d", "Ewan LEROY"], ["e", "Yanis Benali"], ["f", "Yanis Benali"], ["g", "Adam BENZEMA"], ["h", "Adam BENAMAR"]]);
+    ok("Noms identiques en court : 3 premières lettres du nom", n.a === "Mohamed Ben." && n.b === "Mohamed Bou." && n.c === "Mohamed Bra.", JSON.stringify(n));
+    ok("3 lettres identiques : une lettre de plus", n.g === "Adam Benz." && n.h === "Adam Bena.", `${n.g} / ${n.h}`);
+    ok("Nom unique : reste court", n.d === "Ewan L.", n.d);
+    ok("Même nom complet : numéroté", n.e === "Yanis Benali (1)" && n.f === "Yanis Benali (2)", `${n.e} / ${n.f}`);
+  }
   return res;
 };

@@ -7,7 +7,6 @@ const PHASES = [
   { k: "op", l: "S'opposer à la progression", bloc: "On n'a pas le ballon", p: [[6, "Freiner la progression de l'adversaire, organiser et réorganiser les alignements"]] },
   { k: "pb", l: "S'organiser pour protéger son but", bloc: "On n'a pas le ballon", p: [[7, "S'organiser en déséquilibre"], [8, "Densifier et être actif dans le CJD (axe ballon-but)"], [9, "Défendre son but, récupérer ou dégager le ballon"]] }
 ];
-const PROC_TYPES = ["Échauffement", "Jeu", "Situation", "Exercice", "Jeu réduit", "Match", "Retour au calme"];
 const PROC_CHAMPS = [["objectif", "Objectif"], ["buts", "But(s)"], ["consignes", "Consignes / variables"], ["rotations", "Gestion des rotations"], ["comportements", "Comportements attendus"], ["criteres", "Critères de réussite"]];
 const REFLEX = [
   ["contexte", "Le contexte et ce que j'avais prévu", "Je décris avec précision le contexte et ce que j'avais prévu de faire, en lien avec mes objectifs d'apprentissage.", "Ex. : 12 présents, terrain mouillé. J'avais prévu de travailler…"],
@@ -108,23 +107,8 @@ function seanceForm(d) {
       h("label", { class: "check" }, (() => { const c = h("input", { type: "checkbox" }); c.checked = !!d.np; c.onchange = () => { d.np = c.checked; S.bmfDirty = true; }; return c; })(), "Nouvelles pratiques ou futsal")));
   drawPrin();
   box.append(head);
-  const procs = h("div", { class: "stack" });
-  const drawProcs = () => {
-    procs.replaceChildren();
-    d.procedes.forEach((p, i) => {
-      const det = h("details", { class: "card proc", open: i === 0 && !p.objectif ? true : null },
-        h("summary", {}, h("span", { class: "rq-n" }, String(i + 1)), h("b", {}, p.type || "Procédé"), h("span", { class: "note" }, p.objectif ? " · " + p.objectif.slice(0, 60) : "")));
-      const body = h("div", { class: "stack", style: "margin-top:10px" },
-        h("div", { class: "row" }, sel(p, "type", "Type", [["", "Choisir…"], ...PROC_TYPES.map(t => [t, t])]), fld(p, "surface", "Surface", { cls: "f-s", ph: "30 x 20 m" }), fld(p, "sequence", "Séquence", { cls: "f-s", ph: "4 x 5'" })),
-        PROC_CHAMPS.map(([k, l]) => fld(p, k, l, { area: true, rows: 2, max: 1500 })));
-      const del = h("button", { type: "button", class: "linkbtn danger" }, "Retirer ce procédé");
-      del.onclick = () => { d.procedes.splice(i, 1); S.bmfDirty = true; drawProcs(); };
-      body.append(del); det.append(body); procs.append(det);
-    });
-    procs.append(h("button", { type: "button", class: "btn ghost small", style: "align-self:flex-start", onclick: () => { d.procedes.push({ type: "", surface: "", sequence: "", objectif: "", buts: "", consignes: "", rotations: "", comportements: "", criteres: "" }); S.bmfDirty = true; drawProcs(); } }, "Ajouter un procédé"));
-  };
-  drawProcs();
-  box.append(h("h3", { class: "d-t", style: "margin:6px 0 0" }, `Les procédés (${d.procedes.length})`), procs, reflexBlock(d, "seance"));
+  // les procédés ne se saisissent plus ici (Nico garde la séance prévue et l'analyse réflexive) ; ceux déjà enregistrés restent dans la fiche et l'export
+  box.append(reflexBlock(d, "seance"));
   return box;
 }
 function matchForm(d) {

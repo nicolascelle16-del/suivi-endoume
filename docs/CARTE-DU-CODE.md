@@ -109,10 +109,10 @@ Définit : `OBJ_POSTES`, `OBJ_ALL`, `posteKey`, `objectifCard`
 Utilise : 00 (S, isTemp) ; 01 (h) ; 20 (sel) ; 27 (render)
 Utilisé par : 19
 
-### `15-compositions-de-match.js` — compositions de match (93 lignes)
-Définit : `DEF4`, `SYSTEMES`, `shortNom`, `pitchView`, `composCard`
+### `15-compositions-de-match.js` — compositions de match (112 lignes)
+Définit : `DEF4`, `SYSTEMES`, `shortNom`, `nomsDistincts`, `pitchView`, `composCard`
 Utilise : 00 (S) ; 01 (groupOf, h, nid, today) ; 02 (avatarNode) ; 13 (writeEquipe) ; 20 (sel) ; 27 (render)
-Utilisé par : 03, 13
+Utilisé par : 03, 13, 23b
 
 ### `16-ma-saison.js` — ma saison : courbe par mois + données (122 lignes)
 Définit : `SER`, `MOIS`, `monthKey`, `monthLab`, `mean`, `compteAssid`, `matchStats`, `presStats`, `tipBox`, `showTip`, `saisonCard`
@@ -134,8 +134,8 @@ Définit : `ficheView`, `MAIL_URL`, `envoyerMails`, `lireQuota`, `writeFiche`
 Utilise : 00 (GRILLES, GROUPS, LEVELS, S, critLabel, critsForNote, isOldNote, isTemp…) ; 01 (adjNotes, critAvg, fmtDate, fmtLong, groupOf, h, n1, noteAvg…) ; 02 (avatarEditor) ; 03 (saveAvatar) ; 04 (fcard) ; 05 (badgesBox, records) ; 09 (autoCard, ecrireFiche, watchAutos) ; 10 (linkAccount) ; 11 (compteCard) ; 12 (softRender) ; 14 (objectifCard) ; 16 (mean, saisonCard) ; 18 (chart) ; 20 (sel) ; 23 (objectifCoachCard) ; 24 (profilCard) ; 27 (render)
 Utilisé par : 11, 21, 22, 23, 23b, 25
 
-### `20-carnet-bmf.js` — vue coach (268 lignes)
-Définit : `PHASES`, `PROC_TYPES`, `PROC_CHAMPS`, `REFLEX`, `BMF_OBJ`, `phaseOf`, `principeLab`, `reflexFaite`, `carnetList`, `bmfStatut`, `bmfCompteur`, `nextNum`, `newSeance`, `newMatch`, `saveCarnet`, `openCarnet`, `fld`, `sel`, `reflexBlock`, `presentsLe`, `resumeSeance`, `resumeMatch`, `seanceForm`, `matchForm`, `carnetEdit`, `carnetView`, `printCarnet`
+### `20-carnet-bmf.js` — vue coach (252 lignes)
+Définit : `PHASES`, `PROC_CHAMPS`, `REFLEX`, `BMF_OBJ`, `phaseOf`, `principeLab`, `reflexFaite`, `carnetList`, `bmfStatut`, `bmfCompteur`, `nextNum`, `newSeance`, `newMatch`, `saveCarnet`, `openCarnet`, `fld`, `sel`, `reflexBlock`, `presentsLe`, `resumeSeance`, `resumeMatch`, `seanceForm`, `matchForm`, `carnetEdit`, `carnetView`, `printCarnet`
 Utilise : 00 (GROUPS, S) ; 01 (esc, fmtDate, h, n1, nid, noteAvg, sortedNotes, today) ; 21 (dFiches) ; 27 (render)
 Utilisé par : 00, 07, 08, 10, 11, 13, 14, 15, 18, 19, 21, 22, 23b, 29
 
@@ -156,7 +156,7 @@ Utilisé par : 13, 23b, 27, 29
 
 ### `23b-accueil-premium.js` — accueil premium : joueur (U19, gardiens) et coach (271 lignes)
 Définit : `finSem`, `numSemaine`, `libSemaine`, `nomCourt`, `critsEnt`, `notesEnt`, `indiceA`, `serieIndice`, `calculStatsGroupe`, `statsGroupe`, `publierStatsGroupes`, `objectifSemaine`, `secT`, `coche`, `courbeIndice`, `radarAcc`, `prochainMatch`, `signature`, `accueilJoueur`, `objectifCoachCard`, `accueilCoach`
-Utilise : 00 (DESC, GRILLES, GROUPS, S, isOldNote, isTemp, mGrid) ; 01 (critAvg, groupOf, h, n1, noteAvg, sortedNotes, today) ; 04 (fcard, stable) ; 09 (autoAFaire, lundiDe, masquerNotes, plusJours, watchAutos) ; 13 (writeEquipe) ; 16 (compteAssid, mean) ; 17 (ditOf, jourLong) ; 19 (MAIL_URL, envoyerMails, writeFiche) ; 20 (sel) ; 21 (dFiches, presRange, visG) ; 22 (startSaisie) ; 23 (semaineCard) ; 24 (RLAB, moyCrit) ; 26 (erreursItem) ; 27 (render)
+Utilise : 00 (DESC, GRILLES, GROUPS, S, isOldNote, isTemp, mGrid) ; 01 (critAvg, groupOf, h, n1, noteAvg, sortedNotes, today) ; 04 (fcard, stable) ; 09 (autoAFaire, lundiDe, masquerNotes, plusJours, watchAutos) ; 13 (writeEquipe) ; 15 (nomsDistincts) ; 16 (compteAssid, mean) ; 17 (ditOf, jourLong) ; 19 (MAIL_URL, envoyerMails, writeFiche) ; 20 (sel) ; 21 (dFiches, presRange, visG) ; 22 (startSaisie) ; 23 (semaineCard) ; 24 (RLAB, moyCrit) ; 26 (erreursItem) ; 27 (render)
 Utilisé par : 19, 22, 23
 
 ### `24-profil-araignee.js` — profil en araignée : coach et auto (50 lignes)
@@ -348,6 +348,7 @@ Utilise : 00 (DB, GROUPS, S) ; 01 (groupOf, h, sortedNotes) ; 03 (saveAvatar) ; 
 - `nextNum` → 20-carnet-bmf.js
 - `nid` → 01-petits-outils.js
 - `nomCourt` → 23b-accueil-premium.js
+- `nomsDistincts` → 15-compositions-de-match.js
 - `normName` → 10-acces-coachs.js
 - `noteAvg` → 01-petits-outils.js
 - `notesEnt` → 23b-accueil-premium.js
@@ -380,7 +381,6 @@ Utilise : 00 (DB, GROUPS, S) ; 01 (groupOf, h, sortedNotes) ; 03 (saveAvatar) ; 
 - `principeLab` → 20-carnet-bmf.js
 - `printCarnet` → 20-carnet-bmf.js
 - `PROC_CHAMPS` → 20-carnet-bmf.js
-- `PROC_TYPES` → 20-carnet-bmf.js
 - `prochainMatch` → 23b-accueil-premium.js
 - `profilCard` → 24-profil-araignee.js
 - `psubtabs` → 23-vue-joueur-parent.js

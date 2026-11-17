@@ -210,7 +210,7 @@ function accueilCoach() {
   const gs = visG(), g = gs.includes(S.accG) ? S.accG : (gs.includes("U19") ? "U19" : gs[0]);
   const l0 = lundiDe(today()), fin = finSem(l0), lp = plusJours(l0, -7);
   const box = h("div", { class: "acc acc-coach" });
-  const fs = dFiches(g).filter(([, f]) => S.demo || !f.exemple), nom = fid => nomCourt((S.fiches[fid] || {}).nom);
+  const fs = dFiches(g).filter(([, f]) => S.demo || !f.exemple), noms = nomsDistincts(fs.map(([fid, f]) => [fid, f.nom])), nom = fid => noms[fid] || nomCourt((S.fiches[fid] || {}).nom);
   const seS = Object.values(S.seances).filter(x => x && x.groupe === g && x.date >= l0 && x.date <= fin);
   const c = g === "U19" ? S.champ : null, ME = c && (c.equipe || "USM ENDOUME CATALANS");
   const mj = c && Array.isArray(c.matchs) ? c.matchs.filter(x => x.date && x.date.slice(0, 10) >= l0 && x.date.slice(0, 10) <= fin) : [];
@@ -262,7 +262,7 @@ function accueilCoach() {
   if (cl.length) {
     const vus = S.accTout ? cl : cl.slice(0, 5);
     box.append(h("section", { class: "acc-sec acc-classe" }, h("div", { class: "acc-st" }, h("h2", { class: "acc-h" }, "Classement indice"), cl.length > 5 ? h("button", { class: "linkbtn", onclick: () => { S.accTout = !S.accTout; render(); } }, S.accTout ? "Voir le top 5" : `Voir les ${cl.length}`) : null),
-      h("div", { class: "acc-boite acc-cl" }, vus.map(([fid, v], i) => h("button", { class: "acc-cr", onclick: go(fid) }, h("span", { class: "acc-cn" + (i < 3 ? " or" : "") }, String(i + 1)), h("span", { class: "acc-cnom" }, nom(fid)),
+      h("div", { class: "acc-boite acc-cl", style: `--nomw:${Math.max(...vus.map(([fid]) => nom(fid).length)) * 0.95}ch` }, vus.map(([fid, v], i) => h("button", { class: "acc-cr", onclick: go(fid) }, h("span", { class: "acc-cn" + (i < 3 ? " or" : "") }, String(i + 1)), h("span", { class: "acc-cnom" }, nom(fid)),
         h("span", { class: "acc-cb" }, h("i", { class: i === 0 ? "or" : "", style: `width:${v}%` })), h("span", { class: "acc-cv" }, String(v)))))));
   }
   box.append(h("button", { class: "acc-saisir", onclick: () => { S.dash = false; S.bmf = false; S.tab = g; startSaisie(); const se = seS.find(x => x.date === today()); if (se) { S.saisie.date = se.date; S.saisie.type = se.type; render(); } } }, h("span", { "aria-hidden": "true" }, "+"), "Saisir les notes de la séance"));

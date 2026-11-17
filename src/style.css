@@ -660,8 +660,8 @@ button.card:hover { border-color: var(--or); }
 .acc-cr { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 0; min-height: 44px; }
 .acc-cr:focus-visible { outline: 2px solid var(--or); }
 .acc-cn { font: 800 20px/1 var(--display); color: var(--faible); width: 22px; } .acc-cn.or { color: var(--or); }
-.acc-cnom { font-size: 14px; font-weight: 600; width: 96px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.acc-cb { flex: 1; height: 6px; border-radius: 3px; background: var(--ligne); overflow: hidden; }
+.acc-cnom { font-size: 14px; font-weight: 600; width: min(var(--nomw, 96px), 58%); min-width: 96px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-cb { flex: 1 1 40px; min-width: 40px; height: 6px; border-radius: 3px; background: var(--ligne); overflow: hidden; }
 .acc-cb i { display: block; height: 100%; border-radius: 3px; background: var(--rouge); } .acc-cb i.or { background: var(--or); }
 .acc-cv { font: 700 18px/1 var(--display); width: 28px; text-align: right; font-variant-numeric: tabular-nums; }
 .acc-saisir { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; background: var(--rouge); color: var(--texte); border: 0; border-radius: 16px; padding: 18px; font: 700 19px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; }
@@ -686,7 +686,7 @@ button.card:hover { border-color: var(--or); }
   .acc-ch::before { font-size: 130px; right: 0; top: auto; bottom: 8px; }
   .acc-gs { justify-content: flex-end; position: relative; z-index: 1; }
   .acc-kpis { gap: 16px; } .acc-k { padding: 18px 20px; }
-  .acc-cnom { width: 140px; }
+  .acc-cnom { min-width: 150px; }
 }
 @media (max-width: 380px) { .acc-big { font-size: 88px; } .acc-ot { font-size: 31px; } .acc-k-v { font-size: 34px; } }
 /* contraste (WCAG AA) : badges pas encore débloqués lisibles, puce de groupe en texte clair (la couleur du groupe reste sur la bordure) */

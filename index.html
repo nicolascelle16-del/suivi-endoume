@@ -676,8 +676,8 @@ button.card:hover { border-color: var(--or); }
 .acc-cr { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 0; min-height: 44px; }
 .acc-cr:focus-visible { outline: 2px solid var(--or); }
 .acc-cn { font: 800 20px/1 var(--display); color: var(--faible); width: 22px; } .acc-cn.or { color: var(--or); }
-.acc-cnom { font-size: 14px; font-weight: 600; width: 96px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.acc-cb { flex: 1; height: 6px; border-radius: 3px; background: var(--ligne); overflow: hidden; }
+.acc-cnom { font-size: 14px; font-weight: 600; width: min(var(--nomw, 96px), 58%); min-width: 96px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-cb { flex: 1 1 40px; min-width: 40px; height: 6px; border-radius: 3px; background: var(--ligne); overflow: hidden; }
 .acc-cb i { display: block; height: 100%; border-radius: 3px; background: var(--rouge); } .acc-cb i.or { background: var(--or); }
 .acc-cv { font: 700 18px/1 var(--display); width: 28px; text-align: right; font-variant-numeric: tabular-nums; }
 .acc-saisir { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; background: var(--rouge); color: var(--texte); border: 0; border-radius: 16px; padding: 18px; font: 700 19px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; }
@@ -702,7 +702,7 @@ button.card:hover { border-color: var(--or); }
   .acc-ch::before { font-size: 130px; right: 0; top: auto; bottom: 8px; }
   .acc-gs { justify-content: flex-end; position: relative; z-index: 1; }
   .acc-kpis { gap: 16px; } .acc-k { padding: 18px 20px; }
-  .acc-cnom { width: 140px; }
+  .acc-cnom { min-width: 150px; }
 }
 @media (max-width: 380px) { .acc-big { font-size: 88px; } .acc-ot { font-size: 31px; } .acc-k-v { font-size: 34px; } }
 /* contraste (WCAG AA) : badges pas encore débloqués lisibles, puce de groupe en texte clair (la couleur du groupe reste sur la bordure) */
@@ -2141,15 +2141,34 @@ const SYSTEMES = {
   "3-4-3": [["GB", 50, 91], ["DC", 72, 76], ["DC", 50, 78], ["DC", 28, 76], ["PD", 86, 51], ["MC", 62, 54], ["MC", 38, 54], ["PG", 14, 51], ["AD", 80, 23], ["BU", 50, 17], ["AG", 20, 23]]
 };
 const shortNom = n => { const w = (n || "?").trim().split(/\s+/); if (w.length < 2) return w[0]; const caps = w.filter(x => x === x.toUpperCase() && /[A-Z]/.test(x)); const pre = w.find(x => !caps.includes(x)) || w[0]; const fam = caps[0] || w[w.length - 1]; return pre === fam ? pre : `${pre[0].toUpperCase() + pre.slice(1).toLowerCase()} ${fam[0].toUpperCase()}.`; };
+/* noms courts sans doublon : « Mohamed B. » devient « Mohamed Ben. », « Mohamed Bou. »… (3 premières lettres du nom de famille, plus si besoin) */
+function nomsDistincts(paires) {
+  const cap = x => x.split("-").map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join("-");
+  const parts = nom => { const w = (nom || "?").trim().split(/\s+/); if (w.length < 2) return [w[0], ""]; const caps = w.filter(x => x === x.toUpperCase() && /[A-Z]/.test(x)); const pre = w.find(x => !caps.includes(x)) || w[0]; return [cap(pre), (caps.length ? caps : w.filter(x => x !== pre)).map(cap).join(" ")]; };
+  const lab = ([, pre, fam], n) => !fam ? pre : n >= fam.length ? `${pre} ${fam}` : `${pre} ${fam.slice(0, n)}.`;
+  const p = paires.map(([fid, nom]) => [fid, ...parts(nom)]), out = {};
+  const nb = l => { const c = {}; for (const x of p) c[l(x)] = (c[l(x)] || 0) + 1; return c; };
+  const court = nb(x => lab(x, 1));
+  for (const x of p) {
+    if (court[lab(x, 1)] < 2) { out[x[0]] = lab(x, 1); continue; }
+    const memes = p.filter(y => lab(y, 1) === lab(x, 1));
+    let n = 3; while (n < x[2].length && memes.some(y => y !== x && lab(y, n) === lab(x, n))) n++;
+    out[x[0]] = lab(x, n);
+  }
+  const vus = {}, rang = {}; for (const x of p) vus[out[x[0]]] = (vus[out[x[0]]] || 0) + 1;
+  for (const x of p) if (vus[out[x[0]]] > 1) { const t = out[x[0]]; rang[t] = (rang[t] || 0) + 1; out[x[0]] = `${t} (${rang[t]})`; }
+  return out;
+}
 function pitchView(c) {
   const pos = SYSTEMES[c.systeme] || SYSTEMES["4-4-2"];
   const pitch = h("div", { class: "pitch", role: "img", "aria-label": `Composition en ${c.systeme}` });
   pitch.innerHTML = `<svg viewBox="0 0 68 100" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="rgba(205,189,143,.35)" stroke-width=".4"><rect x="2" y="2" width="64" height="96"/><line x1="2" y1="50" x2="66" y2="50"/><circle cx="34" cy="50" r="8"/><rect x="16" y="2" width="36" height="15"/><rect x="16" y="83" width="36" height="15"/><rect x="26" y="2" width="16" height="5"/><rect x="26" y="93" width="16" height="5"/></g></svg>`;
+  const distincts = nomsDistincts([...(c.xi || []), ...(c.rempl || [])].filter(Boolean).map(f => [f, (c.noms || {})[f] || "?"]));
   pos.forEach(([lab, x, y], i) => {
     const fid = (c.xi || [])[i], nom = fid ? ((c.noms || {})[fid] || "?") : "";
     const t = h("div", { class: "tok" + (fid && fid === S.me ? " me" : ""), style: `left:${x}%;top:${y}%` },
       fid ? avatarNode(fid, nom, "av-mini") : h("div", { class: "av-mini" }, "–"),
-      h("span", { class: "tn" }, fid ? shortNom(nom) + (c.cap === fid ? " (C)" : "") : lab), h("span", { class: "tp" }, lab));
+      h("span", { class: "tn" }, fid ? (distincts[fid] || shortNom(nom)) + (c.cap === fid ? " (C)" : "") : lab), h("span", { class: "tp" }, lab));
     pitch.append(t);
   });
   return pitch;
@@ -2670,7 +2689,6 @@ const PHASES = [
   { k: "op", l: "S'opposer à la progression", bloc: "On n'a pas le ballon", p: [[6, "Freiner la progression de l'adversaire, organiser et réorganiser les alignements"]] },
   { k: "pb", l: "S'organiser pour protéger son but", bloc: "On n'a pas le ballon", p: [[7, "S'organiser en déséquilibre"], [8, "Densifier et être actif dans le CJD (axe ballon-but)"], [9, "Défendre son but, récupérer ou dégager le ballon"]] }
 ];
-const PROC_TYPES = ["Échauffement", "Jeu", "Situation", "Exercice", "Jeu réduit", "Match", "Retour au calme"];
 const PROC_CHAMPS = [["objectif", "Objectif"], ["buts", "But(s)"], ["consignes", "Consignes / variables"], ["rotations", "Gestion des rotations"], ["comportements", "Comportements attendus"], ["criteres", "Critères de réussite"]];
 const REFLEX = [
   ["contexte", "Le contexte et ce que j'avais prévu", "Je décris avec précision le contexte et ce que j'avais prévu de faire, en lien avec mes objectifs d'apprentissage.", "Ex. : 12 présents, terrain mouillé. J'avais prévu de travailler…"],
@@ -2771,23 +2789,8 @@ function seanceForm(d) {
       h("label", { class: "check" }, (() => { const c = h("input", { type: "checkbox" }); c.checked = !!d.np; c.onchange = () => { d.np = c.checked; S.bmfDirty = true; }; return c; })(), "Nouvelles pratiques ou futsal")));
   drawPrin();
   box.append(head);
-  const procs = h("div", { class: "stack" });
-  const drawProcs = () => {
-    procs.replaceChildren();
-    d.procedes.forEach((p, i) => {
-      const det = h("details", { class: "card proc", open: i === 0 && !p.objectif ? true : null },
-        h("summary", {}, h("span", { class: "rq-n" }, String(i + 1)), h("b", {}, p.type || "Procédé"), h("span", { class: "note" }, p.objectif ? " · " + p.objectif.slice(0, 60) : "")));
-      const body = h("div", { class: "stack", style: "margin-top:10px" },
-        h("div", { class: "row" }, sel(p, "type", "Type", [["", "Choisir…"], ...PROC_TYPES.map(t => [t, t])]), fld(p, "surface", "Surface", { cls: "f-s", ph: "30 x 20 m" }), fld(p, "sequence", "Séquence", { cls: "f-s", ph: "4 x 5'" })),
-        PROC_CHAMPS.map(([k, l]) => fld(p, k, l, { area: true, rows: 2, max: 1500 })));
-      const del = h("button", { type: "button", class: "linkbtn danger" }, "Retirer ce procédé");
-      del.onclick = () => { d.procedes.splice(i, 1); S.bmfDirty = true; drawProcs(); };
-      body.append(del); det.append(body); procs.append(det);
-    });
-    procs.append(h("button", { type: "button", class: "btn ghost small", style: "align-self:flex-start", onclick: () => { d.procedes.push({ type: "", surface: "", sequence: "", objectif: "", buts: "", consignes: "", rotations: "", comportements: "", criteres: "" }); S.bmfDirty = true; drawProcs(); } }, "Ajouter un procédé"));
-  };
-  drawProcs();
-  box.append(h("h3", { class: "d-t", style: "margin:6px 0 0" }, `Les procédés (${d.procedes.length})`), procs, reflexBlock(d, "seance"));
+  // les procédés ne se saisissent plus ici (Nico garde la séance prévue et l'analyse réflexive) ; ceux déjà enregistrés restent dans la fiche et l'export
+  box.append(reflexBlock(d, "seance"));
   return box;
 }
 function matchForm(d) {
@@ -3821,7 +3824,7 @@ function accueilCoach() {
   const gs = visG(), g = gs.includes(S.accG) ? S.accG : (gs.includes("U19") ? "U19" : gs[0]);
   const l0 = lundiDe(today()), fin = finSem(l0), lp = plusJours(l0, -7);
   const box = h("div", { class: "acc acc-coach" });
-  const fs = dFiches(g).filter(([, f]) => S.demo || !f.exemple), nom = fid => nomCourt((S.fiches[fid] || {}).nom);
+  const fs = dFiches(g).filter(([, f]) => S.demo || !f.exemple), noms = nomsDistincts(fs.map(([fid, f]) => [fid, f.nom])), nom = fid => noms[fid] || nomCourt((S.fiches[fid] || {}).nom);
   const seS = Object.values(S.seances).filter(x => x && x.groupe === g && x.date >= l0 && x.date <= fin);
   const c = g === "U19" ? S.champ : null, ME = c && (c.equipe || "USM ENDOUME CATALANS");
   const mj = c && Array.isArray(c.matchs) ? c.matchs.filter(x => x.date && x.date.slice(0, 10) >= l0 && x.date.slice(0, 10) <= fin) : [];
@@ -3873,7 +3876,7 @@ function accueilCoach() {
   if (cl.length) {
     const vus = S.accTout ? cl : cl.slice(0, 5);
     box.append(h("section", { class: "acc-sec acc-classe" }, h("div", { class: "acc-st" }, h("h2", { class: "acc-h" }, "Classement indice"), cl.length > 5 ? h("button", { class: "linkbtn", onclick: () => { S.accTout = !S.accTout; render(); } }, S.accTout ? "Voir le top 5" : `Voir les ${cl.length}`) : null),
-      h("div", { class: "acc-boite acc-cl" }, vus.map(([fid, v], i) => h("button", { class: "acc-cr", onclick: go(fid) }, h("span", { class: "acc-cn" + (i < 3 ? " or" : "") }, String(i + 1)), h("span", { class: "acc-cnom" }, nom(fid)),
+      h("div", { class: "acc-boite acc-cl", style: `--nomw:${Math.max(...vus.map(([fid]) => nom(fid).length)) * 0.95}ch` }, vus.map(([fid, v], i) => h("button", { class: "acc-cr", onclick: go(fid) }, h("span", { class: "acc-cn" + (i < 3 ? " or" : "") }, String(i + 1)), h("span", { class: "acc-cnom" }, nom(fid)),
         h("span", { class: "acc-cb" }, h("i", { class: i === 0 ? "or" : "", style: `width:${v}%` })), h("span", { class: "acc-cv" }, String(v)))))));
   }
   box.append(h("button", { class: "acc-saisir", onclick: () => { S.dash = false; S.bmf = false; S.tab = g; startSaisie(); const se = seS.find(x => x.date === today()); if (se) { S.saisie.date = se.date; S.saisie.type = se.type; render(); } } }, h("span", { "aria-hidden": "true" }, "+"), "Saisir les notes de la séance"));
@@ -4045,7 +4048,7 @@ function showConf() { S.conf = true; document.getElementById("role").textContent
    Quand le site plante chez quelqu'un, l'erreur est enregistrée dans erreurs/{id}, SANS nom, adresse ni identifiant :
    le message technique, l'écran, le rôle (coach, adjoint, joueur, parent), la version du site et le navigateur.
    Seul le coach les lit (accueil coach, « À traiter »). Effacées au bout de 30 jours. */
-const VERSION_SITE = "5b5c0149";
+const VERSION_SITE = "51ed2c1e";
 const JOURNAL = { n: 0, vus: new Set() };
 function roleActuel() {
   if (S.admin) return S.scope ? "adjoint" : "coach";

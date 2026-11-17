@@ -9,15 +9,34 @@ const SYSTEMES = {
   "3-4-3": [["GB", 50, 91], ["DC", 72, 76], ["DC", 50, 78], ["DC", 28, 76], ["PD", 86, 51], ["MC", 62, 54], ["MC", 38, 54], ["PG", 14, 51], ["AD", 80, 23], ["BU", 50, 17], ["AG", 20, 23]]
 };
 const shortNom = n => { const w = (n || "?").trim().split(/\s+/); if (w.length < 2) return w[0]; const caps = w.filter(x => x === x.toUpperCase() && /[A-Z]/.test(x)); const pre = w.find(x => !caps.includes(x)) || w[0]; const fam = caps[0] || w[w.length - 1]; return pre === fam ? pre : `${pre[0].toUpperCase() + pre.slice(1).toLowerCase()} ${fam[0].toUpperCase()}.`; };
+/* noms courts sans doublon : « Mohamed B. » devient « Mohamed Ben. », « Mohamed Bou. »… (3 premières lettres du nom de famille, plus si besoin) */
+function nomsDistincts(paires) {
+  const cap = x => x.split("-").map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join("-");
+  const parts = nom => { const w = (nom || "?").trim().split(/\s+/); if (w.length < 2) return [w[0], ""]; const caps = w.filter(x => x === x.toUpperCase() && /[A-Z]/.test(x)); const pre = w.find(x => !caps.includes(x)) || w[0]; return [cap(pre), (caps.length ? caps : w.filter(x => x !== pre)).map(cap).join(" ")]; };
+  const lab = ([, pre, fam], n) => !fam ? pre : n >= fam.length ? `${pre} ${fam}` : `${pre} ${fam.slice(0, n)}.`;
+  const p = paires.map(([fid, nom]) => [fid, ...parts(nom)]), out = {};
+  const nb = l => { const c = {}; for (const x of p) c[l(x)] = (c[l(x)] || 0) + 1; return c; };
+  const court = nb(x => lab(x, 1));
+  for (const x of p) {
+    if (court[lab(x, 1)] < 2) { out[x[0]] = lab(x, 1); continue; }
+    const memes = p.filter(y => lab(y, 1) === lab(x, 1));
+    let n = 3; while (n < x[2].length && memes.some(y => y !== x && lab(y, n) === lab(x, n))) n++;
+    out[x[0]] = lab(x, n);
+  }
+  const vus = {}, rang = {}; for (const x of p) vus[out[x[0]]] = (vus[out[x[0]]] || 0) + 1;
+  for (const x of p) if (vus[out[x[0]]] > 1) { const t = out[x[0]]; rang[t] = (rang[t] || 0) + 1; out[x[0]] = `${t} (${rang[t]})`; }
+  return out;
+}
 function pitchView(c) {
   const pos = SYSTEMES[c.systeme] || SYSTEMES["4-4-2"];
   const pitch = h("div", { class: "pitch", role: "img", "aria-label": `Composition en ${c.systeme}` });
   pitch.innerHTML = `<svg viewBox="0 0 68 100" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="rgba(205,189,143,.35)" stroke-width=".4"><rect x="2" y="2" width="64" height="96"/><line x1="2" y1="50" x2="66" y2="50"/><circle cx="34" cy="50" r="8"/><rect x="16" y="2" width="36" height="15"/><rect x="16" y="83" width="36" height="15"/><rect x="26" y="2" width="16" height="5"/><rect x="26" y="93" width="16" height="5"/></g></svg>`;
+  const distincts = nomsDistincts([...(c.xi || []), ...(c.rempl || [])].filter(Boolean).map(f => [f, (c.noms || {})[f] || "?"]));
   pos.forEach(([lab, x, y], i) => {
     const fid = (c.xi || [])[i], nom = fid ? ((c.noms || {})[fid] || "?") : "";
     const t = h("div", { class: "tok" + (fid && fid === S.me ? " me" : ""), style: `left:${x}%;top:${y}%` },
       fid ? avatarNode(fid, nom, "av-mini") : h("div", { class: "av-mini" }, "–"),
-      h("span", { class: "tn" }, fid ? shortNom(nom) + (c.cap === fid ? " (C)" : "") : lab), h("span", { class: "tp" }, lab));
+      h("span", { class: "tn" }, fid ? (distincts[fid] || shortNom(nom)) + (c.cap === fid ? " (C)" : "") : lab), h("span", { class: "tp" }, lab));
     pitch.append(t);
   });
   return pitch;
