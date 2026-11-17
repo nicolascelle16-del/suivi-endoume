@@ -219,16 +219,16 @@ function accueilCoach() {
   box.append(h("section", { class: "acc-ch" }, h("div", { class: "acc-ch-l" }, `Espace staff · ${GROUPS[g].label}`),
     gs.length > 1 ? h("div", { class: "acc-gs", role: "group", "aria-label": "Groupe" }, gs.map(x => h("button", { class: "opt", "aria-pressed": String(x === g), onclick: () => { S.accG = x; render(); } }, GROUPS[x].label))) : null,
     h("div", { class: "acc-ch-t" }, `Semaine ${numSemaine(today())}`), h("div", { class: "acc-ch-s" }, resume.join(" · "))));
-  if (S.flash) { box.append(h("p", { class: "ok" }, S.flash)); S.flash = ""; }
+  if (S.flash) { box.querySelector(".acc-ch").append(h("p", { class: "ok", role: "status", style: "margin:0" }, S.flash)); S.flash = ""; }
   // chiffres
   const p = presRange(g, l0, fin), pp = presRange(g, lp, plusJours(lp, 6));
   const ind = fs.map(([, f]) => indiceA(f, today())).filter(v => v != null), indP = fs.map(([, f]) => indiceA(f, plusJours(l0, -1))).filter(v => v != null);
   const im = ind.length ? Math.round(mean(ind)) : null, imP = indP.length ? Math.round(mean(indP)) : null;
   const ouiAbs = [];
   for (const se of seS) for (const [fid, oui] of Object.entries(ditOf(se))) { if (!oui || !S.fiches[fid] || groupOf(S.fiches[fid]) !== g) continue; const pr = (S.fiches[fid].presences || []).find(x => x && x.date === se.date && x.type === se.type); if (pr && !pr.p) ouiAbs.push([fid, se]); }
-  const delta = (a, b, u) => a == null || b == null ? h("span", { class: "acc-k-s" }, "–") : h("span", { class: "acc-k-s " + (a - b >= 0 ? "acc-up" : "acc-down") }, `${a - b >= 0 ? "+" : "−"}${Math.abs(a - b)} ${u}`);
+  const delta = (a, b, u) => a == null || b == null ? h("span", { class: "acc-k-s" }, "–") : a === b ? h("span", { class: "acc-k-s" }, "Stable") : h("span", { class: "acc-k-s " + (a > b ? "acc-up" : "acc-down") }, `${a > b ? "+" : "−"}${Math.abs(a - b)} ${u} sur 7 jours`);
   box.append(h("section", { class: "acc-kpis" },
-    h("div", { class: "acc-k" }, h("span", { class: "acc-k-l" }, "Présence"), h("span", { class: "acc-k-v" }, p == null ? "–" : String(Math.round(p * 100)), p == null ? null : h("small", {}, "%")), delta(p == null ? null : Math.round(p * 100), pp == null ? null : Math.round(pp * 100), "pts")),
+    h("div", { class: "acc-k" }, h("span", { class: "acc-k-l" }, "Présence"), h("span", { class: "acc-k-v" }, p == null ? "–" : String(Math.round(p * 100)), p == null ? null : h("small", {}, "%")), p == null ? h("span", { class: "acc-k-s" }, "Pas encore d'appel") : delta(Math.round(p * 100), pp == null ? null : Math.round(pp * 100), "pts")),
     h("div", { class: "acc-k" }, h("span", { class: "acc-k-l" }, "Indice moyen"), h("span", { class: "acc-k-v or" }, im == null ? "–" : String(im)), delta(im, imP, "pts")),
     h("div", { class: "acc-k" }, h("span", { class: "acc-k-l" }, "Écart sondage"), h("span", { class: "acc-k-v" + (ouiAbs.length ? " rouge" : "") }, ouiAbs.length ? "−" + ouiAbs.length : "0"), h("span", { class: "acc-k-s" }, "oui sans venir"))));
   // à traiter
@@ -252,7 +252,7 @@ function accueilCoach() {
     items.push({ c: "rouge", t: `${ouiAbs.length} « oui » au sondage, absent${ouiAbs.length > 1 ? "s" : ""}`, d: Object.entries(parJour).map(([j, n]) => `${j} : ${n.join(", ")}`).join(" · "), lab: "Voir", go: () => { S.dash = false; S.tab = g; S.view = "list"; S.sub = "presences"; render(); } });
   }
   const ei = erreursItem(); if (ei) items.push(ei);
-  const at = h("section", { class: "acc-sec" }, secT("À traiter cette semaine"));
+  const at = h("section", { class: "acc-sec acc-traiter" }, secT("À traiter cette semaine"));
   if (!items.length) at.append(h("div", { class: "acc-boite acc-rien" }, "✓ Rien à traiter pour l'instant."));
   else at.append(h("div", { class: "acc-boite acc-list" }, items.map(it => h("div", { class: "acc-li" }, h("i", { class: "acc-pt " + it.c, "aria-hidden": "true" }),
     h("div", { class: "acc-li-t" }, h("b", {}, it.t), h("span", {}, it.d), it.detail || null), h("button", { class: "linkbtn acc-act", onclick: it.go }, it.lab)))));
@@ -261,7 +261,7 @@ function accueilCoach() {
   const cl = fs.map(([fid, f]) => [fid, indiceA(f, today())]).filter(x => x[1] != null).sort((a, b) => b[1] - a[1]);
   if (cl.length) {
     const vus = S.accTout ? cl : cl.slice(0, 5);
-    box.append(h("section", { class: "acc-sec" }, h("div", { class: "acc-st" }, h("h2", { class: "acc-h" }, "Classement indice"), cl.length > 5 ? h("button", { class: "linkbtn", onclick: () => { S.accTout = !S.accTout; render(); } }, S.accTout ? "Voir le top 5" : `Voir les ${cl.length}`) : null),
+    box.append(h("section", { class: "acc-sec acc-classe" }, h("div", { class: "acc-st" }, h("h2", { class: "acc-h" }, "Classement indice"), cl.length > 5 ? h("button", { class: "linkbtn", onclick: () => { S.accTout = !S.accTout; render(); } }, S.accTout ? "Voir le top 5" : `Voir les ${cl.length}`) : null),
       h("div", { class: "acc-boite acc-cl" }, vus.map(([fid, v], i) => h("button", { class: "acc-cr", onclick: go(fid) }, h("span", { class: "acc-cn" + (i < 3 ? " or" : "") }, String(i + 1)), h("span", { class: "acc-cnom" }, nom(fid)),
         h("span", { class: "acc-cb" }, h("i", { class: i === 0 ? "or" : "", style: `width:${v}%` })), h("span", { class: "acc-cv" }, String(v)))))));
   }
