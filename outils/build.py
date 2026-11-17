@@ -11,8 +11,11 @@ Organisation :
   src/js/ORDRE.txt         ordre des morceaux de code (un seul module à l'arrivée)
   src/js/NN-theme.js       le code, rangé par thème
   src/firebase-config.js   configuration publique Firebase (injectée à la place de __CONFIG__)
+  docs/CARTE-DU-CODE.md    carte du code, régénérée à chaque build (outils/carte.py)
 """
 import os, subprocess, sys, tempfile
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import carte
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 S = lambda *p: os.path.join(RACINE, *p)
@@ -54,6 +57,8 @@ def main():
     if "--verifier" in sys.argv:
         actuel = open(S("index.html"), encoding="utf-8").read()
         if actuel != html: erreurs.append("index.html n'est pas à jour : lance python3 outils/build.py")
+        c = S("docs", "CARTE-DU-CODE.md")
+        if not os.path.exists(c) or open(c, encoding="utf-8").read() != carte.main(ecrire=False): erreurs.append("docs/CARTE-DU-CODE.md n'est pas à jour : lance python3 outils/build.py")
     if not erreurs and "--tests" in sys.argv:
         with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as t:
             t.write(html); candidat = t.name
@@ -61,6 +66,7 @@ def main():
         if r.returncode: erreurs.append("le test de rendu a échoué : index.html n'a pas été modifié")
     if not erreurs and "--verifier" not in sys.argv:
         open(S("index.html"), "w", encoding="utf-8").write(html)
+        carte.main()
     if erreurs:
         print("ÉCHEC :\n- " + "\n- ".join(erreurs)); sys.exit(1)
     print(f"OK : index.html ({len(html)//1024} Ko) vérifié.")
